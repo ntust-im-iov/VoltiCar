@@ -35,7 +35,16 @@ class AuthService {
       _logger.i('響應數據: ${response.data}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final user = User.fromJson(response.data);
+        // 創建用戶對象，使用請求數據和響應的 user_id
+        final user = User(
+          username: request.username,
+          email: request.email,
+          password: request.password,
+          phone: request.phone,
+          name: request.username,  // 使用 username 作為默認名稱
+          userUuid: response.data['user_id'] as String,
+        );
+        
         _logger.i('用戶對象創建成功: ${user.toJson()}');
         
         // 如果 API 返回 token，保存它
