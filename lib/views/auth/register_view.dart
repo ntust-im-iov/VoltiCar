@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:intl_phone_number_input/intl_phone_number_input.dart';
+import 'package:logger/logger.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/observer.dart';
 import '../../viewmodels/auth_viewmodel.dart';
@@ -16,39 +18,64 @@ class RegisterView extends StatefulWidget {
 
 class _RegisterViewState extends State<RegisterView> implements EventObserver {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
+  final _accountController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _nameController = TextEditingController();
   final _authViewModel = AuthViewModel();
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String? _errorMessage;
+  PhoneNumber? _phoneNumber;
+  final _logger = Logger();
 
   @override
   void initState() {
     super.initState();
     _authViewModel.subscribe(this);
+    // 設置默認國家為台灣
+    _phoneNumber = PhoneNumber(isoCode: 'TW');
   }
 
   @override
   void dispose() {
-    _usernameController.dispose();
+    _accountController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _phoneController.dispose();
+    _nameController.dispose();
     _authViewModel.unsubscribe(this);
     super.dispose();
   }
 
   void _register() {
     if (_formKey.currentState?.validate() ?? false) {
+      _logger.i('開始註冊流程...');
+      _logger.i('表單驗證通過');
+      _logger.i('註冊信息：');
+      _logger.i('用戶名: ${_accountController.text}');
+      _logger.i('姓名: ${_nameController.text}');
+      _logger.i('電話: ${_phoneNumber?.phoneNumber}');
+      _logger.i('國家代碼: ${_phoneNumber?.isoCode}');
+      _logger.i('完整號碼: ${_phoneNumber?.phoneNumber}');
+      _logger.i('電子郵件: ${_emailController.text}');
+      _logger.i('密碼長度: ${_passwordController.text.length}');
+      
+      _logger.i('調用 AuthViewModel.register...');
       _authViewModel.register(
-        _usernameController.text.trim(),
-        _emailController.text.trim(),
-        _passwordController.text.trim(),
+        username: _accountController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+        phone: _phoneNumber?.phoneNumber ?? '',
+        name: _nameController.text.trim(),
       );
+      _logger.i('AuthViewModel.register 調用完成');
+    } else {
+      _logger.e('表單驗證失敗');
     }
   }
 
@@ -113,18 +140,80 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
                   ),
                   const SizedBox(height: 32),
                   
-                  // 用戶名輸入框
+                  // 帳號輸入框
                   CustomTextField(
-                    controller: _usernameController,
-                    hintText: '用戶名',
+                    controller: _accountController,
+                    hintText: '帳號',
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return '請輸入用戶名';
+                        return '請輸入帳號';
                       }
                       return null;
                     },
                     suffixIcon: const Icon(Icons.person_outline),
                     textInputAction: TextInputAction.next,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 姓名輸入框
+                  CustomTextField(
+                    controller: _nameController,
+                    hintText: '姓名',
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return '請輸入姓名';
+                      }
+                      return null;
+                    },
+                    suffixIcon: const Icon(Icons.badge_outlined),
+                    textInputAction: TextInputAction.next,
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // 電話輸入框
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: InternationalPhoneNumberInput(
+                      onInputChanged: (PhoneNumber number) {
+                        setState(() {
+                          _phoneNumber = number;
+                        });
+                      },
+                      onInputValidated: (bool value) {
+                        if (_phoneNumber?.phoneNumber != null) {
+                          _logger.d('電話號碼驗證結果: $value');
+                        }
+                      },
+                      selectorConfig: const SelectorConfig(
+                        selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
+                        setSelectorButtonAsPrefixIcon: true,
+                        leadingPadding: 16,
+                        showFlags: true,
+                      ),
+                      ignoreBlank: false,
+                      autoValidateMode: AutovalidateMode.disabled,
+                      initialValue: _phoneNumber,
+                      textFieldController: _phoneController,
+                      formatInput: true,
+                      keyboardType: TextInputType.phone,
+                      inputDecoration: InputDecoration(
+                        hintText: '電話號碼',
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return '請輸入電話號碼';
+                        }
+                        return null;
+                      },
+                    ),
                   ),
                   const SizedBox(height: 16),
                   

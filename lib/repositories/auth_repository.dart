@@ -1,92 +1,76 @@
-import 'dart:async';
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
+import '../models/register_request.dart';
 import '../services/auth_service.dart';
+import 'package:logger/logger.dart';
 
 class AuthRepository {
   final AuthService _authService = AuthService();
-  
-  // 模擬API延遲
-  final _delay = const Duration(milliseconds: 1500);
+  final Logger _logger = Logger();
   
   // 註冊
-  Future<User?> register(String username, String email, String password) async {
-    // 模擬網絡延遲
-    await Future.delayed(_delay);
-    
-    // 這裡模擬API請求和驗證
-    // 在實際應用中，需要檢查用戶名是否已存在等
-    final user = User(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      username: username,
-      email: email,
-    );
-    
-    // 保存用戶
-    await _saveUser(user);
-    
-    return user;
+  Future<User?> register({
+    required String username,
+    required String email,
+    required String password,
+    required String phone,
+    required String name,
+  }) async {
+    try {
+      _logger.i('開始創建註冊請求...');
+      
+      // 生成 userUuid
+      String userUuid = DateTime.now().millisecondsSinceEpoch.toString();
+      _logger.i('生成的 userUuid: $userUuid');
+      
+      final request = RegisterRequest(
+        username: username,
+        email: email,
+        password: password,
+        phone: phone,
+        name: name,
+        userUuid: userUuid,
+      );
+      
+      _logger.i('註冊請求創建完成: ${request.toJson()}');
+      
+      final response = await _authService.register(request);
+      _logger.i('註冊響應: $response');
+      
+      if (response != null) {
+        _logger.i('註冊成功，返回用戶信息');
+        return response;
+      }
+      
+      _logger.e('註冊失敗，返回 null');
+      return null;
+    } catch (e) {
+      _logger.e('註冊過程中發生錯誤: $e');
+      rethrow;
+    }
   }
   
   // 登錄
-  Future<User?> login(String username, String password) async {
-    // 模擬網絡延遲
-    await Future.delayed(_delay);
-    
-    // 這裡模擬API請求
-    if (username == 'admin' && password == 'admin123') {
-      // 模擬用戶數據
-      final user = User(
-        id: '1',
-        username: username,
-        email: 'admin@volticar.com',
-      );
-      
-      // 保存用戶
-      await _saveUser(user);
-      
-      return user;
-    }
-    
-    return null;
+  Future<User?> login(String account, String password) async {
+    return await _authService.login(account, password);
   }
   
   // 登出
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('user');
+    await _authService.logout();
   }
   
   // 檢查是否已登錄
   Future<bool> isLoggedIn() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userJson = prefs.getString('user');
-    
-    // 模擬網絡延遲
-    await Future.delayed(_delay);
-    
-    return userJson != null;
+    return await _authService.isLoggedIn();
   }
   
   // 重設密碼
   Future<bool> resetPassword(String email, String newPassword) async {
-    // 模擬網絡延遲
-    await Future.delayed(_delay);
-    
-    // 這裡模擬API請求
-    // 在實際應用中，需要確認電子郵件是否存在等
-    return true;
+    return await _authService.resetPassword(email, newPassword);
   }
   
   // 取得用戶ID
   Future<String?> getUserId() async {
     return await _authService.getUserId();
-  }
-  
-  // 保存用戶方法
-  Future<void> _saveUser(User user) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user', jsonEncode(user.toJson()));
   }
 } 

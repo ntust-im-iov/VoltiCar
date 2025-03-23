@@ -1,4 +1,4 @@
-class User {
+class RegisterRequest {
   final String username;
   final String email;
   final String password;
@@ -6,7 +6,7 @@ class User {
   final String name;
   final String userUuid;
 
-  User({
+  RegisterRequest({
     required this.username,
     required this.email,
     required this.password,
@@ -14,17 +14,6 @@ class User {
     required this.name,
     required this.userUuid,
   });
-
-  factory User.fromJson(Map<String, dynamic> json) {
-    return User(
-      username: json['username'] as String,
-      email: json['email'] as String,
-      password: json['password'] as String,
-      phone: json['phone'] as String,
-      name: json['name'] as String,
-      userUuid: json['user_uuid'] as String,
-    );
-  }
 
   Map<String, dynamic> toJson() {
     return {
