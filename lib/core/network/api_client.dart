@@ -33,6 +33,9 @@ class ApiClient {
       },
     ));
     
+    _logger.i('ApiClient 初始化');
+    _logger.i('Base URL: ${ApiConstants.baseUrl}');
+    
     _setupInterceptors();
   }
   
@@ -40,69 +43,33 @@ class ApiClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
+          _logger.i('=== 發送請求 ===');
+          _logger.i('URL: ${options.uri}');
+          _logger.i('Method: ${options.method}');
+          _logger.i('Headers: ${options.headers}');
+          _logger.i('Data: ${options.data}');
+          
           // 添加認證 token
           final token = await _getToken();
           if (token != null) {
             options.headers[ApiConstants.authHeader] = '${ApiConstants.bearerPrefix}$token';
+            _logger.i('已添加認證 Token');
           }
 
-          _logger.i('發送請求: ${options.method} ${options.uri}');
-          _logger.i('請求頭: ${options.headers}');
-          _logger.i('請求數據: ${options.data}');
-          return handler.next(options);
+          handler.next(options);
         },
         onResponse: (response, handler) {
-          _logger.i('收到響應: ${response.statusCode}');
-          _logger.i('響應頭: ${response.headers}');
-          _logger.i('響應數據: ${response.data}');
-          return handler.next(response);
+          _logger.i('=== 收到響應 ===');
+          _logger.i('Status Code: ${response.statusCode}');
+          _logger.i('Data: ${response.data}');
+          handler.next(response);
         },
-        onError: (DioException e, handler) async {
-          _logger.e('請求錯誤: ${e.type}');
-          _logger.e('錯誤消息: ${e.message}');
-          _logger.e('請求URL: ${e.requestOptions.uri}');
-          _logger.e('請求方法: ${e.requestOptions.method}');
-          _logger.e('請求頭: ${e.requestOptions.headers}');
-          _logger.e('請求數據: ${e.requestOptions.data}');
-          
-          if (e.response != null) {
-            _logger.e('錯誤狀態碼: ${e.response?.statusCode}');
-            _logger.e('錯誤響應數據: ${e.response?.data}');
-            _logger.e('錯誤響應頭: ${e.response?.headers}');
-
-            // 處理特定的錯誤狀態碼
-            switch (e.response?.statusCode) {
-              case 400:
-                _logger.e('Bad Request: 請檢查請求參數');
-                break;
-              case 401:
-                _logger.e('Unauthorized: 未授權的訪問');
-                await _handleUnauthorized();
-                break;
-              case 403:
-                _logger.e('Forbidden: 禁止訪問');
-                break;
-              case 404:
-                _logger.e('Not Found: 資源不存在');
-                break;
-              case 500:
-                _logger.e('Internal Server Error: 服務器錯誤');
-                break;
-              default:
-                _logger.e('未處理的錯誤狀態碼: ${e.response?.statusCode}');
-            }
-          } else {
-            _logger.e('沒有收到響應數據');
-            if (e.type == DioExceptionType.connectionTimeout) {
-              _logger.e('連接超時');
-            } else if (e.type == DioExceptionType.receiveTimeout) {
-              _logger.e('接收數據超時');
-            } else if (e.type == DioExceptionType.sendTimeout) {
-              _logger.e('發送數據超時');
-            }
-          }
-          
-          return handler.next(e);
+        onError: (DioException e, handler) {
+          _logger.e('=== 請求錯誤 ===');
+          _logger.e('Type: ${e.type}');
+          _logger.e('Message: ${e.message}');
+          _logger.e('Response: ${e.response?.data}');
+          handler.next(e);
         },
       ),
     );

@@ -78,7 +78,6 @@ class AuthViewModel extends EventViewModel {
     required String email,
     required String password,
     required String phone,
-    required String name,
   }) async {
     try {
       _logger.i('AuthViewModel: 開始註冊流程');
@@ -87,32 +86,29 @@ class AuthViewModel extends EventViewModel {
       _logger.i('AuthViewModel: 已通知界面開始加載');
       
       _logger.i('AuthViewModel: 調用 AuthRepository.register...');
-      _logger.i('AuthViewModel: 參數 - username: $username, email: $email, phone: $phone, name: $name');
+      _logger.i('AuthViewModel: 參數 - username: $username, email: $email, phone: $phone');
       // 調用存儲庫進行註冊
       final user = await _authRepository.register(
         username: username,
         email: email,
         password: password,
         phone: phone,
-        name: name,
       );
       _logger.i('AuthViewModel: AuthRepository.register 調用完成');
       
       if (user != null) {
         _currentUser = user;
-        _logger.i('AuthViewModel: 註冊成功，用戶信息：${user.toJson()}');
-        // 通知界面註冊成功
         notify(const RegisterStateEvent(isSuccess: true));
-        _logger.i('AuthViewModel: 已通知界面註冊成功');
+        _logger.i('AuthViewModel: 註冊成功');
       } else {
-        _logger.e('AuthViewModel: 註冊失敗，用戶對象為空');
-        // 通知界面註冊失敗
         notify(const RegisterStateEvent(error: '註冊失敗'));
+        _logger.e('AuthViewModel: 註冊失敗');
       }
     } catch (e) {
-      _logger.e('AuthViewModel: 註冊過程中發生錯誤: $e');
-      // 通知界面發生錯誤
       notify(RegisterStateEvent(error: e.toString()));
+      _logger.e('AuthViewModel: 註冊錯誤 - ${e.toString()}');
+    } finally {
+      notify(const RegisterStateEvent(isLoading: false));
     }
   }
   

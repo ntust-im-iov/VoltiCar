@@ -13,22 +13,15 @@ class AuthRepository {
     required String email,
     required String password,
     required String phone,
-    required String name,
   }) async {
     try {
       _logger.i('開始創建註冊請求...');
-      
-      // 生成 userUuid
-      String userUuid = DateTime.now().millisecondsSinceEpoch.toString();
-      _logger.i('生成的 userUuid: $userUuid');
       
       final request = RegisterRequest(
         username: username,
         email: email,
         password: password,
         phone: phone,
-        name: name,
-        userUuid: userUuid,
       );
       
       _logger.i('註冊請求創建完成: ${request.toJson()}');

@@ -53,17 +53,35 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
   }
 
   void _register() {
-    if (_formKey.currentState?.validate() ?? false) {
+    _logger.i('註冊按鈕被點擊');
+    
+    if (_formKey.currentState == null) {
+      _logger.e('表單狀態為空');
+      setState(() {
+        _errorMessage = '系統錯誤：表單狀態無效';
+      });
+      return;
+    }
+    
+    _logger.i('開始表單驗證');
+    final isValid = _formKey.currentState!.validate();
+    _logger.i('表單驗證結果: $isValid');
+
+    if (isValid) {
       _logger.i('開始註冊流程...');
       _logger.i('表單驗證通過');
       _logger.i('註冊信息：');
       _logger.i('用戶名: ${_accountController.text}');
-      _logger.i('姓名: ${_nameController.text}');
       _logger.i('電話: ${_phoneNumber?.phoneNumber}');
       _logger.i('國家代碼: ${_phoneNumber?.isoCode}');
       _logger.i('完整號碼: ${_phoneNumber?.phoneNumber}');
       _logger.i('電子郵件: ${_emailController.text}');
       _logger.i('密碼長度: ${_passwordController.text.length}');
+      
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
       
       _logger.i('調用 AuthViewModel.register...');
       _authViewModel.register(
@@ -71,31 +89,59 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
         phone: _phoneNumber?.phoneNumber ?? '',
-        name: _nameController.text.trim(),
-      );
+      ).then((_) {
+        _logger.i('註冊請求完成');
+      }).catchError((error) {
+        _logger.e('註冊請求失敗: $error');
+        setState(() {
+          _errorMessage = '註冊失敗：$error';
+          _isLoading = false;
+        });
+      });
+      
       _logger.i('AuthViewModel.register 調用完成');
     } else {
       _logger.e('表單驗證失敗');
+      setState(() {
+        _errorMessage = '請檢查所有必填欄位';
+      });
     }
   }
 
   void _navigateToLogin() {
-    Navigator.of(context).pushReplacementNamed('/login');
+    _logger.i('準備導航到登入頁面');
+    Navigator.of(context).pushReplacementNamed('/login').then((_) {
+      _logger.i('成功導航到登入頁面');
+    }).catchError((error) {
+      _logger.e('導航失敗: $error');
+    });
   }
 
   @override
   void notify(ViewEvent event) {
+    _logger.i('收到事件: ${event.runtimeType}');
+    
     if (event is RegisterStateEvent) {
+      _logger.i('RegisterStateEvent - isLoading: ${event.isLoading}, isSuccess: ${event.isSuccess}, error: ${event.error}');
+      
       setState(() {
         _isLoading = event.isLoading;
         _errorMessage = event.error;
       });
 
       if (event.isSuccess && mounted) {
+        _logger.i('註冊成功，準備導航到登入頁面');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('註冊成功，請登入')),
         );
-        Navigator.of(context).pushReplacementNamed('/login');
+        Future.delayed(const Duration(seconds: 1), () {
+          _logger.i('延遲1秒後開始導航');
+          Navigator.of(context).pushReplacementNamed('/login').then((_) {
+            _logger.i('成功導航到登入頁面');
+          }).catchError((error) {
+            _logger.e('導航失敗: $error');
+          });
+        });
       }
     }
   }
@@ -154,21 +200,6 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 16),
-
-                  // 姓名輸入框
-                  CustomTextField(
-                    controller: _nameController,
-                    hintText: '姓名',
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '請輸入姓名';
-                      }
-                      return null;
-                    },
-                    suffixIcon: const Icon(Icons.badge_outlined),
-                    textInputAction: TextInputAction.next,
-                  ),
-                  const SizedBox(height: 16),
                   
                   // 電話輸入框
                   Container(
@@ -183,9 +214,7 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
                         });
                       },
                       onInputValidated: (bool value) {
-                        if (_phoneNumber?.phoneNumber != null) {
-                          _logger.d('電話號碼驗證結果: $value');
-                        }
+                        // 不需要任何操作
                       },
                       selectorConfig: const SelectorConfig(
                         selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
