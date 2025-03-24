@@ -52,23 +52,39 @@ class AuthViewModel extends EventViewModel {
   // 登入方法
   Future<void> login(String username, String password) async {
     try {
+      _logger.i('AuthViewModel: 開始登入流程');
       // 通知界面開始加載
       notify(const LoginStateEvent(isLoading: true));
+      _logger.i('AuthViewModel: 已通知界面開始加載');
       
+      _logger.i('AuthViewModel: 調用 AuthRepository.login...');
+      _logger.i('AuthViewModel: 參數 - username: $username');
       // 調用存儲庫進行登入
       final user = await _authRepository.login(username, password);
+      _logger.i('AuthViewModel: AuthRepository.login 調用完成');
       
       if (user != null) {
         _currentUser = user;
         // 通知界面登入成功
         notify(const LoginStateEvent(isSuccess: true));
+        _logger.i('AuthViewModel: 登入成功');
       } else {
         // 通知界面登入失敗
         notify(const LoginStateEvent(error: '用戶名或密碼錯誤'));
+        _logger.e('AuthViewModel: 登入失敗 - 用戶名或密碼錯誤');
       }
     } catch (e) {
       // 通知界面發生錯誤
-      notify(LoginStateEvent(error: e.toString()));
+      String errorMessage = e.toString();
+      // 處理可能的異常信息，使其更友好
+      if (errorMessage.contains('Exception:')) {
+        errorMessage = errorMessage.split('Exception:').last.trim();
+      }
+      notify(LoginStateEvent(error: errorMessage));
+      _logger.e('AuthViewModel: 登入錯誤 - $errorMessage');
+    } finally {
+      // 確保在任何情況下都重置加載狀態
+      notify(const LoginStateEvent(isLoading: false));
     }
   }
   
@@ -141,7 +157,20 @@ class AuthViewModel extends EventViewModel {
   
   // 登出方法
   Future<void> logout() async {
-    await _authRepository.logout();
-    _currentUser = null;
+    try {
+      _logger.i('AuthViewModel: 開始登出流程');
+      
+      // 調用存儲庫進行登出
+      await _authRepository.logout();
+      
+      // 重置當前用戶
+      _currentUser = null;
+      
+      _logger.i('AuthViewModel: 登出成功');
+    } catch (e) {
+      _logger.e('AuthViewModel: 登出過程中發生錯誤 - $e');
+      // 即使出錯，也確保重置用戶狀態
+      _currentUser = null;
+    }
   }
 } 
