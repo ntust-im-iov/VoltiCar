@@ -44,12 +44,33 @@ class AuthRepository {
   
   // 登錄
   Future<User?> login(String account, String password) async {
-    return await _authService.login(account, password);
+    try {
+      _logger.i('準備登入，用戶帳號: $account');
+      final user = await _authService.login(account, password);
+      
+      if (user != null) {
+        _logger.i('登入成功，返回用戶信息');
+        return user;
+      }
+      
+      _logger.w('登入失敗，返回 null');
+      return null;
+    } catch (e) {
+      _logger.e('登入過程中發生錯誤: $e');
+      rethrow;
+    }
   }
   
   // 登出
   Future<void> logout() async {
-    await _authService.logout();
+    try {
+      _logger.i('Repository: 開始登出處理');
+      await _authService.logout();
+      _logger.i('Repository: 登出成功完成');
+    } catch (e) {
+      _logger.e('Repository: 登出過程中發生錯誤: $e');
+      rethrow;
+    }
   }
   
   // 檢查是否已登錄
