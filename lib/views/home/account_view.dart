@@ -2,31 +2,31 @@ import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/observer.dart';
-import '../../viewmodels/auth_viewmodel.dart'; // Assuming we might need this later
+import '../../viewmodels/auth_viewmodel.dart';
 
-class HomeView extends StatefulWidget {
-  const HomeView({super.key});
+class AccountView extends StatefulWidget {
+  const AccountView({super.key});
 
   @override
-  State<HomeView> createState() => _HomeViewState();
+  State<AccountView> createState() => _AccountViewState();
 }
 
-class _HomeViewState extends State<HomeView> implements EventObserver {
-  final AuthViewModel _authViewModel = AuthViewModel(); // Keep the view model
+class _AccountViewState extends State<AccountView> implements EventObserver {
+  final AuthViewModel _authViewModel = AuthViewModel();
   final _logger = Logger();
 
   @override
   void initState() {
     super.initState();
     _authViewModel.subscribe(this);
-    _logger.i('HomeView initialized');
+    _logger.i('AccountView initialized');
   }
 
   @override
   void dispose() {
     _authViewModel.unsubscribe(this);
     super.dispose();
-    _logger.i('HomeView disposed');
+    _logger.i('AccountView disposed');
   }
 
   @override
@@ -34,10 +34,10 @@ class _HomeViewState extends State<HomeView> implements EventObserver {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'HOME',
+          'ACCOUNT',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.black, // Match the image
+        backgroundColor: Colors.black,
         elevation: 0,
         actions: [
           IconButton(
@@ -48,9 +48,7 @@ class _HomeViewState extends State<HomeView> implements EventObserver {
       ),
       body: Container(
         color: const Color(0xFFf2f2f2), // Light grey background
-        child: SingleChildScrollView(
-          child: Container(),
-        ), // Keep the grey background, but make the content empty
+        child: SingleChildScrollView(child: Container()),
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: <BottomNavigationBarItem>[
@@ -66,11 +64,11 @@ class _HomeViewState extends State<HomeView> implements EventObserver {
             label: 'ACCOUNT',
           ),
         ],
-        currentIndex: 2,
+        currentIndex: 4,
         selectedItemColor: AppColors.primaryColor,
         unselectedItemColor: Colors.grey,
-        showUnselectedLabels: true, // Show labels for unselected items
-        type: BottomNavigationBarType.fixed, // Prevent shifting
+        showUnselectedLabels: true,
+        type: BottomNavigationBarType.fixed,
         onTap: (index) {
           _logger.i('Bottom navigation tapped: $index');
           switch (index) {
@@ -81,13 +79,13 @@ class _HomeViewState extends State<HomeView> implements EventObserver {
               Navigator.pushReplacementNamed(context, '/race');
               break;
             case 2: // HOME
-              // Stay on the same screen
+              Navigator.pushReplacementNamed(context, '/home');
               break;
             case 3: // MY CAR
               Navigator.pushReplacementNamed(context, '/mycar');
               break;
             case 4: // ACCOUNT
-              Navigator.pushReplacementNamed(context, '/account');
+              // Stay on the same screen
               break;
           }
         },
@@ -106,7 +104,6 @@ class _HomeViewState extends State<HomeView> implements EventObserver {
 
   @override
   void notify(ViewEvent event) {
-    // TODO: Implement event handling if needed
     _logger.i('Received event: ${event.runtimeType}');
   }
 }

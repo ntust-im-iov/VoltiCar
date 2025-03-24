@@ -4,17 +4,21 @@ import 'views/auth/login_view.dart';
 import 'views/auth/register_view.dart';
 import 'views/auth/reset_password_view.dart';
 import 'views/home/home_view.dart';
+import 'views/home/mycar_view.dart';
+import 'views/home/map_view.dart';
+import 'views/home/race_view.dart';
+import 'views/home/account_view.dart';
 
 void main() {
   // 確保Flutter綁定初始化
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // 固定螢幕方向為垂直方向
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
-  
+
   runApp(const MyApp());
 }
 
@@ -40,6 +44,10 @@ class MyApp extends StatelessWidget {
         '/register': (context) => const RegisterView(),
         '/reset-password': (context) => const ResetPasswordView(),
         '/home': (context) => const HomeView(),
+        '/mycar': (context) => const MyCarView(),
+        '/map': (context) => const MapView(),
+        '/race': (context) => const RaceView(),
+        '/account': (context) => const AccountView(),
       },
     );
   }

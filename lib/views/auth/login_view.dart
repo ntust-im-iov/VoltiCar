@@ -5,8 +5,6 @@ import '../../core/utils/observer.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
-import 'register_view.dart';
-import 'reset_password_view.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -47,12 +45,13 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
   }
 
   void _login() {
-    if (_formKey.currentState?.validate() ?? false) {
+    //Navigator.of(context).pushReplacementNamed('/home');//測試用
+    /*if (_formKey.currentState?.validate() ?? false) {
       _authViewModel.login(
         _usernameController.text.trim(),
         _passwordController.text.trim(),
       );
-    }
+    }*/
   }
 
   void _navigateToRegister() {
@@ -73,9 +72,9 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
 
       if (event.isSuccess && mounted) {
         Navigator.of(context).pushReplacementNamed('/home');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('登入成功')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('登入成功')));
       }
     }
   }
@@ -95,12 +94,12 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
                 children: [
                   // Logo
                   Image.asset(
-                    'assets/images/volticar_title.png', 
-                    height: 80, 
-                    fit: BoxFit.contain
+                    'assets/images/volticar_title.png',
+                    height: 80,
+                    fit: BoxFit.contain,
                   ),
                   const SizedBox(height: 40),
-                  
+
                   // 用戶名輸入框
                   CustomTextField(
                     controller: _usernameController,
@@ -115,7 +114,7 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // 密碼輸入框
                   CustomTextField(
                     controller: _passwordController,
@@ -129,8 +128,8 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
                     },
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword 
-                            ? Icons.visibility_off_outlined 
+                        _obscurePassword
+                            ? Icons.visibility_off_outlined
                             : Icons.visibility_outlined,
                       ),
                       onPressed: () {
@@ -143,7 +142,7 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
                     onSubmitted: (_) => _login(),
                   ),
                   const SizedBox(height: 8),
-                  
+
                   // 忘記密碼
                   Align(
                     alignment: Alignment.centerRight,
@@ -160,7 +159,7 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // 錯誤信息
                   if (_errorMessage != null) ...[
                     Text(
@@ -169,7 +168,7 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
                     ),
                     const SizedBox(height: 16),
                   ],
-                  
+
                   // 登入按鈕
                   CustomButton(
                     text: '登入',
@@ -178,7 +177,7 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
                     width: double.infinity,
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // 分隔線
                   Row(
                     children: [
@@ -201,27 +200,30 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
                     ],
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // Google登入按鈕
                   OutlinedButton.icon(
                     onPressed: () {
                       // TODO: Google 登入
                     },
                     icon: Image.asset(
-                      'assets/images/volticar_logo.png', 
-                      width: 24, 
-                      height: 24
+                      'assets/images/volticar_logo.png',
+                      width: 24,
+                      height: 24,
                     ),
                     label: const Text('Google 登入'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.black,
                       side: const BorderSide(color: Colors.grey),
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 16,
+                      ),
                       minimumSize: const Size(double.infinity, 48),
                     ),
                   ),
                   const SizedBox(height: 32),
-                  
+
                   // 註冊鏈接
                   RichText(
                     text: TextSpan(
@@ -234,8 +236,9 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
                             color: AppColors.linkColor,
                             fontWeight: FontWeight.bold,
                           ),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = _navigateToRegister,
+                          recognizer:
+                              TapGestureRecognizer()
+                                ..onTap = _navigateToRegister,
                         ),
                       ],
                     ),
@@ -248,4 +251,4 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
       ),
     );
   }
-} 
+}
