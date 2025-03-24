@@ -93,13 +93,35 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Logo
-                  Image.asset(
-                    'assets/images/volticar_title.png', 
-                    height: 80, 
-                    fit: BoxFit.contain
+                  // Logo and Title
+                  SizedBox(
+                    height: 250, // 設置合適的高度
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Logo在上方
+                        Positioned(
+                          top: 50,
+                          bottom: 80,
+                          child: Image.asset(
+                            'assets/images/volticar_logo.png', 
+                            height: 300,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                        // Title在底部
+                        Positioned(
+                          bottom: 0,
+                          child: Image.asset(
+                            'assets/images/volticar_title.png', 
+                            height: 50,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 20),
                   
                   // 用戶名輸入框
                   CustomTextField(
@@ -208,7 +230,7 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
                       // TODO: Google 登入
                     },
                     icon: Image.asset(
-                      'assets/images/volticar_logo.png', 
+                      'assets/images/google_icon.png', 
                       width: 24, 
                       height: 24
                     ),
