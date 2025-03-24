@@ -78,6 +78,9 @@ class AuthService {
 
   Future<User?> login(String username, String password) async {
     try {
+      _logger.i('開始登入請求');
+      _logger.i('用戶名: $username');
+      
       final response = await _apiClient.post(
         ApiConstants.login,
         data: {
@@ -86,24 +89,84 @@ class AuthService {
         },
       );
 
+      _logger.i('收到登入響應');
+      _logger.i('響應狀態碼: ${response.statusCode}');
+      _logger.i('響應數據: ${response.data}');
+
       if (response.statusCode == 200) {
-        final user = User.fromJson(response.data);
-        
-        if (response.data['access_token'] != null) {
-          await _secureStorage.write(
-            key: 'access_token',
-            value: response.data['access_token'],
+        try {
+          // 使用響應數據創建用戶對象
+          final user = User(
+            username: response.data['username'] ?? username,
+            email: response.data['email'] ?? '',
+            password: '', // 不存儲密碼
+            phone: response.data['phone'] ?? '',
+            name: response.data['name'] ?? response.data['username'] ?? username,
+            userUuid: response.data['user_uuid'] ?? response.data['user_id'] ?? '',
           );
+          
+          _logger.i('用戶對象創建成功: ${user.toJson()}');
+          
+          // 保存訪問令牌
+          if (response.data['access_token'] != null) {
+            await _secureStorage.write(
+              key: 'access_token',
+              value: response.data['access_token'],
+            );
+            _logger.i('訪問令牌已保存');
+          } else if (response.data['token'] != null) {
+            await _secureStorage.write(
+              key: 'access_token',
+              value: response.data['token'],
+            );
+            _logger.i('訪問令牌已保存(token鍵)');
+          } else {
+            _logger.w('響應中未找到訪問令牌');
+          }
+          
+          // 保存刷新令牌(如果有)
+          if (response.data['refresh_token'] != null) {
+            await _secureStorage.write(
+              key: 'refresh_token',
+              value: response.data['refresh_token'],
+            );
+            _logger.i('刷新令牌已保存');
+          }
+          
+          // 保存登入狀態
+          await _saveAuthState(user.userUuid);
+          _logger.i('認證狀態已保存');
+          
+          return user;
+        } catch (e) {
+          _logger.e('解析用戶數據時發生錯誤: $e');
+          throw Exception('登入成功但處理用戶數據時發生錯誤');
         }
-        
-        await _saveAuthState(user.userUuid);
-        return user;
+      } else {
+        _logger.e('登入失敗: 狀態碼 ${response.statusCode}');
+        return null;
+      }
+    } on DioException catch (e) {
+      _logger.e('登入DIO錯誤: ${e.type}');
+      _logger.e('錯誤響應: ${e.response?.data}');
+      _logger.e('錯誤消息: ${e.message}');
+      
+      String errorMessage = '登入失敗';
+      
+      if (e.response?.statusCode == 401) {
+        errorMessage = '用戶名或密碼錯誤';
+      } else if (e.response?.data != null && e.response?.data['detail'] != null) {
+        errorMessage = e.response?.data['detail'];
+      } else if (e.type == DioExceptionType.connectionTimeout) {
+        errorMessage = '連接超時，請檢查網絡';
+      } else if (e.type == DioExceptionType.receiveTimeout) {
+        errorMessage = '接收數據超時，請稍後再試';
       }
       
-      return null;
+      throw Exception(errorMessage);
     } catch (e) {
-      _logger.e('Login error: $e');
-      rethrow;
+      _logger.e('登入過程中發生未預期的錯誤: $e');
+      throw Exception('登入過程中發生錯誤: $e');
     }
   }
   
@@ -126,13 +189,23 @@ class AuthService {
   
   Future<void> logout() async {
     try {
-      await _apiClient.post(ApiConstants.logout);
+      _logger.i('開始本地登出處理...');
+      
+      // 清除共享偏好設置中的登入狀態
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.remove('isLoggedIn');
-      await _secureStorage.deleteAll();
+      await prefs.remove('userId');
+      _logger.i('已清除SharedPreferences中的登入狀態');
+      
+      // 清除安全存儲中的所有令牌
+      await _secureStorage.delete(key: 'access_token');
+      await _secureStorage.delete(key: 'refresh_token');
+      _logger.i('已清除安全存儲中的所有令牌');
+      
+      _logger.i('本地登出完成');
     } catch (e) {
-      _logger.e('Logout error: $e');
-      rethrow;
+      _logger.e('登出過程中發生錯誤: $e');
+      throw Exception('登出過程中發生錯誤');
     }
   }
   
@@ -161,9 +234,10 @@ class AuthService {
   
   Future<String?> getUserId() async {
     try {
-      return await _secureStorage.read(key: 'user_id');
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      return prefs.getString('userId');
     } catch (e) {
-      _logger.e('Get user ID error: $e');
+      _logger.e('獲取用戶ID時發生錯誤: $e');
       return null;
     }
   }

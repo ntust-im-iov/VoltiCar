@@ -5,7 +5,6 @@ class ApiConstants {
   static const String login = '/users/login';
   static const String register = '/users/register';
   static const String resetPassword = '/users/reset-password';
-  static const String logout = '/users/logout';
   
   // API version
   static const String apiVersion = '/api/v1';
