@@ -253,8 +253,14 @@ class AuthService {
     try {
       _logger.i('開始Google登入流程');
 
-      // 初始化GoogleSignIn
-      final GoogleSignIn googleSignIn = GoogleSignIn();
+      // 初始化GoogleSignIn，設置為每次都提示選擇帳號
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        scopes: ['email', 'profile'],
+        forceCodeForRefreshToken: true,
+      );
+
+      // 確保先登出，以便每次都會顯示帳號選擇界面
+      await googleSignIn.signOut();
 
       // 顯示Google登入界面
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
