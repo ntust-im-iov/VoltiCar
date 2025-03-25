@@ -5,6 +5,7 @@ class ApiConstants {
   static const String login = '/users/login';
   static const String register = '/users/register';
   static const String resetPassword = '/users/reset-password';
+  static const String googleLogin = '/users/google-login';
   
   // API version
   static const String apiVersion = '/api/v1';
@@ -21,4 +22,4 @@ class ApiConstants {
   // Header values
   static const String contentType = 'application/json';
   static const String bearerPrefix = 'Bearer ';
-} 
+}

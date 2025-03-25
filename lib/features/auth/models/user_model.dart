@@ -7,6 +7,7 @@ class User {
   final String? name;
   final String? userUuid;
   final String token;
+  final String? photoUrl;
 
   User({
     required this.id,
@@ -17,6 +18,7 @@ class User {
     this.name,
     this.userUuid,
     required this.token,
+    this.photoUrl,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -29,6 +31,7 @@ class User {
       name: json['name'] as String?,
       userUuid: json['user_uuid'] as String?,
       token: json['token'] as String? ?? '',
+      photoUrl: json['photo_url'] as String?,
     );
   }
 
@@ -42,6 +45,7 @@ class User {
       if (name != null) 'name': name,
       if (userUuid != null) 'user_uuid': userUuid,
       'token': token,
+      if (photoUrl != null) 'photo_url': photoUrl,
     };
   }
 }

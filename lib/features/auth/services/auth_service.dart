@@ -300,13 +300,14 @@ class AuthService {
           name: firebaseUser.displayName,
           userUuid: firebaseUser.uid,
           token: await firebaseUser.getIdToken() ?? '',
+          photoUrl: firebaseUser.photoURL,
         );
 
         // 保存token到安全存儲
         await _secureStorage.write(key: 'access_token', value: user.token);
 
-        // 保存用户登录状态
-        await _saveAuthState(user.id);
+        // 將Google用戶數據保存到MongoDB
+        await _saveGoogleUserToMongoDB(user);
 
         _logger.i('Google登入成功，返回用戶對象');
         return user;
@@ -317,6 +318,142 @@ class AuthService {
     } catch (e) {
       _logger.e('Google登入過程中發生錯誤: $e');
       rethrow;
+    }
+  }
+
+  // 將Google用戶數據保存到MongoDB
+  Future<bool> _saveGoogleUserToMongoDB(User user) async {
+    try {
+      _logger.i('開始將Google用戶數據保存到MongoDB');
+      _logger.i('用戶數據: ${user.toJson()}');
+
+      // 準備要發送到後端的數據 - 使用註冊端點的格式
+      final Map<String, dynamic> userData = {
+        'username': user.username,
+        'email': user.email,
+        'password': '${user.id}_google_auth', // 使用Firebase UID作為密碼的一部分，確保唯一性
+        'phone': user.phone,
+        'name': user.name ?? user.username,
+        'user_uuid': user.id, // 使用Firebase UID作為用戶UUID
+        'auth_provider': 'google',
+        'profile_image': user.photoUrl ?? '',
+      };
+
+      _logger.i('準備發送數據到MongoDB: $userData');
+      _logger.i('API端點: ${ApiConstants.register}');
+
+      // 發送請求到後端API，使用註冊端點
+      final response = await _apiClient.post(
+        ApiConstants.register,
+        data: userData,
+      );
+
+      _logger.i('MongoDB響應狀態碼: ${response.statusCode}');
+      _logger.i('MongoDB響應數據: ${response.data}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        _logger.i('Google用戶數據成功保存到MongoDB Users集合');
+
+        // 如果後端返回了新的令牌，則更新本地存儲
+        if (response.data != null && response.data['access_token'] != null) {
+          await _secureStorage.write(
+            key: 'access_token',
+            value: response.data['access_token'],
+          );
+          _logger.i('已更新來自MongoDB的訪問令牌');
+
+          // 保存刷新令牌（如果有）
+          if (response.data['refresh_token'] != null) {
+            await _secureStorage.write(
+              key: 'refresh_token',
+              value: response.data['refresh_token'],
+            );
+            _logger.i('已保存刷新令牌');
+          }
+        }
+
+        // 如果後端返回了用戶ID，則更新本地存儲
+        if (response.data != null && response.data['user_id'] != null) {
+          await _saveAuthState(response.data['user_id']);
+          _logger.i('已更新來自MongoDB的用戶ID');
+        }
+
+        return true;
+      } else if (response.statusCode == 409) {
+        _logger.w('用戶已存在於MongoDB，嘗試使用登入端點');
+        return await _loginGoogleUserToMongoDB(user);
+      } else {
+        _logger.e('保存Google用戶數據到MongoDB失敗: ${response.statusCode}');
+        _logger.e('響應數據: ${response.data}');
+        return false;
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 409) {
+        _logger.w('用戶已存在於MongoDB，嘗試使用登入端點');
+        return await _loginGoogleUserToMongoDB(user);
+      }
+
+      _logger.e('保存Google用戶數據到MongoDB時發生DIO錯誤: ${e.type}');
+      _logger.e('錯誤響應: ${e.response?.data}');
+      _logger.e('錯誤消息: ${e.message}');
+      _logger.e('錯誤URL: ${e.requestOptions.path}');
+      _logger.e('錯誤數據: ${e.requestOptions.data}');
+      return false;
+    } catch (e) {
+      _logger.e('保存Google用戶數據到MongoDB時發生未預期的錯誤: $e');
+      return false;
+    }
+  }
+
+  // 如果用戶已存在，則使用登入端點
+  Future<bool> _loginGoogleUserToMongoDB(User user) async {
+    try {
+      _logger.i('嘗試使用登入端點將Google用戶連接到MongoDB');
+
+      // 準備登入數據
+      final Map<String, dynamic> loginData = {
+        'username': user.email, // 使用email作為用戶名
+        'password': '${user.id}_google_auth', // 使用相同的密碼格式
+      };
+
+      _logger.i('準備發送登入數據到MongoDB: $loginData');
+      _logger.i('API端點: ${ApiConstants.login}');
+
+      // 發送請求到登入端點
+      final response = await _apiClient.post(
+        ApiConstants.login,
+        data: loginData,
+      );
+
+      _logger.i('MongoDB登入響應狀態碼: ${response.statusCode}');
+      _logger.i('MongoDB登入響應數據: ${response.data}');
+
+      if (response.statusCode == 200) {
+        _logger.i('Google用戶成功登入到MongoDB');
+
+        // 更新令牌和用戶ID
+        if (response.data != null && response.data['access_token'] != null) {
+          await _secureStorage.write(
+            key: 'access_token',
+            value: response.data['access_token'],
+          );
+          _logger.i('已更新來自MongoDB的訪問令牌');
+        }
+
+        if (response.data != null && response.data['user_id'] != null) {
+          await _saveAuthState(response.data['user_id']);
+          _logger.i('已更新來自MongoDB的用戶ID');
+        }
+
+        return true;
+      } else {
+        _logger.e('Google用戶登入到MongoDB失敗: ${response.statusCode}');
+        _logger.e('響應數據: ${response.data}');
+        return false;
+      }
+    } catch (e) {
+      _logger.e('Google用戶登入到MongoDB時發生錯誤: $e');
+      return false;
     }
   }
 }

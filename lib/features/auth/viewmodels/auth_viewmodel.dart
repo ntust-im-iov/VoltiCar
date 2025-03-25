@@ -65,13 +65,19 @@ class AuthViewModel extends ChangeNotifier implements EventObserver {
   Future<void> signInWithGoogle() async {
     try {
       _logger.i('開始Google登入流程');
+      
+      // 通知界面開始加載
+      notify(const LoginStateEvent(isLoading: true));
 
       try {
+        // 調用存儲庫進行Google登入
+        _logger.i('調用 AuthRepository.signInWithGoogle...');
         final user = await _authRepository.signInWithGoogle();
         _currentUser = user;
 
         if (user != null) {
           _logger.i('Google登入成功，用戶ID: ${user.id}');
+          _logger.i('用戶數據已保存到MongoDB');
           notify(
               LoginStateEvent(isLoading: false, isSuccess: true, error: null));
         } else {
@@ -101,15 +107,24 @@ class AuthViewModel extends ChangeNotifier implements EventObserver {
           return;
         }
 
+        // 提供更具體的錯誤信息
+        String errorMessage = e.toString();
+        if (e.toString().contains('DioException')) {
+          errorMessage = '連接到MongoDB服務器時出錯，請檢查網絡連接';
+        } else if (e.toString().contains('timeout')) {
+          errorMessage = '連接超時，請稍後再試';
+        }
+
         notify(LoginStateEvent(
-            isLoading: false, isSuccess: false, error: e.toString()));
-        rethrow;
+            isLoading: false, isSuccess: false, error: errorMessage));
       }
     } catch (e) {
       _logger.e('Google登入處理過程中發生錯誤: $e');
       notify(LoginStateEvent(
           isLoading: false, isSuccess: false, error: e.toString()));
-      rethrow;
+    } finally {
+      // 確保在任何情況下都重置加載狀態
+      notify(const LoginStateEvent(isLoading: false));
     }
   }
 

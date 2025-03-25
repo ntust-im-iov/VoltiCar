@@ -72,9 +72,18 @@ class AuthRepository {
   Future<User?> signInWithGoogle() async {
     try {
       _logger.i('Repository: 開始Google登入流程');
+      
+      // 調用 AuthService 進行 Google 登入
       final user = await _authService.signInWithGoogle();
-      _logger.i('Google登入完成，返回用戶信息');
-      return user;
+      
+      if (user != null) {
+        _logger.i('Google登入成功，用戶ID: ${user.id}');
+        _logger.i('Google登入完成，返回用戶信息');
+        return user;
+      } else {
+        _logger.w('Google登入失敗，用戶為空');
+        return null;
+      }
     } catch (e) {
       _logger.e('Google登入過程中發生錯誤: $e');
       rethrow;
