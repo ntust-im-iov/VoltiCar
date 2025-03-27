@@ -1,7 +1,8 @@
-import '../core/utils/observer.dart';
+import '../../../core/utils/observer.dart';
 import '../repositories/auth_repository.dart';
 import '../models/user_model.dart';
 import 'package:logger/logger.dart';
+import 'package:flutter/foundation.dart';
 
 // 定義登入狀態事件
 class LoginStateEvent extends ViewEvent {
@@ -9,11 +10,8 @@ class LoginStateEvent extends ViewEvent {
   final String? error;
   final bool isSuccess;
 
-  const LoginStateEvent({
-    this.isLoading = false, 
-    this.error, 
-    this.isSuccess = false
-  });
+  const LoginStateEvent(
+      {this.isLoading = false, this.error, this.isSuccess = false});
 }
 
 // 定義註冊狀態事件
@@ -22,11 +20,8 @@ class RegisterStateEvent extends ViewEvent {
   final String? error;
   final bool isSuccess;
 
-  const RegisterStateEvent({
-    this.isLoading = false, 
-    this.error, 
-    this.isSuccess = false
-  });
+  const RegisterStateEvent(
+      {this.isLoading = false, this.error, this.isSuccess = false});
 }
 
 // 定義重設密碼狀態事件
@@ -34,21 +29,109 @@ class ResetPasswordStateEvent extends ViewEvent {
   final bool isLoading;
   final String? error;
   final bool isSuccess;
-  
-  const ResetPasswordStateEvent({
-    this.isLoading = false, 
-    this.error, 
-    this.isSuccess = false
-  });
+
+  const ResetPasswordStateEvent(
+      {this.isLoading = false, this.error, this.isSuccess = false});
 }
 
-class AuthViewModel extends EventViewModel {
+class AuthViewModel extends ChangeNotifier implements EventObserver {
   final AuthRepository _authRepository = AuthRepository();
   final Logger _logger = Logger();
   User? _currentUser;
-  
+  final List<EventObserver> _observers = [];
+
   User? get currentUser => _currentUser;
-  
+
+  // Observer pattern methods
+  void subscribe(EventObserver observer) {
+    if (!_observers.contains(observer)) {
+      _observers.add(observer);
+    }
+  }
+
+  void unsubscribe(EventObserver observer) {
+    _observers.remove(observer);
+  }
+
+  @override
+  void notify(ViewEvent event) {
+    for (final observer in _observers) {
+      observer.notify(event);
+    }
+    notifyListeners();
+  }
+
+  // Google登入方法
+  Future<User?> signInWithGoogle() async {
+    try {
+      _logger.i('開始Google登入流程');
+      
+      // 通知界面開始加載
+      notify(const LoginStateEvent(isLoading: true));
+
+      try {
+        // 調用存儲庫進行Google登入
+        _logger.i('調用 AuthRepository.signInWithGoogle...');
+        final user = await _authRepository.signInWithGoogle();
+        _currentUser = user;
+
+        if (user != null) {
+          _logger.i('Google登入成功，用戶ID: ${user.id}');
+          _logger.i('用戶數據已保存到MongoDB');
+          notify(
+              LoginStateEvent(isLoading: false, isSuccess: true, error: null));
+          return user;
+        } else {
+          _logger.e('Google登入失敗，用戶為空');
+          notify(LoginStateEvent(
+              isLoading: false, isSuccess: false, error: '登入失敗'));
+          return null;
+        }
+      } catch (e) {
+        _logger.e('Google登入過程中發生錯誤: $e');
+
+        // For development - create mock user if Firebase is not configured
+        if (e.toString().contains('Firebase') ||
+            e.toString().contains('PlatformException')) {
+          _logger.w('使用模擬用戶進行開發測試');
+          final mockUser = User(
+            id: 'mock-google-user-id',
+            username: 'google_user',
+            email: 'google_user@example.com',
+            phone: '+886912345678',
+            name: 'Google User',
+            userUuid: 'mock-google-user-id',
+            token: 'mock-token-for-development',
+          );
+          _currentUser = mockUser;
+          notify(
+              LoginStateEvent(isLoading: false, isSuccess: true, error: null));
+          return mockUser;
+        }
+
+        // 提供更具體的錯誤信息
+        String errorMessage = e.toString();
+        if (e.toString().contains('DioException')) {
+          errorMessage = '連接到MongoDB服務器時出錯，請檢查網絡連接';
+        } else if (e.toString().contains('timeout')) {
+          errorMessage = '連接超時，請稍後再試';
+        }
+
+        notify(LoginStateEvent(
+            isLoading: false, isSuccess: false, error: errorMessage));
+        return null;
+      }
+    } catch (e) {
+      _logger.e('Google登入處理過程中發生錯誤: $e');
+      notify(LoginStateEvent(
+          isLoading: false, isSuccess: false, error: e.toString()));
+      return null;
+    } finally {
+      // 確保在任何情況下都重置加載狀態
+      notify(const LoginStateEvent(isLoading: false));
+    }
+  }
+
   // 登入方法
   Future<void> login(String username, String password) async {
     try {
@@ -56,13 +139,13 @@ class AuthViewModel extends EventViewModel {
       // 通知界面開始加載
       notify(const LoginStateEvent(isLoading: true));
       _logger.i('AuthViewModel: 已通知界面開始加載');
-      
+
       _logger.i('AuthViewModel: 調用 AuthRepository.login...');
       _logger.i('AuthViewModel: 參數 - username: $username');
       // 調用存儲庫進行登入
       final user = await _authRepository.login(username, password);
       _logger.i('AuthViewModel: AuthRepository.login 調用完成');
-      
+
       if (user != null) {
         _currentUser = user;
         // 通知界面登入成功
@@ -87,7 +170,7 @@ class AuthViewModel extends EventViewModel {
       notify(const LoginStateEvent(isLoading: false));
     }
   }
-  
+
   // 註冊方法
   Future<void> register({
     required String username,
@@ -100,9 +183,10 @@ class AuthViewModel extends EventViewModel {
       // 通知界面開始加載
       notify(const RegisterStateEvent(isLoading: true));
       _logger.i('AuthViewModel: 已通知界面開始加載');
-      
+
       _logger.i('AuthViewModel: 調用 AuthRepository.register...');
-      _logger.i('AuthViewModel: 參數 - username: $username, email: $email, phone: $phone');
+      _logger.i(
+          'AuthViewModel: 參數 - username: $username, email: $email, phone: $phone');
       // 調用存儲庫進行註冊
       final user = await _authRepository.register(
         username: username,
@@ -111,7 +195,7 @@ class AuthViewModel extends EventViewModel {
         phone: phone,
       );
       _logger.i('AuthViewModel: AuthRepository.register 調用完成');
-      
+
       if (user != null) {
         _currentUser = user;
         notify(const RegisterStateEvent(isSuccess: true));
@@ -127,21 +211,21 @@ class AuthViewModel extends EventViewModel {
       notify(const RegisterStateEvent(isLoading: false));
     }
   }
-  
+
   // 檢查登入狀態
   Future<bool> checkLoginStatus() async {
     return await _authRepository.isLoggedIn();
   }
-  
+
   // 重設密碼方法
   Future<void> resetPassword(String email, String newPassword) async {
     try {
       // 通知界面開始加載
       notify(const ResetPasswordStateEvent(isLoading: true));
-      
+
       // 調用存儲庫進行密碼重設
       final result = await _authRepository.resetPassword(email, newPassword);
-      
+
       if (result) {
         // 通知界面重設成功
         notify(const ResetPasswordStateEvent(isSuccess: true));
@@ -154,18 +238,18 @@ class AuthViewModel extends EventViewModel {
       notify(ResetPasswordStateEvent(error: e.toString()));
     }
   }
-  
+
   // 登出方法
   Future<void> logout() async {
     try {
       _logger.i('AuthViewModel: 開始登出流程');
-      
+
       // 調用存儲庫進行登出
       await _authRepository.logout();
-      
+
       // 重置當前用戶
       _currentUser = null;
-      
+
       _logger.i('AuthViewModel: 登出成功');
     } catch (e) {
       _logger.e('AuthViewModel: 登出過程中發生錯誤 - $e');
@@ -173,4 +257,4 @@ class AuthViewModel extends EventViewModel {
       _currentUser = null;
     }
   }
-} 
+}

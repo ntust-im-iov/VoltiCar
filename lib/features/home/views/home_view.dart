@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
-import '../../viewmodels/auth_viewmodel.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../features/auth/viewmodels/auth_viewmodel.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});

@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "427763680887",
+    "project_id": "volticar-e998e",
+    "storage_bucket": "volticar-e998e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:427763680887:android:2ec0109f1d256ecf54e872",
+        "android_client_info": {
+          "package_name": "com.example.volticar_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "427763680887-gvq5p146hj7eh1sfbc6qnt1rtn1jn9mv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.volticar_app",
+            "certificate_hash": "ec0aaebedcd5658649b4b65da88fc74ef99515d4"
+          }
+        },
+        {
+          "client_id": "427763680887-jovfnu2oq53b9tgdv10ed4tadtd6pv81.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAKy4kJhqspSCn6dDKQ4wO0qNkABl31kbM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "427763680887-jovfnu2oq53b9tgdv10ed4tadtd6pv81.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "427763680887-rbqgs4mv9jh04tetgqphk7s83928m8bv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.volticarApp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

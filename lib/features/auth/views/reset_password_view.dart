@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/utils/observer.dart';
-import '../../viewmodels/auth_viewmodel.dart';
-import '../../widgets/custom_button.dart';
-import '../../widgets/custom_text_field.dart';
+import 'package:provider/provider.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/observer.dart';
+import '../viewmodels/auth_viewmodel.dart';
+import '../../../shared/widgets/custom_button.dart';
+import '../../../shared/widgets/custom_text_field.dart';
 
 class ResetPasswordView extends StatefulWidget {
   const ResetPasswordView({super.key});
@@ -18,19 +19,19 @@ class _ResetPasswordViewState extends State<ResetPasswordView> implements EventO
   final _otpController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _authViewModel = AuthViewModel();
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String? _errorMessage;
+  late AuthViewModel _authViewModel;
   
   // 步驟控制
   int _currentStep = 0; // 0: 輸入電子郵件, 1: 輸入OTP, 2: 設置新密碼
-  bool _isOtpSent = false;
 
   @override
   void initState() {
     super.initState();
+    _authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     _authViewModel.subscribe(this);
   }
 
@@ -54,7 +55,6 @@ class _ResetPasswordViewState extends State<ResetPasswordView> implements EventO
     
     // 這裡模擬發送OTP的過程
     setState(() {
-      _isOtpSent = true;
       _currentStep = 1;
       _errorMessage = null;
     });

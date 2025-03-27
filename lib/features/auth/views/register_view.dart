@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:provider/provider.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
-import 'package:logger/logger.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/utils/observer.dart';
-import '../../viewmodels/auth_viewmodel.dart';
-import '../../widgets/custom_button.dart';
-import '../../widgets/custom_text_field.dart';
-import 'login_view.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/observer.dart';
+import '../viewmodels/auth_viewmodel.dart';
+import '../../../shared/widgets/custom_button.dart';
+import '../../../shared/widgets/custom_text_field.dart';
 
 class RegisterView extends StatefulWidget {
   const RegisterView({super.key});
@@ -24,17 +23,17 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
   final _confirmPasswordController = TextEditingController();
   final _phoneController = TextEditingController();
   final _nameController = TextEditingController();
-  final _authViewModel = AuthViewModel();
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String? _errorMessage;
   PhoneNumber? _phoneNumber;
-  final _logger = Logger();
+  late AuthViewModel _authViewModel;
 
   @override
   void initState() {
     super.initState();
+    _authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     _authViewModel.subscribe(this);
     // 設置默認國家為台灣
     _phoneNumber = PhoneNumber(isoCode: 'TW');
@@ -53,55 +52,39 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
   }
 
   void _register() {
-    _logger.i('註冊按鈕被點擊');
-    
     if (_formKey.currentState == null) {
-      _logger.e('表單狀態為空');
       setState(() {
         _errorMessage = '系統錯誤：表單狀態無效';
       });
       return;
     }
-    
-    _logger.i('開始表單驗證');
+
     final isValid = _formKey.currentState!.validate();
-    _logger.i('表單驗證結果: $isValid');
 
     if (isValid) {
-      _logger.i('開始註冊流程...');
-      _logger.i('表單驗證通過');
-      _logger.i('註冊信息：');
-      _logger.i('用戶名: ${_accountController.text}');
-      _logger.i('電話: ${_phoneNumber?.phoneNumber}');
-      _logger.i('國家代碼: ${_phoneNumber?.isoCode}');
-      _logger.i('完整號碼: ${_phoneNumber?.phoneNumber}');
-      _logger.i('電子郵件: ${_emailController.text}');
-      _logger.i('密碼長度: ${_passwordController.text.length}');
-      
       setState(() {
         _isLoading = true;
         _errorMessage = null;
       });
-      
-      _logger.i('調用 AuthViewModel.register...');
-      _authViewModel.register(
+
+      _authViewModel
+          .register(
         username: _accountController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
         phone: _phoneNumber?.phoneNumber ?? '',
-      ).then((_) {
-        _logger.i('註冊請求完成');
+      )
+          .then((_) {
+        setState(() {
+          _isLoading = false;
+        });
       }).catchError((error) {
-        _logger.e('註冊請求失敗: $error');
         setState(() {
           _errorMessage = '註冊失敗：$error';
           _isLoading = false;
         });
       });
-      
-      _logger.i('AuthViewModel.register 調用完成');
     } else {
-      _logger.e('表單驗證失敗');
       setState(() {
         _errorMessage = '請檢查所有必填欄位';
       });
@@ -109,38 +92,29 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
   }
 
   void _navigateToLogin() {
-    _logger.i('準備導航到登入頁面');
-    Navigator.of(context).pushReplacementNamed('/login').then((_) {
-      _logger.i('成功導航到登入頁面');
-    }).catchError((error) {
-      _logger.e('導航失敗: $error');
-    });
+    Navigator.of(context)
+        .pushReplacementNamed('/login')
+        .then((_) {})
+        .catchError((error) {});
   }
 
   @override
   void notify(ViewEvent event) {
-    _logger.i('收到事件: ${event.runtimeType}');
-    
     if (event is RegisterStateEvent) {
-      _logger.i('RegisterStateEvent - isLoading: ${event.isLoading}, isSuccess: ${event.isSuccess}, error: ${event.error}');
-      
       setState(() {
         _isLoading = event.isLoading;
         _errorMessage = event.error;
       });
 
       if (event.isSuccess && mounted) {
-        _logger.i('註冊成功，準備導航到登入頁面');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('註冊成功，請登入')),
         );
         Future.delayed(const Duration(seconds: 1), () {
-          _logger.i('延遲1秒後開始導航');
-          Navigator.of(context).pushReplacementNamed('/login').then((_) {
-            _logger.i('成功導航到登入頁面');
-          }).catchError((error) {
-            _logger.e('導航失敗: $error');
-          });
+          Navigator.of(context)
+              .pushReplacementNamed('/login')
+              .then((_) {})
+              .catchError((error) {});
         });
       }
     }
@@ -178,7 +152,7 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
                           top: 50,
                           bottom: 80,
                           child: Image.asset(
-                            'assets/images/volticar_logo.png', 
+                            'assets/images/volticar_logo.png',
                             height: 300,
                             fit: BoxFit.contain,
                           ),
@@ -187,7 +161,7 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
                         Positioned(
                           bottom: 0,
                           child: Image.asset(
-                            'assets/images/volticar_title.png', 
+                            'assets/images/volticar_title.png',
                             height: 50,
                             fit: BoxFit.contain,
                           ),
@@ -207,7 +181,7 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
                   //   ),
                   // ),
                   // const SizedBox(height: 32),
-                  
+
                   // 帳號輸入框
                   CustomTextField(
                     controller: _accountController,
@@ -222,7 +196,7 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // 電話輸入框
                   Container(
                     decoration: BoxDecoration(
@@ -250,10 +224,10 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
                       textFieldController: _phoneController,
                       formatInput: true,
                       keyboardType: TextInputType.phone,
-                      inputDecoration: InputDecoration(
+                      inputDecoration: const InputDecoration(
                         hintText: '電話號碼',
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
+                        contentPadding: EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 16,
                         ),
@@ -267,7 +241,7 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // 電子郵件輸入框
                   CustomTextField(
                     controller: _emailController,
@@ -277,7 +251,8 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
                       if (value == null || value.isEmpty) {
                         return '請輸入電子郵件';
                       }
-                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                          .hasMatch(value)) {
                         return '請輸入有效的電子郵件地址';
                       }
                       return null;
@@ -286,7 +261,7 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // 密碼輸入框
                   CustomTextField(
                     controller: _passwordController,
@@ -303,8 +278,8 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
                     },
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword 
-                            ? Icons.visibility_off_outlined 
+                        _obscurePassword
+                            ? Icons.visibility_off_outlined
                             : Icons.visibility_outlined,
                       ),
                       onPressed: () {
@@ -316,7 +291,7 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // 確認密碼輸入框
                   CustomTextField(
                     controller: _confirmPasswordController,
@@ -333,8 +308,8 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
                     },
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscureConfirmPassword 
-                            ? Icons.visibility_off_outlined 
+                        _obscureConfirmPassword
+                            ? Icons.visibility_off_outlined
                             : Icons.visibility_outlined,
                       ),
                       onPressed: () {
@@ -347,7 +322,7 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
                     onSubmitted: (_) => _register(),
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // 錯誤信息
                   if (_errorMessage != null) ...[
                     Text(
@@ -356,7 +331,7 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
                     ),
                     const SizedBox(height: 16),
                   ],
-                  
+
                   // 註冊按鈕
                   CustomButton(
                     text: '註冊',
@@ -365,15 +340,15 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
                     width: double.infinity,
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // 分隔線
-                  Row(
+                  const Row(
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Divider(color: AppColors.textSecondary),
                       ),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        padding: EdgeInsets.symmetric(horizontal: 16.0),
                         child: Text(
                           '或',
                           style: TextStyle(
@@ -382,33 +357,31 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
                           ),
                         ),
                       ),
-                      const Expanded(
+                      Expanded(
                         child: Divider(color: AppColors.textSecondary),
                       ),
                     ],
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // Google註冊按鈕
                   OutlinedButton.icon(
                     onPressed: () {
                       // TODO: Google 註冊
                     },
-                    icon: Image.asset(
-                      'assets/images/google_icon.png', 
-                      width: 24, 
-                      height: 24
-                    ),
+                    icon: Image.asset('assets/images/google_icon.png',
+                        width: 24, height: 24),
                     label: const Text('Google 註冊'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.black,
                       side: const BorderSide(color: Colors.grey),
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 16),
                       minimumSize: const Size(double.infinity, 48),
                     ),
                   ),
                   const SizedBox(height: 32),
-                  
+
                   // 登入鏈接
                   RichText(
                     text: TextSpan(
@@ -435,4 +408,4 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
       ),
     );
   }
-} 
+}

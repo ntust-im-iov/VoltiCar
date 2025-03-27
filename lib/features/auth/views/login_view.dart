@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/utils/observer.dart';
-import '../../viewmodels/auth_viewmodel.dart';
-import '../../widgets/custom_button.dart';
-import '../../widgets/custom_text_field.dart';
-import 'register_view.dart';
-import 'reset_password_view.dart';
+import 'package:provider/provider.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/observer.dart';
+import '../viewmodels/auth_viewmodel.dart';
+import '../../../shared/widgets/custom_button.dart';
+import '../../../shared/widgets/custom_text_field.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -19,14 +18,15 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _authViewModel = AuthViewModel();
   bool _isLoading = false;
   bool _obscurePassword = true;
   String? _errorMessage;
+  late AuthViewModel _authViewModel;
 
   @override
   void initState() {
     super.initState();
+    _authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     _authViewModel.subscribe(this);
     _checkLoginStatus();
   }
@@ -61,6 +61,32 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
 
   void _navigateToResetPassword() {
     Navigator.of(context).pushReplacementNamed('/reset-password');
+  }
+
+  void _handleGoogleSignIn() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final user = await _authViewModel.signInWithGoogle();
+      
+      if (mounted) {
+        if (user != null) {
+          Navigator.pushReplacementNamed(context, '/home');
+        } else {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = '登入失敗: ${e.toString()}';
+      });
+    }
   }
 
   @override
@@ -226,9 +252,7 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
                   
                   // Google登入按鈕
                   OutlinedButton.icon(
-                    onPressed: () {
-                      // TODO: Google 登入
-                    },
+                    onPressed: _handleGoogleSignIn,
                     icon: Image.asset(
                       'assets/images/google_icon.png', 
                       width: 24, 
@@ -270,4 +294,4 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
       ),
     );
   }
-} 
+}
