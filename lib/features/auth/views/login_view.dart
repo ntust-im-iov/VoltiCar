@@ -70,10 +70,16 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
     });
 
     try {
-      await _authViewModel.signInWithGoogle();
+      final user = await _authViewModel.signInWithGoogle();
       
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
+        if (user != null) {
+          Navigator.pushReplacementNamed(context, '/home');
+        } else {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     } catch (e) {
       setState(() {

@@ -62,7 +62,7 @@ class AuthViewModel extends ChangeNotifier implements EventObserver {
   }
 
   // Google登入方法
-  Future<void> signInWithGoogle() async {
+  Future<User?> signInWithGoogle() async {
     try {
       _logger.i('開始Google登入流程');
       
@@ -80,10 +80,12 @@ class AuthViewModel extends ChangeNotifier implements EventObserver {
           _logger.i('用戶數據已保存到MongoDB');
           notify(
               LoginStateEvent(isLoading: false, isSuccess: true, error: null));
+          return user;
         } else {
           _logger.e('Google登入失敗，用戶為空');
           notify(LoginStateEvent(
               isLoading: false, isSuccess: false, error: '登入失敗'));
+          return null;
         }
       } catch (e) {
         _logger.e('Google登入過程中發生錯誤: $e');
@@ -104,7 +106,7 @@ class AuthViewModel extends ChangeNotifier implements EventObserver {
           _currentUser = mockUser;
           notify(
               LoginStateEvent(isLoading: false, isSuccess: true, error: null));
-          return;
+          return mockUser;
         }
 
         // 提供更具體的錯誤信息
@@ -117,11 +119,13 @@ class AuthViewModel extends ChangeNotifier implements EventObserver {
 
         notify(LoginStateEvent(
             isLoading: false, isSuccess: false, error: errorMessage));
+        return null;
       }
     } catch (e) {
       _logger.e('Google登入處理過程中發生錯誤: $e');
       notify(LoginStateEvent(
           isLoading: false, isSuccess: false, error: e.toString()));
+      return null;
     } finally {
       // 確保在任何情況下都重置加載狀態
       notify(const LoginStateEvent(isLoading: false));
