@@ -65,7 +65,7 @@ class AuthViewModel extends ChangeNotifier implements EventObserver {
   Future<User?> signInWithGoogle() async {
     try {
       _logger.i('開始Google登入流程');
-      
+
       // 通知界面開始加載
       notify(const LoginStateEvent(isLoading: true));
 
@@ -176,7 +176,6 @@ class AuthViewModel extends ChangeNotifier implements EventObserver {
     required String username,
     required String email,
     required String password,
-    required String phone,
   }) async {
     try {
       _logger.i('AuthViewModel: 開始註冊流程');
@@ -185,14 +184,12 @@ class AuthViewModel extends ChangeNotifier implements EventObserver {
       _logger.i('AuthViewModel: 已通知界面開始加載');
 
       _logger.i('AuthViewModel: 調用 AuthRepository.register...');
-      _logger.i(
-          'AuthViewModel: 參數 - username: $username, email: $email, phone: $phone');
+      _logger.i('AuthViewModel: 參數 - username: $username, email: $email');
       // 調用存儲庫進行註冊
       final user = await _authRepository.register(
         username: username,
         email: email,
         password: password,
-        phone: phone,
       );
       _logger.i('AuthViewModel: AuthRepository.register 調用完成');
 

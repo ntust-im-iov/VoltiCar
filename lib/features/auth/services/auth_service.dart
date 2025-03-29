@@ -43,7 +43,6 @@ class AuthService {
           username: request.username,
           email: request.email,
           password: request.password,
-          phone: request.phone,
           name: request.username, // 使用 username 作為默認名稱
           userUuid: response.data['user_id'] as String?,
           token: response.data['token'] as String? ?? '',
@@ -106,9 +105,12 @@ class AuthService {
             email: response.data['email'] ?? '',
             password: '', // 不存儲密碼
             phone: response.data['phone'] ?? '',
-            name: response.data['name'] ?? response.data['username'] ?? username,
-            userUuid: response.data['user_uuid'] ?? response.data['user_id'] ?? '',
-            token: response.data['access_token'] ?? response.data['token'] ?? '',
+            name:
+                response.data['name'] ?? response.data['username'] ?? username,
+            userUuid:
+                response.data['user_uuid'] ?? response.data['user_id'] ?? '',
+            token:
+                response.data['access_token'] ?? response.data['token'] ?? '',
           );
 
           _logger.i('用戶對象創建成功: ${user.toJson()}');
