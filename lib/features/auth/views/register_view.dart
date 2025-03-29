@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
-import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/observer.dart';
 import '../viewmodels/auth_viewmodel.dart';
@@ -21,13 +20,11 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _phoneController = TextEditingController();
   final _nameController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String? _errorMessage;
-  PhoneNumber? _phoneNumber;
   late AuthViewModel _authViewModel;
 
   @override
@@ -35,8 +32,6 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
     super.initState();
     _authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     _authViewModel.subscribe(this);
-    // 設置默認國家為台灣
-    _phoneNumber = PhoneNumber(isoCode: 'TW');
   }
 
   @override
@@ -45,7 +40,6 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _phoneController.dispose();
     _nameController.dispose();
     _authViewModel.unsubscribe(this);
     super.dispose();
@@ -72,7 +66,6 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
         username: _accountController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
-        phone: _phoneNumber?.phoneNumber ?? '',
       )
           .then((_) {
         setState(() {
@@ -143,7 +136,7 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
                 children: [
                   // Logo and Title
                   SizedBox(
-                    height: 250, // 設置合適的高度
+                    height: 250,
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
@@ -171,17 +164,6 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
                   ),
                   const SizedBox(height: 20),
 
-                  // 標題
-                  // const Text(
-                  //   '註冊',
-                  //   style: TextStyle(
-                  //     fontSize: 24,
-                  //     fontWeight: FontWeight.bold,
-                  //     color: AppColors.primaryColor,
-                  //   ),
-                  // ),
-                  // const SizedBox(height: 32),
-
                   // 帳號輸入框
                   CustomTextField(
                     controller: _accountController,
@@ -194,51 +176,6 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
                     },
                     suffixIcon: const Icon(Icons.person_outline),
                     textInputAction: TextInputAction.next,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // 電話輸入框
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: InternationalPhoneNumberInput(
-                      onInputChanged: (PhoneNumber number) {
-                        setState(() {
-                          _phoneNumber = number;
-                        });
-                      },
-                      onInputValidated: (bool value) {
-                        // 不需要任何操作
-                      },
-                      selectorConfig: const SelectorConfig(
-                        selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
-                        setSelectorButtonAsPrefixIcon: true,
-                        leadingPadding: 16,
-                        showFlags: true,
-                      ),
-                      ignoreBlank: false,
-                      autoValidateMode: AutovalidateMode.disabled,
-                      initialValue: _phoneNumber,
-                      textFieldController: _phoneController,
-                      formatInput: true,
-                      keyboardType: TextInputType.phone,
-                      inputDecoration: const InputDecoration(
-                        hintText: '電話號碼',
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return '請輸入電話號碼';
-                        }
-                        return null;
-                      },
-                    ),
                   ),
                   const SizedBox(height: 16),
 
@@ -338,47 +275,6 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
                     onPressed: _register,
                     isLoading: _isLoading,
                     width: double.infinity,
-                  ),
-                  const SizedBox(height: 24),
-
-                  // 分隔線
-                  const Row(
-                    children: [
-                      Expanded(
-                        child: Divider(color: AppColors.textSecondary),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Text(
-                          '或',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Divider(color: AppColors.textSecondary),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Google註冊按鈕
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      // TODO: Google 註冊
-                    },
-                    icon: Image.asset('assets/images/google_icon.png',
-                        width: 24, height: 24),
-                    label: const Text('Google 註冊'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.black,
-                      side: const BorderSide(color: Colors.grey),
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 12, horizontal: 16),
-                      minimumSize: const Size(double.infinity, 48),
-                    ),
                   ),
                   const SizedBox(height: 32),
 
