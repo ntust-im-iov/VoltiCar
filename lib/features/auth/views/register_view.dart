@@ -101,7 +101,7 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
 
       if (event.isSuccess && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('註冊成功，請登入')),
+          const SnackBar(content: Text('註冊成功，請前往信箱點擊驗證信件')),
         );
         Future.delayed(const Duration(seconds: 1), () {
           Navigator.of(context)

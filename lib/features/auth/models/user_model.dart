@@ -8,6 +8,7 @@ class User {
   final String? userUuid;
   final String token;
   final String? photoUrl;
+  final bool isEmailVerified;
 
   User({
     required this.id,
@@ -19,6 +20,7 @@ class User {
     this.userUuid,
     required this.token,
     this.photoUrl,
+    this.isEmailVerified = false,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -32,6 +34,7 @@ class User {
       userUuid: json['user_uuid'] as String?,
       token: json['token'] as String? ?? '',
       photoUrl: json['photo_url'] as String?,
+      isEmailVerified: json['is_email_verified'] as bool? ?? false,
     );
   }
 
@@ -46,6 +49,7 @@ class User {
       if (userUuid != null) 'user_uuid': userUuid,
       'token': token,
       if (photoUrl != null) 'photo_url': photoUrl,
+      'is_email_verified': isEmailVerified,
     };
   }
 }

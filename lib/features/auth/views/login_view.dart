@@ -71,7 +71,7 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
 
     try {
       final user = await _authViewModel.signInWithGoogle();
-      
+
       if (mounted) {
         if (user != null) {
           Navigator.pushReplacementNamed(context, '/home');
@@ -130,7 +130,7 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
                           top: 50,
                           bottom: 80,
                           child: Image.asset(
-                            'assets/images/volticar_logo.png', 
+                            'assets/images/volticar_logo.png',
                             height: 300,
                             fit: BoxFit.contain,
                           ),
@@ -139,7 +139,7 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
                         Positioned(
                           bottom: 0,
                           child: Image.asset(
-                            'assets/images/volticar_title.png', 
+                            'assets/images/volticar_title.png',
                             height: 50,
                             fit: BoxFit.contain,
                           ),
@@ -148,14 +148,14 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  
+
                   // 用戶名輸入框
                   CustomTextField(
                     controller: _usernameController,
-                    hintText: '用戶名',
+                    hintText: '電子郵件',
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return '請輸入用戶名';
+                        return '請輸入電子郵件';
                       }
                       return null;
                     },
@@ -163,7 +163,7 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // 密碼輸入框
                   CustomTextField(
                     controller: _passwordController,
@@ -177,8 +177,8 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
                     },
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword 
-                            ? Icons.visibility_off_outlined 
+                        _obscurePassword
+                            ? Icons.visibility_off_outlined
                             : Icons.visibility_outlined,
                       ),
                       onPressed: () {
@@ -191,7 +191,7 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
                     onSubmitted: (_) => _login(),
                   ),
                   const SizedBox(height: 8),
-                  
+
                   // 忘記密碼
                   Align(
                     alignment: Alignment.centerRight,
@@ -208,16 +208,46 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // 錯誤信息
-                  if (_errorMessage != null) ...[
-                    Text(
-                      _errorMessage!,
-                      style: const TextStyle(color: AppColors.errorColor),
+                  if (_errorMessage?.isNotEmpty ?? false) ...[
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: (_errorMessage?.contains('驗證') ?? false) 
+                          ? Colors.orange.withOpacity(0.1) 
+                          : Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            _errorMessage!,
+                            style: TextStyle(
+                              color: _errorMessage!.contains('驗證') 
+                                ? Colors.orange 
+                                : Colors.red,
+                              fontSize: 14,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          if (_errorMessage!.contains('驗證')) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              '提示：請檢查您的電子郵件信箱，點擊驗證連結後即可登入',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 12,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 16),
                   ],
-                  
+
                   // 登入按鈕
                   CustomButton(
                     text: '登入',
@@ -226,7 +256,7 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
                     width: double.infinity,
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // 分隔線
                   Row(
                     children: [
@@ -249,25 +279,23 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
                     ],
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // Google登入按鈕
                   OutlinedButton.icon(
                     onPressed: _handleGoogleSignIn,
-                    icon: Image.asset(
-                      'assets/images/google_icon.png', 
-                      width: 24, 
-                      height: 24
-                    ),
+                    icon: Image.asset('assets/images/google_icon.png',
+                        width: 24, height: 24),
                     label: const Text('Google 登入'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.black,
                       side: const BorderSide(color: Colors.grey),
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 16),
                       minimumSize: const Size(double.infinity, 48),
                     ),
                   ),
                   const SizedBox(height: 32),
-                  
+
                   // 註冊鏈接
                   RichText(
                     text: TextSpan(
