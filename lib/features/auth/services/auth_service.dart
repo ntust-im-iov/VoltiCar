@@ -179,7 +179,6 @@ class AuthService {
                 email.split('@')[0], // 如果沒有用戶名，使用郵件前綴
             email: email,
             password: '', // 不存儲密碼
-            phone: response.data['phone'] ?? '',
             name: response.data['name'] ??
                 response.data['username'] ??
                 email.split('@')[0],
@@ -337,6 +336,7 @@ class AuthService {
           name: userCredential.user!.displayName ?? '',
           userUuid: userCredential.user!.uid,
           token: await userCredential.user!.getIdToken() ?? '',
+          isGoogleUser: true,
         );
 
         // 保存用戶數據到 MongoDB
@@ -364,11 +364,9 @@ class AuthService {
         'username': user.username,
         'email': user.email,
         'password': '${user.id}_google_auth', // 使用 Firebase UID 作為密碼的一部分，確保唯一性
-        'phone': user.phone,
-        'name': user.name ?? user.username,
-        'user_uuid': user.id, // 使用 Firebase UID 作為用戶 UUID
-        'auth_provider': 'google',
-        'profile_image': user.photoUrl ?? '',
+        'isGoogleUser': true,
+        'name': user.name,
+        'userUuid': user.userUuid,
       };
 
       _logger.i('準備發送數據到 MongoDB: $userData');

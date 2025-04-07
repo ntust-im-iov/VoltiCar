@@ -14,6 +14,12 @@ void main() async {
   // 確保Flutter綁定初始化
   WidgetsFlutterBinding.ensureInitialized();
   
+  // 設置為軟體渲染模式
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: [
+    SystemUiOverlay.top,
+    SystemUiOverlay.bottom,
+  ]);
+  
   // 創建logger實例
   final logger = Logger();
   

@@ -215,9 +215,9 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
                       margin: const EdgeInsets.only(bottom: 16),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: (_errorMessage?.contains('驗證') ?? false) 
-                          ? Colors.orange.withOpacity(0.1) 
-                          : Colors.red.withOpacity(0.1),
+                        color: (_errorMessage?.contains('驗證') ?? false)
+                            ? Colors.orange.withOpacity(0.1)
+                            : Colors.red.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Column(
@@ -225,9 +225,9 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
                           Text(
                             _errorMessage!,
                             style: TextStyle(
-                              color: _errorMessage!.contains('驗證') 
-                                ? Colors.orange 
-                                : Colors.red,
+                              color: _errorMessage!.contains('驗證')
+                                  ? Colors.orange
+                                  : Colors.red,
                               fontSize: 14,
                             ),
                             textAlign: TextAlign.center,
