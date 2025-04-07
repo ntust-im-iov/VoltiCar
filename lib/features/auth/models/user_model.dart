@@ -9,6 +9,7 @@ class User {
   final String token;
   final String? photoUrl;
   final bool isEmailVerified;
+  final bool isGoogleUser;
 
   User({
     required this.id,
@@ -21,20 +22,22 @@ class User {
     required this.token,
     this.photoUrl,
     this.isEmailVerified = false,
+    this.isGoogleUser = false,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'] as String? ?? json['user_uuid'] as String? ?? '',
-      username: json['username'] as String,
-      email: json['email'] as String,
-      password: json['password'] as String?,
-      phone: json['phone'] as String?,
-      name: json['name'] as String?,
-      userUuid: json['user_uuid'] as String?,
-      token: json['token'] as String? ?? '',
-      photoUrl: json['photo_url'] as String?,
-      isEmailVerified: json['is_email_verified'] as bool? ?? false,
+      id: json['id'] ?? '',
+      username: json['username'] ?? '',
+      email: json['email'] ?? '',
+      password: json['password'],
+      phone: json['phone'],
+      name: json['name'],
+      userUuid: json['user_uuid'],
+      token: json['token'] ?? '',
+      photoUrl: json['photo_url'],
+      isEmailVerified: json['is_email_verified'] ?? false,
+      isGoogleUser: json['is_google_user'] ?? false,
     );
   }
 
@@ -50,6 +53,7 @@ class User {
       'token': token,
       if (photoUrl != null) 'photo_url': photoUrl,
       'is_email_verified': isEmailVerified,
+      'is_google_user': isGoogleUser,
     };
   }
 }

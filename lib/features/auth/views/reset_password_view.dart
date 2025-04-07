@@ -13,7 +13,8 @@ class ResetPasswordView extends StatefulWidget {
   State<ResetPasswordView> createState() => _ResetPasswordViewState();
 }
 
-class _ResetPasswordViewState extends State<ResetPasswordView> implements EventObserver {
+class _ResetPasswordViewState extends State<ResetPasswordView>
+    implements EventObserver {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _otpController = TextEditingController();
@@ -24,7 +25,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> implements EventO
   bool _obscureConfirmPassword = true;
   String? _errorMessage;
   late AuthViewModel _authViewModel;
-  
+
   // 步驟控制
   int _currentStep = 0; // 0: 輸入電子郵件, 1: 輸入OTP, 2: 設置新密碼
 
@@ -52,13 +53,13 @@ class _ResetPasswordViewState extends State<ResetPasswordView> implements EventO
       });
       return;
     }
-    
+
     // 這裡模擬發送OTP的過程
     setState(() {
       _currentStep = 1;
       _errorMessage = null;
     });
-    
+
     // 顯示發送成功提示
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('驗證碼已發送至您的電子郵件')),
@@ -72,7 +73,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> implements EventO
       });
       return;
     }
-    
+
     // 這裡模擬驗證OTP的過程
     setState(() {
       _currentStep = 2;
@@ -196,8 +197,8 @@ class _ResetPasswordViewState extends State<ResetPasswordView> implements EventO
           },
           suffixIcon: IconButton(
             icon: Icon(
-              _obscurePassword 
-                  ? Icons.visibility_off_outlined 
+              _obscurePassword
+                  ? Icons.visibility_off_outlined
                   : Icons.visibility_outlined,
             ),
             onPressed: () {
@@ -224,8 +225,8 @@ class _ResetPasswordViewState extends State<ResetPasswordView> implements EventO
           },
           suffixIcon: IconButton(
             icon: Icon(
-              _obscureConfirmPassword 
-                  ? Icons.visibility_off_outlined 
+              _obscureConfirmPassword
+                  ? Icons.visibility_off_outlined
                   : Icons.visibility_outlined,
             ),
             onPressed: () {
@@ -288,11 +289,8 @@ class _ResetPasswordViewState extends State<ResetPasswordView> implements EventO
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Logo
-                  Image.asset(
-                    'assets/images/volticar_title.png', 
-                    height: 80, 
-                    fit: BoxFit.contain
-                  ),
+                  Image.asset('assets/images/volticar_title.png',
+                      height: 80, fit: BoxFit.contain),
                   const SizedBox(height: 24),
 
                   // 標題
@@ -305,7 +303,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> implements EventO
                     ),
                   ),
                   const SizedBox(height: 32),
-                  
+
                   // 步驟進度顯示
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -318,7 +316,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> implements EventO
                     ],
                   ),
                   const SizedBox(height: 32),
-                  
+
                   // 錯誤信息
                   if (_errorMessage != null) ...[
                     Text(
@@ -327,7 +325,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> implements EventO
                     ),
                     const SizedBox(height: 16),
                   ],
-                  
+
                   // 當前步驟內容
                   _getStepContent(),
                 ],
@@ -341,7 +339,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> implements EventO
 
   Widget _buildStepIndicator(int step) {
     final isActive = _currentStep >= step;
-    
+
     return Container(
       width: 32,
       height: 32,
@@ -367,11 +365,11 @@ class _ResetPasswordViewState extends State<ResetPasswordView> implements EventO
 
   Widget _buildStepLine(int step) {
     final isActive = _currentStep > step;
-    
+
     return Container(
       width: 40,
       height: 2,
       color: isActive ? AppColors.primaryColor : Colors.grey,
     );
   }
-} 
+}
