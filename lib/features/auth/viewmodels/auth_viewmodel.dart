@@ -163,12 +163,17 @@ class AuthViewModel extends ChangeNotifier implements EventObserver {
       if (errorMessage.contains('Exception:')) {
         errorMessage = errorMessage.split('Exception:').last.trim();
       }
-      notify(LoginStateEvent(error: errorMessage));
+      // 確保錯誤信息被正確傳遞到 UI
+      notify(LoginStateEvent(
+        isLoading: false,
+        isSuccess: false,
+        error: errorMessage,
+      ));
       _logger.e('AuthViewModel: 登入錯誤 - $errorMessage');
-    } finally {
-      // 確保在任何情況下都重置加載狀態
-      notify(const LoginStateEvent(isLoading: false));
+      return; // 提前返回，不執行 finally 塊中的重置
     }
+    // 只有在成功或一般錯誤時才重置加載狀態
+    notify(const LoginStateEvent(isLoading: false));
   }
 
   // 註冊方法
