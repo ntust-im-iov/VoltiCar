@@ -209,40 +209,39 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
                   ),
                   const SizedBox(height: 24),
 
-                  // 錯誤信息
-                  if (_errorMessage?.isNotEmpty ?? false) ...[
+                  if (_errorMessage?.contains('驗證') ?? false) ...[
                     Container(
                       margin: const EdgeInsets.only(bottom: 16),
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
-                        color: (_errorMessage?.contains('驗證') ?? false)
-                            ? Colors.orange.withOpacity(0.1)
-                            : Colors.red.withOpacity(0.1),
+                        color: const Color(0xFFFFF3E0),
                         borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Colors.orange.withOpacity(0.3),
+                          width: 1,
+                        ),
                       ),
                       child: Column(
                         children: [
                           Text(
-                            _errorMessage!,
+                            '電子郵件未驗證',
                             style: TextStyle(
-                              color: _errorMessage!.contains('驗證')
-                                  ? Colors.orange
-                                  : Colors.red,
+                              color: Colors.orange[700],
                               fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              height: 1.4,
                             ),
                             textAlign: TextAlign.center,
                           ),
-                          if (_errorMessage!.contains('驗證')) ...[
-                            const SizedBox(height: 8),
-                            Text(
-                              '提示：請檢查您的電子郵件信箱，點擊驗證連結後即可登入',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 12,
-                              ),
-                              textAlign: TextAlign.center,
+                          const SizedBox(height: 4),
+                          Text(
+                            '提示：請檢查您的電子郵件信箱，點擊驗證連結後即可登入',
+                            style: TextStyle(
+                              color: Colors.grey[700],
+                              fontSize: 12,
+                              height: 1.4,
                             ),
-                          ],
+                          ),
                         ],
                       ),
                     ),
