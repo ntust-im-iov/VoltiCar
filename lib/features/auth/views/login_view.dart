@@ -212,7 +212,8 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
                   if (_errorMessage?.contains('驗證') ?? false) ...[
                     Container(
                       margin: const EdgeInsets.only(bottom: 16),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFFF3E0),
                         borderRadius: BorderRadius.circular(8),
