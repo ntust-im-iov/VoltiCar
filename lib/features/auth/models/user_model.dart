@@ -56,4 +56,32 @@ class User {
       'is_google_user': isGoogleUser,
     };
   }
+
+  User copyWith({
+    String? id,
+    String? username,
+    String? email,
+    String? password,
+    String? phone,
+    String? name,
+    String? userUuid,
+    String? token,
+    String? photoUrl,
+    bool? isEmailVerified,
+    bool? isGoogleUser,
+  }) {
+    return User(
+      id: id ?? this.id,
+      username: username ?? this.username,
+      email: email ?? this.email,
+      password: password ?? this.password,
+      phone: phone ?? this.phone,
+      name: name ?? this.name,
+      userUuid: userUuid ?? this.userUuid,
+      token: token ?? this.token,
+      photoUrl: photoUrl ?? this.photoUrl,
+      isEmailVerified: isEmailVerified ?? this.isEmailVerified,
+      isGoogleUser: isGoogleUser ?? this.isGoogleUser,
+    );
+  }
 }
