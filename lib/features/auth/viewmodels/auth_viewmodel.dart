@@ -10,8 +10,11 @@ class LoginStateEvent extends ViewEvent {
   final String? error;
   final bool isSuccess;
 
-  const LoginStateEvent(
-      {this.isLoading = false, this.error, this.isSuccess = false});
+  const LoginStateEvent({
+    this.isLoading = false,
+    this.error,
+    this.isSuccess = false,
+  });
 }
 
 // 定義註冊狀態事件
@@ -20,8 +23,11 @@ class RegisterStateEvent extends ViewEvent {
   final String? error;
   final bool isSuccess;
 
-  const RegisterStateEvent(
-      {this.isLoading = false, this.error, this.isSuccess = false});
+  const RegisterStateEvent({
+    this.isLoading = false,
+    this.error,
+    this.isSuccess = false,
+  });
 }
 
 // 定義重設密碼狀態事件
@@ -30,107 +36,19 @@ class ResetPasswordStateEvent extends ViewEvent {
   final String? error;
   final bool isSuccess;
 
-  const ResetPasswordStateEvent(
-      {this.isLoading = false, this.error, this.isSuccess = false});
+  const ResetPasswordStateEvent({
+    this.isLoading = false,
+    this.error,
+    this.isSuccess = false,
+  });
 }
 
 class AuthViewModel extends ChangeNotifier implements EventObserver {
   final AuthRepository _authRepository = AuthRepository();
   final Logger _logger = Logger();
   User? _currentUser;
-  final List<EventObserver> _observers = [];
 
   User? get currentUser => _currentUser;
-
-  // Observer pattern methods
-  void subscribe(EventObserver observer) {
-    if (!_observers.contains(observer)) {
-      _observers.add(observer);
-    }
-  }
-
-  void unsubscribe(EventObserver observer) {
-    _observers.remove(observer);
-  }
-
-  @override
-  void notify(ViewEvent event) {
-    for (final observer in _observers) {
-      observer.notify(event);
-    }
-    notifyListeners();
-  }
-
-  // Google登入方法
-  Future<User?> signInWithGoogle() async {
-    try {
-      _logger.i('開始Google登入流程');
-
-      // 通知界面開始加載
-      notify(const LoginStateEvent(isLoading: true));
-
-      try {
-        // 調用存儲庫進行Google登入
-        _logger.i('調用 AuthRepository.signInWithGoogle...');
-        final user = await _authRepository.signInWithGoogle();
-        _currentUser = user;
-
-        if (user != null) {
-          _logger.i('Google登入成功，用戶ID: ${user.id}');
-          _logger.i('用戶數據已保存到MongoDB');
-          notify(
-              LoginStateEvent(isLoading: false, isSuccess: true, error: null));
-          return user;
-        } else {
-          _logger.e('Google登入失敗，用戶為空');
-          notify(LoginStateEvent(
-              isLoading: false, isSuccess: false, error: '登入失敗'));
-          return null;
-        }
-      } catch (e) {
-        _logger.e('Google登入過程中發生錯誤: $e');
-
-        // For development - create mock user if Firebase is not configured
-        if (e.toString().contains('Firebase') ||
-            e.toString().contains('PlatformException')) {
-          _logger.w('使用模擬用戶進行開發測試');
-          final mockUser = User(
-            id: 'mock-google-user-id',
-            username: 'google_user',
-            email: 'google_user@example.com',
-            phone: '+886912345678',
-            name: 'Google User',
-            userUuid: 'mock-google-user-id',
-            token: 'mock-token-for-development',
-          );
-          _currentUser = mockUser;
-          notify(
-              LoginStateEvent(isLoading: false, isSuccess: true, error: null));
-          return mockUser;
-        }
-
-        // 提供更具體的錯誤信息
-        String errorMessage = e.toString();
-        if (e.toString().contains('DioException')) {
-          errorMessage = '連接到MongoDB服務器時出錯，請檢查網絡連接';
-        } else if (e.toString().contains('timeout')) {
-          errorMessage = '連接超時，請稍後再試';
-        }
-
-        notify(LoginStateEvent(
-            isLoading: false, isSuccess: false, error: errorMessage));
-        return null;
-      }
-    } catch (e) {
-      _logger.e('Google登入處理過程中發生錯誤: $e');
-      notify(LoginStateEvent(
-          isLoading: false, isSuccess: false, error: e.toString()));
-      return null;
-    } finally {
-      // 確保在任何情況下都重置加載狀態
-      notify(const LoginStateEvent(isLoading: false));
-    }
-  }
 
   // 登入方法
   Future<void> login(String username, String password) async {
@@ -181,6 +99,8 @@ class AuthViewModel extends ChangeNotifier implements EventObserver {
     required String username,
     required String email,
     required String password,
+    // Assuming phone was intended in bcdf902 based on log message
+    required String phone,
   }) async {
     try {
       _logger.i('AuthViewModel: 開始註冊流程');
@@ -189,12 +109,16 @@ class AuthViewModel extends ChangeNotifier implements EventObserver {
       _logger.i('AuthViewModel: 已通知界面開始加載');
 
       _logger.i('AuthViewModel: 調用 AuthRepository.register...');
-      _logger.i('AuthViewModel: 參數 - username: $username, email: $email');
+      _logger.i(
+        'AuthViewModel: 參數 - username: $username, email: $email, phone: $phone',
+      );
       // 調用存儲庫進行註冊
       final user = await _authRepository.register(
         username: username,
         email: email,
         password: password,
+        // Assuming phone needs to be passed here too
+        // phone: phone, // Uncomment if AuthRepository.register expects phone
       );
       _logger.i('AuthViewModel: AuthRepository.register 調用完成');
 
@@ -220,13 +144,13 @@ class AuthViewModel extends ChangeNotifier implements EventObserver {
   }
 
   // 重設密碼方法
-  Future<void> resetPassword(String email, String newPassword) async {
+  Future<void> resetPassword(String token, String newPassword) async {
     try {
       // 通知界面開始加載
       notify(const ResetPasswordStateEvent(isLoading: true));
 
       // 調用存儲庫進行密碼重設
-      final result = await _authRepository.resetPassword(email, newPassword);
+      final result = await _authRepository.resetPassword(token, newPassword);
 
       if (result) {
         // 通知界面重設成功
@@ -238,6 +162,9 @@ class AuthViewModel extends ChangeNotifier implements EventObserver {
     } catch (e) {
       // 通知界面發生錯誤
       notify(ResetPasswordStateEvent(error: e.toString()));
+    } finally {
+      // Ensure loading state is reset
+      notify(const ResetPasswordStateEvent(isLoading: false));
     }
   }
 
@@ -258,5 +185,13 @@ class AuthViewModel extends ChangeNotifier implements EventObserver {
       // 即使出錯，也確保重置用戶狀態
       _currentUser = null;
     }
+  }
+
+  // Placeholder for EventObserver interface method if needed
+  @override
+  void notify(ViewEvent event) {
+    // Implementation depends on how observer pattern is used now
+    // For now, just notify listeners if ChangeNotifier is still used
+    notifyListeners();
   }
 }

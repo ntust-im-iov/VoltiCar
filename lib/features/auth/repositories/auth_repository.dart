@@ -94,8 +94,8 @@ class AuthRepository {
   }
 
   // 重設密碼
-  Future<bool> resetPassword(String email, String newPassword) async {
-    return await _authService.resetPassword(email, newPassword);
+  Future<bool> resetPassword(String token, String newPassword) async {
+    return await _authService.resetPassword(token, newPassword);
   }
 
   // 取得用戶ID
