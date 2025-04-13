@@ -10,9 +10,9 @@ class LoginStateEvent extends ViewEvent {
   final bool isSuccess;
 
   const LoginStateEvent({
-    this.isLoading = false, 
-    this.error, 
-    this.isSuccess = false
+    this.isLoading = false,
+    this.error,
+    this.isSuccess = false,
   });
 }
 
@@ -23,9 +23,9 @@ class RegisterStateEvent extends ViewEvent {
   final bool isSuccess;
 
   const RegisterStateEvent({
-    this.isLoading = false, 
-    this.error, 
-    this.isSuccess = false
+    this.isLoading = false,
+    this.error,
+    this.isSuccess = false,
   });
 }
 
@@ -34,11 +34,11 @@ class ResetPasswordStateEvent extends ViewEvent {
   final bool isLoading;
   final String? error;
   final bool isSuccess;
-  
+
   const ResetPasswordStateEvent({
-    this.isLoading = false, 
-    this.error, 
-    this.isSuccess = false
+    this.isLoading = false,
+    this.error,
+    this.isSuccess = false,
   });
 }
 
@@ -46,9 +46,9 @@ class AuthViewModel extends EventViewModel {
   final AuthRepository _authRepository = AuthRepository();
   final Logger _logger = Logger();
   User? _currentUser;
-  
+
   User? get currentUser => _currentUser;
-  
+
   // 登入方法
   Future<void> login(String username, String password) async {
     try {
@@ -56,13 +56,13 @@ class AuthViewModel extends EventViewModel {
       // 通知界面開始加載
       notify(const LoginStateEvent(isLoading: true));
       _logger.i('AuthViewModel: 已通知界面開始加載');
-      
+
       _logger.i('AuthViewModel: 調用 AuthRepository.login...');
       _logger.i('AuthViewModel: 參數 - username: $username');
       // 調用存儲庫進行登入
       final user = await _authRepository.login(username, password);
       _logger.i('AuthViewModel: AuthRepository.login 調用完成');
-      
+
       if (user != null) {
         _currentUser = user;
         // 通知界面登入成功
@@ -87,7 +87,7 @@ class AuthViewModel extends EventViewModel {
       notify(const LoginStateEvent(isLoading: false));
     }
   }
-  
+
   // 註冊方法
   Future<void> register({
     required String username,
@@ -100,9 +100,11 @@ class AuthViewModel extends EventViewModel {
       // 通知界面開始加載
       notify(const RegisterStateEvent(isLoading: true));
       _logger.i('AuthViewModel: 已通知界面開始加載');
-      
+
       _logger.i('AuthViewModel: 調用 AuthRepository.register...');
-      _logger.i('AuthViewModel: 參數 - username: $username, email: $email, phone: $phone');
+      _logger.i(
+        'AuthViewModel: 參數 - username: $username, email: $email, phone: $phone',
+      );
       // 調用存儲庫進行註冊
       final user = await _authRepository.register(
         username: username,
@@ -111,7 +113,7 @@ class AuthViewModel extends EventViewModel {
         phone: phone,
       );
       _logger.i('AuthViewModel: AuthRepository.register 調用完成');
-      
+
       if (user != null) {
         _currentUser = user;
         notify(const RegisterStateEvent(isSuccess: true));
@@ -127,21 +129,21 @@ class AuthViewModel extends EventViewModel {
       notify(const RegisterStateEvent(isLoading: false));
     }
   }
-  
+
   // 檢查登入狀態
   Future<bool> checkLoginStatus() async {
     return await _authRepository.isLoggedIn();
   }
-  
+
   // 重設密碼方法
-  Future<void> resetPassword(String email, String newPassword) async {
+  Future<void> resetPassword(String token, String newPassword) async {
     try {
       // 通知界面開始加載
       notify(const ResetPasswordStateEvent(isLoading: true));
-      
+
       // 調用存儲庫進行密碼重設
-      final result = await _authRepository.resetPassword(email, newPassword);
-      
+      final result = await _authRepository.resetPassword(token, newPassword);
+
       if (result) {
         // 通知界面重設成功
         notify(const ResetPasswordStateEvent(isSuccess: true));
@@ -154,18 +156,18 @@ class AuthViewModel extends EventViewModel {
       notify(ResetPasswordStateEvent(error: e.toString()));
     }
   }
-  
+
   // 登出方法
   Future<void> logout() async {
     try {
       _logger.i('AuthViewModel: 開始登出流程');
-      
+
       // 調用存儲庫進行登出
       await _authRepository.logout();
-      
+
       // 重置當前用戶
       _currentUser = null;
-      
+
       _logger.i('AuthViewModel: 登出成功');
     } catch (e) {
       _logger.e('AuthViewModel: 登出過程中發生錯誤 - $e');
@@ -173,4 +175,4 @@ class AuthViewModel extends EventViewModel {
       _currentUser = null;
     }
   }
-} 
+}

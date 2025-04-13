@@ -46,12 +46,12 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
 
   void _login() {
     //Navigator.of(context).pushReplacementNamed('/home');//測試用
-    /*if (_formKey.currentState?.validate() ?? false) {
+    if (_formKey.currentState?.validate() ?? false) {
       _authViewModel.login(
         _usernameController.text.trim(),
         _passwordController.text.trim(),
       );
-    }*/
+    }
   }
 
   void _navigateToRegister() {

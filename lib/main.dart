@@ -8,6 +8,8 @@ import 'views/home/mycar_view.dart';
 import 'views/home/map_view.dart';
 import 'views/home/race_view.dart';
 import 'views/home/account_view.dart';
+import 'views/home/charging_view.dart';
+import 'views/home/tools_view.dart';
 
 void main() {
   // 確保Flutter綁定初始化
@@ -48,6 +50,9 @@ class MyApp extends StatelessWidget {
         '/map': (context) => const MapView(),
         '/race': (context) => const RaceView(),
         '/account': (context) => const AccountView(),
+        '/charging': (context) => const ChargingView(),
+        '/tools': (context) => const ToolsView(),
+        '/modification': (context) => const ToolsView(),
       },
     );
   }

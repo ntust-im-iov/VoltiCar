@@ -3,6 +3,7 @@ import 'package:logger/logger.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/observer.dart';
 import '../../viewmodels/auth_viewmodel.dart'; // Assuming we might need this later
+import 'garage_view.dart'; // 引入車庫視圖
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -32,66 +33,9 @@ class _HomeViewState extends State<HomeView> implements EventObserver {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'HOME',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.black, // Match the image
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: _handleLogout,
-          ),
-        ],
-      ),
-      body: Container(
-        color: const Color(0xFFf2f2f2), // Light grey background
-        child: SingleChildScrollView(
-          child: Container(),
-        ), // Keep the grey background, but make the content empty
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: <BottomNavigationBarItem>[
-          const BottomNavigationBarItem(icon: Icon(Icons.map), label: 'MAP'),
-          const BottomNavigationBarItem(icon: Icon(Icons.flag), label: 'RACE'),
-          const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'HOME'),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.directions_car),
-            label: 'MY CAR',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'ACCOUNT',
-          ),
-        ],
-        currentIndex: 2,
-        selectedItemColor: AppColors.primaryColor,
-        unselectedItemColor: Colors.grey,
-        showUnselectedLabels: true, // Show labels for unselected items
-        type: BottomNavigationBarType.fixed, // Prevent shifting
-        onTap: (index) {
-          _logger.i('Bottom navigation tapped: $index');
-          switch (index) {
-            case 0: // MAP
-              Navigator.pushReplacementNamed(context, '/map');
-              break;
-            case 1: // RACE
-              Navigator.pushReplacementNamed(context, '/race');
-              break;
-            case 2: // HOME
-              // Stay on the same screen
-              break;
-            case 3: // MY CAR
-              Navigator.pushReplacementNamed(context, '/mycar');
-              break;
-            case 4: // ACCOUNT
-              Navigator.pushReplacementNamed(context, '/account');
-              break;
-          }
-        },
-      ),
+      // 移除 AppBar，以提供更多顯示空間
+      body: const GarageView(),
+      backgroundColor: const Color(0xFF0F0A1F), // 確保背景顏色一致
     );
   }
 
