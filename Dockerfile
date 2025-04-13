@@ -1,6 +1,6 @@
-# 使用包含 Flutter 3.7.2, Java 11, 和 Android SDK 工具的基礎映像檔
+# 使用包含較新 Flutter 穩定版本和兼容 Java 版本的基礎映像檔
 # 參考: https://hub.docker.com/r/cirrusci/flutter
-FROM cirrusci/flutter:3.7.2
+FROM cirrusci/flutter:stable
 
 # 設定工作目錄
 WORKDIR /app
