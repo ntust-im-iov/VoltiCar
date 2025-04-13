@@ -1,11 +1,3 @@
-# volticar_app
-
-A new Flutter project.
-
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
 ## 應用程式功能
 
 本應用程式主要包含以下功能模組：
