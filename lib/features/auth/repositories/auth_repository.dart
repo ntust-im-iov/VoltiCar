@@ -12,7 +12,6 @@ class AuthRepository {
     required String username,
     required String email,
     required String password,
-    required String phone,
   }) async {
     try {
       _logger.i('開始創建註冊請求...');
@@ -21,14 +20,13 @@ class AuthRepository {
         username: username,
         email: email,
         password: password,
-        phone: phone,
       );
 
       _logger.i('註冊請求創建完成: ${request.toJson()}');
 
       final response = await _authService.register(request);
       _logger.i('註冊響應: $response');
-      
+
       _logger.i('註冊成功，返回用戶信息');
       return response;
     } catch (e) {
@@ -72,10 +70,10 @@ class AuthRepository {
   Future<User?> signInWithGoogle() async {
     try {
       _logger.i('Repository: 開始Google登入流程');
-      
+
       // 調用 AuthService 進行 Google 登入
       final user = await _authService.signInWithGoogle();
-      
+
       if (user != null) {
         _logger.i('Google登入成功，用戶ID: ${user.id}');
         _logger.i('Google登入完成，返回用戶信息');

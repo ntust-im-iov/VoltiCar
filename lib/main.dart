@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
-import 'dart:io';
+import 'firebase_options.dart';
 import 'features/auth/viewmodels/auth_viewmodel.dart';
 import 'features/auth/views/login_view.dart';
 import 'features/auth/views/register_view.dart';
@@ -14,20 +14,24 @@ void main() async {
   // 確保Flutter綁定初始化
   WidgetsFlutterBinding.ensureInitialized();
   
+  // 設置為軟體渲染模式
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: [
+    SystemUiOverlay.top,
+    SystemUiOverlay.bottom,
+  ]);
+  
   // 創建logger實例
   final logger = Logger();
   
-  // 初始化Firebase (有條件地初始化)
+  // 初始化Firebase
   try {
-    if (Platform.isAndroid || Platform.isIOS) {
-      await Firebase.initializeApp();
-      logger.i('Firebase initialized successfully');
-    } else {
-      logger.w('Firebase initialization skipped on this platform');
-    }
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    logger.i('Firebase initialized successfully');
   } catch (e) {
     logger.e('Failed to initialize Firebase: $e');
-    // Continue without Firebase for development purposes
+    rethrow; // 在開發階段，我們需要知道 Firebase 初始化失敗的原因
   }
   
   // 固定螢幕方向為垂直方向
