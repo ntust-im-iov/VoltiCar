@@ -1,0 +1,36 @@
+# Git files
+.git/
+.gitignore
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# Flutter/Dart build artifacts and caches
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.metadata
+
+# Platform specific build folders (we only need Android for this Dockerfile)
+ios/
+linux/
+macos/
+web/
+windows/
+
+# Test files (optional, uncomment if you don't need tests in the image)
+# test/
+
+# Lock files (pubspec.lock is needed)
+# pubspec.lock # Keep this one
+
+# Other generated files
+devtools_options.yaml
+
+# Docker files themselves
+Dockerfile
+.dockerignore
