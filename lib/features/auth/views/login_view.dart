@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/utils/observer.dart';
-import '../../viewmodels/auth_viewmodel.dart';
-import '../../widgets/custom_button.dart';
-import '../../widgets/custom_text_field.dart';
+import '../../../core/constants/app_colors.dart'; // Corrected path
+import '../../../core/utils/observer.dart'; // Corrected path
+import '../viewmodels/auth_viewmodel.dart'; // Corrected path
+import '../../../shared/widgets/custom_button.dart'; // Corrected path
+import '../../../shared/widgets/custom_text_field.dart'; // Corrected path
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -40,7 +40,7 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
   void _checkLoginStatus() async {
     final isLoggedIn = await _authViewModel.checkLoginStatus();
     if (isLoggedIn && mounted) {
-      Navigator.of(context).pushReplacementNamed('/home');
+      Navigator.of(context).pushReplacementNamed('/garage');
     }
   }
 
@@ -71,7 +71,7 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
       });
 
       if (event.isSuccess && mounted) {
-        Navigator.of(context).pushReplacementNamed('/home');
+        Navigator.of(context).pushReplacementNamed('/garage');
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('登入成功')));
@@ -204,10 +204,11 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
                   // Google登入按鈕
                   OutlinedButton.icon(
                     onPressed: () {
-                      // TODO: Google 登入
+                      _authViewModel
+                          .signInWithGoogle(); // 呼叫 ViewModel 中的 Google 登入方法
                     },
                     icon: Image.asset(
-                      'assets/images/volticar_logo.png',
+                      'assets/images/google_icon.png', // 使用 Google 圖示
                       width: 24,
                       height: 24,
                     ),
@@ -236,9 +237,8 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
                             color: AppColors.linkColor,
                             fontWeight: FontWeight.bold,
                           ),
-                          recognizer:
-                              TapGestureRecognizer()
-                                ..onTap = _navigateToRegister,
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = _navigateToRegister,
                         ),
                       ],
                     ),

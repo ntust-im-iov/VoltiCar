@@ -43,7 +43,8 @@ class ResetPasswordStateEvent extends ViewEvent {
   });
 }
 
-class AuthViewModel extends ChangeNotifier implements EventObserver {
+// Inherit from EventViewModel to get observer pattern implementation
+class AuthViewModel extends EventViewModel {
   final AuthRepository _authRepository = AuthRepository();
   final Logger _logger = Logger();
   User? _currentUser;
@@ -99,8 +100,7 @@ class AuthViewModel extends ChangeNotifier implements EventObserver {
     required String username,
     required String email,
     required String password,
-    // Assuming phone was intended in bcdf902 based on log message
-    required String phone,
+    // Removed required phone parameter as it's not used by the repository
   }) async {
     try {
       _logger.i('AuthViewModel: 開始註冊流程');
@@ -110,15 +110,14 @@ class AuthViewModel extends ChangeNotifier implements EventObserver {
 
       _logger.i('AuthViewModel: 調用 AuthRepository.register...');
       _logger.i(
-        'AuthViewModel: 參數 - username: $username, email: $email, phone: $phone',
+        'AuthViewModel: 參數 - username: $username, email: $email', // Removed phone from log
       );
       // 調用存儲庫進行註冊
       final user = await _authRepository.register(
         username: username,
         email: email,
         password: password,
-        // Assuming phone needs to be passed here too
-        // phone: phone, // Uncomment if AuthRepository.register expects phone
+        // Removed commented-out phone parameter
       );
       _logger.i('AuthViewModel: AuthRepository.register 調用完成');
 
@@ -187,11 +186,47 @@ class AuthViewModel extends ChangeNotifier implements EventObserver {
     }
   }
 
-  // Placeholder for EventObserver interface method if needed
-  @override
-  void notify(ViewEvent event) {
-    // Implementation depends on how observer pattern is used now
-    // For now, just notify listeners if ChangeNotifier is still used
-    notifyListeners();
+  // Google 登入方法
+  Future<void> signInWithGoogle() async {
+    try {
+      _logger.i('AuthViewModel: 開始 Google 登入流程');
+      // 通知界面開始加載 (可以使用 LoginStateEvent 或創建一個新的 GoogleLoginStateEvent)
+      notify(const LoginStateEvent(isLoading: true));
+      _logger.i('AuthViewModel: 已通知界面開始加載');
+
+      _logger.i('AuthViewModel: 調用 AuthRepository.signInWithGoogle...');
+      // 調用存儲庫進行 Google 登入
+      final user = await _authRepository.signInWithGoogle();
+      _logger.i('AuthViewModel: AuthRepository.signInWithGoogle 調用完成');
+
+      if (user != null) {
+        _currentUser = user;
+        // 通知界面登入成功
+        notify(const LoginStateEvent(isSuccess: true));
+        _logger.i('AuthViewModel: Google 登入成功');
+      } else {
+        // 通知界面登入失敗
+        notify(const LoginStateEvent(error: 'Google 登入失敗'));
+        _logger.e('AuthViewModel: Google 登入失敗');
+      }
+    } catch (e) {
+      // 通知界面發生錯誤
+      String errorMessage = e.toString();
+      if (errorMessage.contains('Exception:')) {
+        errorMessage = errorMessage.split('Exception:').last.trim();
+      }
+      notify(LoginStateEvent(
+        isLoading: false,
+        isSuccess: false,
+        error: 'Google 登入錯誤: $errorMessage',
+      ));
+      _logger.e('AuthViewModel: Google 登入錯誤 - $errorMessage');
+    } finally {
+      // 確保加載狀態被重置
+      notify(const LoginStateEvent(isLoading: false));
+    }
   }
+
+  // Removed redundant notify method implementation.
+  // It's now inherited from EventViewModel.
 }

@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "427763680887-kle2covhspscbi0rtiraf1gcatnfhcpk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.volticar_app",
+            "certificate_hash": "14f1a93f8719be2ba36a772e98cbc7733fed0644"
+          }
+        },
+        {
           "client_id": "427763680887-jovfnu2oq53b9tgdv10ed4tadtd6pv81.apps.googleusercontent.com",
           "client_type": 3
         }
