@@ -20,7 +20,7 @@ class MapOverlay extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFF1F1638),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF5C4EB4), width: 5.5),
+              border: Border.all(color: const Color(0xFF5C4EB4), width: 4.5),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.5),
@@ -52,7 +52,7 @@ class MapOverlay extends StatelessWidget {
                   right: 10,
                   child: IconButton(
                     icon: const Icon(Icons.close,
-                        color: Color.fromARGB(255, 81, 3, 170), size: 30),
+                        color: Color(0xFF5C4EB4), size: 30),
                     onPressed: onClose,
                     tooltip: '關閉地圖',
                   ),

@@ -3,6 +3,8 @@ import 'package:flame/game.dart' hide Route; // Flame import - Hide Route
 import 'package:flame/components.dart'; // Flame import
 import 'package:flame/events.dart'; // Flame import
 import 'package:flame/palette.dart'; // Flame import
+import 'package:volticar_app/shared/maplist/carDetails.dart'; //導入車輛訊息MAP列表
+import 'package:volticar_app/shared/widgets/adaptive_component.dart'; //導入自適應點擊元件原型
 import '../../features/auth/viewmodels/auth_viewmodel.dart'; // 導入身份驗證視圖模型
 import '../../core/constants/app_colors.dart'; // Import AppColors
 import '../../shared/widgets/map_overlay.dart'; // Import the new map overlay widget
@@ -28,50 +30,6 @@ class _GarageViewState extends State<GarageView> {
     'Porsche Taycan',
   ];
 
-  // 車輛數據（簡單示例）
-  final List<Map<String, dynamic>> carDetails = [
-    {
-      'name': 'Tesla Model 3',
-      'image': 'assets/images/tesla_model_3.png', // Added prefix
-      'icon':
-          'assets/images/tesla_model_3.png', // Added prefix, TODO: Replace with actual icon path
-      'range': 450,
-      'power': 283,
-      'charging': 250,
-      'acceleration': 5.6,
-    },
-    {
-      'name': 'Nissan Leaf',
-      'image': 'assets/images/nissan_leaf.png', // Added prefix
-      'icon':
-          'assets/images/nissan_leaf.png', // Added prefix, TODO: Replace with actual icon path
-      'range': 270,
-      'power': 160,
-      'charging': 100,
-      'acceleration': 7.9,
-    },
-    {
-      'name': 'BMW i3',
-      'image': 'assets/images/bmw_i3.png', // Added prefix
-      'icon':
-          'assets/images/bmw_i3.png', // Added prefix, TODO: Replace with actual icon path
-      'range': 260,
-      'power': 170,
-      'charging': 50,
-      'acceleration': 7.2,
-    },
-    {
-      'name': 'Porsche Taycan',
-      'image': 'assets/images/porsche_taycan.png', // Added prefix
-      'icon':
-          'assets/images/porsche_taycan.png', // Added prefix, TODO: Replace with actual icon path
-      'range': 400,
-      'power': 560,
-      'charging': 270,
-      'acceleration': 3.2,
-    },
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -90,22 +48,21 @@ class _GarageViewState extends State<GarageView> {
           // Pass callbacks for info, map, and gas station buttons
           GameWidget(
               game: VoltiCarGame(
-            onInfoButtonPressed: () {
-              // Ensure we have the correct car details based on the current index
-              _showCarDetailsDialog(carDetails[selectedCarIndex]);
-            },
-            onMapButtonPressed:
-                _toggleMapVisibility, // Pass map toggle callback
-            onGasStationPressed: () {
-              // Pass navigation logic to the game
-              Navigator.pushNamed(context, '/charging');
-            },
-          )),
+                  onInfoButtonPressed: () {
+                    // Ensure we have the correct car details based on the current index
+                    _showCarDetailsDialog(carDetails[selectedCarIndex]);
+                  },
+                  onMapButtonPressed:
+                      _toggleMapVisibility, // Pass map toggle callback
+                  onGasStationPressed: () {
+                    // Pass navigation logic to the game
+                    Navigator.pushNamed(context, '/charging');
+                  },
+                  onCarPressed: () {})),
 
           // Status bar - REMOVED
-          // _buildStatusBar(),
 
-          // Add Positioned Logout Button
+          /*暫時停用-Logout Button
           // Positioned(
           //   top: 10, // Adjust top padding as needed
           //   right: 10, // Adjust right padding as needed
@@ -117,10 +74,7 @@ class _GarageViewState extends State<GarageView> {
           //     tooltip: '登出', // Optional: Add tooltip
           //   ),
           // ),
-
-          // Car display - Adjust position slightly higher
-
-          // Gas station image - REMOVED (Now handled by Flame game)
+          */
 
           // New Bottom Car Panel
           Align(
@@ -146,62 +100,11 @@ class _GarageViewState extends State<GarageView> {
     });
   }
 
-  /*暫時藤用 使用精靈代替
-  Re-added _buildPixelGarageBackground method (Made Adaptive)
-  Widget _buildPixelGarageBackground() {
-    // Get screen width for adaptive sizing
-    final screenWidth = MediaQuery.of(context).size.width;
+  // Remove _buildPixelGarageBackground method
 
-    // Wrap Image in a Container constrained by screen width
-    return Container(
-      width: screenWidth, // Set container width to screen width
-      alignment: Alignment.topCenter, // Keep alignment
-      child: Image.asset(
-        'assets/images/garage_bg.png',
-        fit: BoxFit.fill, // Fit the width of the container
-        // alignment: Alignment.topCenter, // Alignment is handled by the Container now
-      ),
-    );
-  }
-  */
   // Remove _buildStatusBar method
-  /*
-  Widget _buildStatusBar() {
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        height: 30,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        color: Colors.black.withOpacity(0.6),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              "9:30",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Row(
-              children: const [
-                Icon(Icons.signal_cellular_alt, color: Colors.white, size: 14),
-                SizedBox(width: 6),
-                Icon(Icons.wifi, color: Colors.white, size: 14),
-                SizedBox(width: 6),
-                Icon(Icons.battery_full, color: Colors.white, size: 14),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-  */
-  /*暫時停用 
+
+  /*暫時停用-電腦
   Widget _buildInteractiveElements() {
     // Keep only the computer button and adjust its position
     // Removed inner Positioned widget
@@ -216,57 +119,9 @@ class _GarageViewState extends State<GarageView> {
     );
   }
   */
-  /*暫時停用
-  Widget _buildInteractiveElement({
-    required IconData icon,
-    required Color color,
-    required String label,
-    double scale = 1.0,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 50 * scale,
-            height: 50 * scale,
-            decoration: BoxDecoration(
-              color: const Color(0xFF1F1638).withOpacity(0.7),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: color, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: color.withOpacity(0.4),
-                  blurRadius: 8,
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
-            child: Icon(icon, color: color, size: 24 * scale),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 12 * scale,
-              fontWeight: FontWeight.bold,
-              shadows: [
-                Shadow(
-                  color: Colors.black,
-                  offset: const Offset(1, 1),
-                  blurRadius: 2,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  */
+
+  // Remove _buildInteractiveElement method
+
   // Removed unused _buildCarSelector method
 
   // 新增底部車輛選擇面板
@@ -560,8 +415,7 @@ class _GarageViewState extends State<GarageView> {
     );
   }
 
-  /*暫時停用
-  // Re-add the logout handler method
+  /*暫時停用-Logout Button method
   Future<void> _handleLogout() async {
     await _authViewModel.logout();
     if (mounted) {
@@ -586,8 +440,11 @@ class VoltiCarGame extends FlameGame with HasGameRef {
   VoltiCarGame({
     this.onInfoButtonPressed,
     this.onMapButtonPressed,
-    this.onGasStationPressed, // Add gas station callback
+    this.onGasStationPressed,
+    required Null Function() onCarPressed, // Add gas station callback
   });
+
+  VoidCallback? get onCarPressed => null;
 
   // Override backgroundColor to make it transparent
   @override
@@ -702,78 +559,21 @@ class VoltiCarGame extends FlameGame with HasGameRef {
     }
 
     // --- Add Gas Station Component ---
-    final gasStation = GasStationComponent(
-      onPressed: onGasStationPressed,
-    )..priority = 2; // Layer 2: Interactive Elements
+    final gasStation = AdaptiveComponent(gameRef.size, 0.5, (250 / 230),
+        'gas.png', 0.8, 0.6, onGasStationPressed)
+      ..priority = 2; // Layer 2: Interactive Elements
     add(gasStation); // Add the gas station to the game
 
     // --- Add Car Component ---
-    final carComponent = CarComponent()
+    final carComponent = AdaptiveComponent(
+        gameRef.size, 0.55, (230 / 250), 'car.png', 0.5, 0.68, onCarPressed)
       ..priority = 2; // Layer 2: Interactive Elements
     add(carComponent); // Add the car to the game
   }
 }
 
-// --- New Car Component ---
-class CarComponent extends SpriteComponent with HasGameRef<VoltiCarGame> {
-  CarComponent() : super(anchor: Anchor.bottomCenter);
-
-  @override
-  Future<void> onLoad() async {
-    await super.onLoad();
-    sprite = await gameRef.loadSprite('car.png');
-
-    // Get screen size
-    final screenSize = gameRef.size;
-
-    // Calculate adaptive size and position
-    final carWidth = screenSize.x * 0.55; // Car width as 55% of screen width
-    final carHeight = carWidth * (230 / 250); // Maintain aspect ratio
-    size = Vector2(carWidth, carHeight);
-
-    // Position the car at the horizontal center and a dynamic position from the bottom
-    position = Vector2(
-      screenSize.x * 0.5,
-      screenSize.y * 0.68,
-    );
-  }
-}
-
-// --- New Gas Station Component ---
-class GasStationComponent extends SpriteComponent
-    with TapCallbacks, HasGameRef<VoltiCarGame> {
-  final VoidCallback? onPressed;
-
-  GasStationComponent({this.onPressed})
-      : super(anchor: Anchor.bottomRight); // Set size and anchor
-
-  @override
-  Future<void> onLoad() async {
-    await super.onLoad();
-    sprite = await gameRef.loadSprite('gas.png'); // Correct the sprite path
-
-    // Get screen size
-    final screenSize = gameRef.size;
-
-    // Calculate adaptive size and position
-    final gasStationWidth =
-        screenSize.x * 0.35; // Gas station width as 20% of screen width
-    final gasStationHeight =
-        gasStationWidth * (260 / 180); // Maintain aspect ratio
-    size = Vector2(gasStationWidth, gasStationHeight);
-
-    // Position the gas station at 10% from the right and a dynamic position from the bottom
-    position = Vector2(
-      screenSize.x * 1.02,
-      screenSize.y * 0.6,
-    );
-  }
-
-  @override
-  void onTapDown(TapDownEvent event) {
-    onPressed?.call(); // Execute the callback on tap
-  }
-}
+// --- Remove CarComponent ---
+// --- Remove GasStationComponent ---
 
 class ButtonComponent extends PositionComponent with TapCallbacks {
   ButtonComponent({
@@ -844,5 +644,3 @@ class ButtonComponent extends PositionComponent with TapCallbacks {
     onPressed?.call();
   }
 }
-
-// Removed MapPopup Flame component
