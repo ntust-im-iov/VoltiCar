@@ -34,11 +34,27 @@ jobs:
         run: flutter test
 
       - name: Notify Discord
-        if: always() # 無論成功或失敗都執行
+        if: always()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
-          status="${{ job.status }}"
+          STATUS="${{ job.status }}"
+          COLOR="16777215" # default: gray
+      
+          if [ "$STATUS" == "success" ]; then
+            COLOR="65280" # green
+          elif [ "$STATUS" == "failure" ]; then
+            COLOR="16711680" # red
+          fi
+      
           curl -H "Content-Type: application/json" \
-               -X POST \
-               -d "{\"content\": \"📢 Flutter CI 完成，狀態：${status}\"}" \
-               ${{ secrets.DISCORD_WEBHOOK_URL }}
+            -X POST \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"🚀 Flutter CI 執行結果：${STATUS}\",
+                \"description\": \"🔁 分支：\`${{ github.ref_name }}\`\n👤 作者：\`${{ github.actor }}\`\n🔗 [檢視 Workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\",
+                \"color\": ${COLOR}
+              }]
+            }" \
+            $DISCORD_WEBHOOK
 
