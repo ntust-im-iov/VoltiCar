@@ -43,18 +43,29 @@ jobs:
       
           if [ "$STATUS" == "success" ]; then
             COLOR="65280" # green
+            EMOJI="✅"
+            STRING="可以下班了"
           elif [ "$STATUS" == "failure" ]; then
             COLOR="16711680" # red
+            EMOJI="❌"
+            STRING="繼續加班"
+          else
+            EMOJI="⚠️"
+            STRING="繼續加班"
           fi
       
           curl -H "Content-Type: application/json" \
             -X POST \
             -d "{
               \"embeds\": [{
-                \"title\": \"🚀 Flutter CI 執行結果：${STATUS}\",
-                \"description\": \"🔁 分支：\`${{ github.ref_name }}\`\n👤 作者：\`${{ github.actor }}\`\n🔗 [檢視 Workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\",
+                \"title\": \"${EMOJI} Flutter CI 執行結果：**${STATUS}**\",
+                \"description\": \"\
+          🔁 **分支**：\`${{ github.ref_name }}\`\n\n\
+          👤 **作者**：\`${{ github.actor }}\`${STRING}\n\n\
+          🧪 **Workflow**：[點我查看執行情況](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\",
                 \"color\": ${COLOR}
               }]
             }" \
             $DISCORD_WEBHOOK
+
 
