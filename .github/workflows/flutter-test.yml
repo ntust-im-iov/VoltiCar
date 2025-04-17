@@ -30,7 +30,15 @@ jobs:
           name: flutter-analyze-report
           path: analyze_report.txt
 
-
       - name: Run tests
         run: flutter test
+
+      - name: Notify Discord
+        if: always() # 無論成功或失敗都執行
+        run: |
+          status="${{ job.status }}"
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d "{\"content\": \"📢 Flutter CI 完成，狀態：${status}\"}" \
+               ${{ secrets.DISCORD_WEBHOOK_URL }}
 
