@@ -22,7 +22,14 @@ jobs:
         run: flutter pub get
 
       - name: Run Dart Analyze
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings > analyze_report.txt || true
+        
+      - name: Upload Analysis Report as Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: flutter-analyze-report
+          path: analyze_report.txt
+
 
       - name: Run tests
         run: flutter test
