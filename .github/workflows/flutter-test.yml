@@ -25,7 +25,7 @@ jobs:
         run: flutter analyze --no-fatal-infos --no-fatal-warnings > analyze_report.txt || true
         
       - name: Upload Analysis Report as Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: flutter-analyze-report
           path: analyze_report.txt
