@@ -1,0 +1,71 @@
+name: Flutter Test (Self-hosted)
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    name: Run Flutter Tests on Self-Hosted
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Flutter
+        run: flutter --version
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Run Dart Analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings > analyze_report.txt || true
+        
+      - name: Upload Analysis Report as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-analyze-report
+          path: analyze_report.txt
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Notify Discord
+        if: always()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          STATUS="${{ job.status }}"
+          COLOR="16777215" # default: gray
+      
+          if [ "$STATUS" == "success" ]; then
+            COLOR="65280" # green
+            EMOJI="✅"
+            STRING="可以下班了"
+          elif [ "$STATUS" == "failure" ]; then
+            COLOR="16711680" # red
+            EMOJI="❌"
+            STRING="繼續加班"
+          else
+            EMOJI="⚠️"
+            STRING="繼續加班"
+          fi
+      
+          curl -H "Content-Type: application/json" \
+            -X POST \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"${EMOJI} Flutter CI 執行結果：**${STATUS}**\",
+                \"description\": \"\
+          🔁 **分支**：\`${{ github.ref_name }}\`\n\n\
+          👤 **作者**：\`${{ github.actor }}\`${STRING}\n\n\
+          🧪 **Workflow**：[點我查看執行情況](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\",
+                \"color\": ${COLOR}
+              }]
+            }" \
+            $DISCORD_WEBHOOK
+
+
