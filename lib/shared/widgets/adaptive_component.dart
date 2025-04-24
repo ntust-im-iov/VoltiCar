@@ -1,7 +1,7 @@
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
-import 'package:volticar_app/views/home/garage_view.dart';
+import 'package:volticar_app/features/home/views/garage_view.dart';
 
 class AdaptiveComponent extends SpriteComponent
     with TapCallbacks, HasGameRef<VoltiCarGame> {

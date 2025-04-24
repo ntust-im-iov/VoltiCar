@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
-import '../../core/constants/app_colors.dart';
+import 'package:volticar_app/core/constants/app_colors.dart';
 
 class ChargingView extends StatefulWidget {
   const ChargingView({super.key});

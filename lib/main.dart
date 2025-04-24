@@ -9,9 +9,9 @@ import 'features/auth/views/login_view.dart';
 import 'features/auth/views/register_view.dart';
 import 'features/auth/views/reset_password_view.dart';
 // import 'features/home/views/home_view.dart'; // No longer used for /home route
-import 'views/home/garage_view.dart'; // Import GarageView
-import 'views/home/charging_view.dart'; // Import ChargingView
-import 'views/home/my_car_view.dart'; // Import MyCarView
+import 'package:volticar_app/features/home/views/garage_view.dart'; // Import GarageView
+import 'package:volticar_app/features/home/views/charging_view.dart'; // Import ChargingView
+import 'package:volticar_app/features/home/views/my_car_view.dart'; // Import MyCarView
 
 void main() async {
   // 確保Flutter綁定初始化

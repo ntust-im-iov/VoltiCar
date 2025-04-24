@@ -5,9 +5,9 @@ import 'package:flame/events.dart'; // Flame import
 import 'package:flame/palette.dart'; // Flame import
 import 'package:volticar_app/shared/maplist/carDetails.dart'; //導入車輛訊息MAP列表
 import 'package:volticar_app/shared/widgets/adaptive_component.dart'; //導入自適應點擊元件原型
-import '../../features/auth/viewmodels/auth_viewmodel.dart'; // 導入身份驗證視圖模型
-import '../../core/constants/app_colors.dart'; // Import AppColors
-import '../../shared/widgets/map_overlay.dart'; // Import the new map overlay widget
+import 'package:volticar_app/features/auth/viewmodels/auth_viewmodel.dart'; // 導入身份驗證視圖模型
+import 'package:volticar_app/core/constants/app_colors.dart'; // Import AppColors
+import 'package:volticar_app/shared/widgets/map_overlay.dart'; // Import the new map overlay widget
 
 class GarageView extends StatefulWidget {
   const GarageView({super.key});
