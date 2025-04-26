@@ -45,9 +45,12 @@ class ResetPasswordStateEvent extends ViewEvent {
 
 // Inherit from EventViewModel to get observer pattern implementation
 class AuthViewModel extends EventViewModel {
-  final AuthRepository _authRepository = AuthRepository();
+  final AuthRepository _authRepository;
   final Logger _logger = Logger();
   User? _currentUser;
+
+  AuthViewModel({AuthRepository? authRepository}) 
+    : _authRepository = authRepository ?? AuthRepository();
 
   User? get currentUser => _currentUser;
 
@@ -68,11 +71,11 @@ class AuthViewModel extends EventViewModel {
       if (user != null) {
         _currentUser = user;
         // 通知界面登入成功
-        notify(const LoginStateEvent(isSuccess: true));
+        notify(const LoginStateEvent(isSuccess: true, isLoading: false));
         _logger.i('AuthViewModel: 登入成功');
       } else {
         // 通知界面登入失敗
-        notify(const LoginStateEvent(error: '用戶名或密碼錯誤'));
+        notify(const LoginStateEvent(error: '用戶名或密碼錯誤', isSuccess: false, isLoading: false));
         _logger.e('AuthViewModel: 登入失敗 - 用戶名或密碼錯誤');
       }
     } catch (e) {
@@ -92,7 +95,7 @@ class AuthViewModel extends EventViewModel {
       return; // 提前返回，不執行 finally 塊中的重置
     }
     // 只有在成功或一般錯誤時才重置加載狀態
-    notify(const LoginStateEvent(isLoading: false));
+    //notify(const LoginStateEvent(isLoading: false, isSuccess: true));
   }
 
   // 註冊方法
@@ -123,17 +126,15 @@ class AuthViewModel extends EventViewModel {
 
       if (user != null) {
         _currentUser = user;
-        notify(const RegisterStateEvent(isSuccess: true));
+        notify(const RegisterStateEvent(isSuccess: true, isLoading: false));
         _logger.i('AuthViewModel: 註冊成功');
       } else {
-        notify(const RegisterStateEvent(error: '註冊失敗'));
+        notify(const RegisterStateEvent(error: '註冊失敗', isSuccess: false, isLoading: false));
         _logger.e('AuthViewModel: 註冊失敗');
       }
     } catch (e) {
       notify(RegisterStateEvent(error: e.toString()));
       _logger.e('AuthViewModel: 註冊錯誤 - ${e.toString()}');
-    } finally {
-      notify(const RegisterStateEvent(isLoading: false));
     }
   }
 
@@ -153,17 +154,14 @@ class AuthViewModel extends EventViewModel {
 
       if (result) {
         // 通知界面重設成功
-        notify(const ResetPasswordStateEvent(isSuccess: true));
+        notify(const ResetPasswordStateEvent(isSuccess: true, isLoading: false));
       } else {
         // 通知界面重設失敗
-        notify(const ResetPasswordStateEvent(error: '重設密碼失敗'));
+        notify(const ResetPasswordStateEvent(error: '重設密碼失敗', isSuccess: false, isLoading: false));
       }
     } catch (e) {
       // 通知界面發生錯誤
       notify(ResetPasswordStateEvent(error: e.toString()));
-    } finally {
-      // Ensure loading state is reset
-      notify(const ResetPasswordStateEvent(isLoading: false));
     }
   }
 
