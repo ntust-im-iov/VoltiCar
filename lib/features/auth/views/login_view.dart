@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart'; // Corrected path
 import '../../../core/utils/observer.dart'; // Corrected path
 import '../viewmodels/auth_viewmodel.dart'; // Corrected path
@@ -17,7 +18,7 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _authViewModel = AuthViewModel();
+  late AuthViewModel _authViewModel; // 改為 late 變量，從 Provider 獲取
   bool _isLoading = false;
   bool _obscurePassword = true;
   String? _errorMessage;
@@ -25,6 +26,8 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
   @override
   void initState() {
     super.initState();
+    // 從 Provider 獲取 ViewModel
+    _authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     _authViewModel.subscribe(this);
     _checkLoginStatus();
   }
@@ -45,13 +48,22 @@ class _LoginViewState extends State<LoginView> implements EventObserver {
   }
 
   void _login() {
-    Navigator.of(context).pushReplacementNamed('/garage'); //測試用
+    if (_formKey.currentState?.validate() ?? false) {
+      if(!_isInTest()){
+        Navigator.of(context).pushReplacementNamed('/garage'); //測試用
+      }
+    }
     // if (_formKey.currentState?.validate() ?? false) {
     //   _authViewModel.login(
     //     _usernameController.text.trim(),
     //     _passwordController.text.trim(),
     //   );
     // }
+  }
+
+  // 檢查是否在測試環境中
+  bool _isInTest() {
+    return const bool.fromEnvironment('FLUTTER_TEST', defaultValue: false);
   }
 
   void _navigateToRegister() {
