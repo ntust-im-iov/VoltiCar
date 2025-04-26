@@ -4,7 +4,7 @@ name: Flutter Test (Self-hosted)
 
 on:
   push:
-    branches: ['feature/*']
+    branches: ['feature/*', 'develop', 'main']
   pull_request:
     branches: [main, develop]
 
