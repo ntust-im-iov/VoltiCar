@@ -1,9 +1,10 @@
 #測試一下
+#測試他會不會自動測試
 name: Flutter Test (Self-hosted)
 
 on:
   push:
-    branches: [main, develop]
+    branches: ['feature/*', 'develop', 'main']
   pull_request:
     branches: [main, develop]
 

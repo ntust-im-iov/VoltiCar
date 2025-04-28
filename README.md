@@ -4,6 +4,56 @@
 
 VoltiCar 是一個專注於電動車充電站管理的 Flutter 應用程式。這個應用程式幫助用戶輕鬆找到附近的充電站，並提供即時的充電站狀態資訊。本專案旨在解決電動車用戶在尋找充電站時遇到的困擾，提供一個直觀且實用的解決方案。
 
+## 專案結構
+
+專案採用分層架構設計，遵循 MVVM (Model-View-ViewModel) 模式：
+
+```
+├─core
+│  ├─constants
+│  ├─network
+│  └─utils
+├─features
+│  ├─auth(登入註冊功能)
+│  │  ├─models
+│  │  ├─repositories
+│  │  ├─services
+│  │  ├─viewmodels
+│  │  └─views
+│  └─home(主畫面功能)
+│      ├─models
+│      ├─repositories
+│      ├─services
+│      ├─viewmodels
+│      └─views
+└─shared(共享物件)
+    ├─maplist
+    └─widgets
+```
+
+### 目錄說明
+
+- **core/**: 核心功能模組
+  - **constants/**: 常數定義
+  - **network/**: 網絡相關功能
+  - **utils/**: 工具類和通用方法
+- **features/**: 功能模組
+  - **auth/**: 身份驗證模組 (登入、註冊功能)
+    - **models/**: 數據模型
+    - **repositories/**: 數據訪問層
+    - **services/**: 業務邏輯層
+    - **viewmodels/**: 視圖模型
+    - **views/**: UI 視圖
+  - **home/**: 主畫面功能模組
+    - **models/**: 數據模型
+    - **repositories/**: 數據訪問層
+    - **services/**: 業務邏輯層
+    - **viewmodels/**: 視圖模型
+    - **views/**: UI 視圖
+- **shared/**: 共享組件
+  - **maplist/**: 地圖列表相關功能
+  - **widgets/**: 可重用的 UI 組件
+
 ## 目前功能
 
 ### 已完成功能
