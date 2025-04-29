@@ -208,6 +208,12 @@ class AuthService {
           'email': email, // 改用 email 參數
           'password': password,
         },
+        options: Options(
+          contentType: 'application/x-www-form-urlencoded',
+          headers: {
+            'Accept': 'application/json',
+          },
+        ),
       );
 
       _logger.i('收到登入響應');
@@ -318,8 +324,8 @@ class AuthService {
 
       // 清除共享偏好設置中的登入狀態
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.remove('isLoggedIn');
-      await prefs.remove('userId');
+      await prefs.remove('is_logged_in');
+      await prefs.remove('user_id');
       _logger.i('已清除SharedPreferences中的登入狀態');
 
       // 清除安全存儲中的所有令牌
@@ -337,7 +343,10 @@ class AuthService {
   Future<bool> isLoggedIn() async {
     try {
       final token = await _secureStorage.read(key: 'access_token');
-      return token != null;
+      final prefs = await SharedPreferences.getInstance();
+      final isLoggedIn = prefs.getBool('is_logged_in') ?? false;
+
+      return token != null && isLoggedIn;
     } catch (e) {
       _logger.e('Check login status error: $e');
       return false;
@@ -359,7 +368,7 @@ class AuthService {
   Future<String?> getUserId() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      return prefs.getString('userId');
+      return prefs.getString('user_id');
     } catch (e) {
       _logger.e('獲取用戶ID時發生錯誤: $e');
       return null;
