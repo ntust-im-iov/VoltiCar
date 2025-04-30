@@ -384,9 +384,15 @@ class AuthService {
       final GoogleSignIn googleSignIn = GoogleSignIn(
         scopes: ['email', 'profile'],
       );
-
+      
       _logger.i('嘗試 Google 登入...');
-      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      GoogleSignInAccount? googleUser;
+      try {
+        googleUser = await googleSignIn.signIn();
+      } catch (e) {
+        _logger.e('Google 登入過程中發生錯誤: $e');
+        throw Exception('Google 登入過程中發生錯誤: $e');
+      }
 
       if (googleUser == null) {
         _logger.w('使用者取消了 Google 登入');
