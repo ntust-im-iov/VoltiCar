@@ -1,11 +1,26 @@
-import '../models/user_model.dart';
-import '../models/register_request.dart';
-import '../services/auth_service.dart';
 import 'package:logger/logger.dart';
+import 'package:volticar_app/features/auth/models/user_model.dart';
+import 'package:volticar_app/features/auth/models/register_request.dart';
+import 'package:volticar_app/features/auth/services/auth_service.dart';
 
 class AuthRepository {
   final AuthService _authService = AuthService();
   final Logger _logger = Logger();
+
+  // 發送郵件驗證
+  Future<void> sendEmailVerification(String email) async {
+    try {
+      _logger.i('Repository: 開始發送郵件驗證請求');
+      _logger.i('郵件地址: $email');
+      
+      await _authService.sendEmailVerification(email);
+      
+      _logger.i('Repository: 郵件驗證發送成功');
+    } catch (e) {
+      _logger.e('Repository: 發送郵件驗證失敗: $e');
+      rethrow;
+    }
+  }
 
   // 註冊
   Future<User?> register({

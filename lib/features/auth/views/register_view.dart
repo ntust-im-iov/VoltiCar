@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/utils/observer.dart';
-import '../viewmodels/auth_viewmodel.dart';
-import '../../../shared/widgets/custom_button.dart';
-import '../../../shared/widgets/custom_text_field.dart';
+import 'package:volticar_app/core/constants/app_colors.dart';
+import 'package:volticar_app/core/utils/observer.dart';
+import 'package:volticar_app/features/auth/viewmodels/auth_viewmodel.dart';
+import 'package:volticar_app/shared/widgets/custom_button.dart';
+import 'package:volticar_app/shared/widgets/custom_text_field.dart';
 
 class RegisterView extends StatefulWidget {
   const RegisterView({super.key});
@@ -91,6 +91,29 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
         .catchError((error) {});
   }
 
+  void _verifyEmail() {
+    if (_emailController.text.isEmpty) {
+      setState(() {
+        _errorMessage = '請先輸入電子郵件';
+      });
+      return;
+    }
+    
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(_emailController.text)) {
+      setState(() {
+        _errorMessage = '請輸入有效的電子郵件地址';
+      });
+      return;
+    }
+    
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    
+    _authViewModel.sendEmailVerification(_emailController.text.trim());
+  }
+
   @override
   void notify(ViewEvent event) {
     if (event is RegisterStateEvent) {
@@ -101,7 +124,7 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
 
       if (event.isSuccess && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('註冊成功，請前往信箱點擊驗證信件')),
+          const SnackBar(content: Text('註冊成功')),
         );
         Future.delayed(const Duration(seconds: 1), () {
           Navigator.of(context)
@@ -109,6 +132,17 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
               .then((_) {})
               .catchError((error) {});
         });
+      }
+    } else if (event is EmailVerificationEvent) {
+      setState(() {
+        _isLoading = event.isLoading;
+        _errorMessage = event.error;
+      });
+
+      if (event.isSuccess && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('驗證郵件已發送，請查收')),
+        );
       }
     }
   }
@@ -180,22 +214,38 @@ class _RegisterViewState extends State<RegisterView> implements EventObserver {
                   const SizedBox(height: 16),
 
                   // 電子郵件輸入框
-                  CustomTextField(
-                    controller: _emailController,
-                    hintText: '電子郵件',
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '請輸入電子郵件';
-                      }
-                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                          .hasMatch(value)) {
-                        return '請輸入有效的電子郵件地址';
-                      }
-                      return null;
-                    },
-                    suffixIcon: const Icon(Icons.email_outlined),
-                    textInputAction: TextInputAction.next,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CustomTextField(
+                          controller: _emailController,
+                          hintText: '電子郵件',
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return '請輸入電子郵件';
+                            }
+                            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                                .hasMatch(value)) {
+                              return '請輸入有效的電子郵件地址';
+                            }
+                            return null;
+                          },
+                          suffixIcon: const Icon(Icons.email_outlined),
+                          textInputAction: TextInputAction.next,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 90,
+                        child: CustomButton(
+                          text: '驗證',
+                          onPressed: _verifyEmail,
+                          isLoading: false,
+                          width: 90,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
 

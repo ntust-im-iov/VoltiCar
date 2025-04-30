@@ -62,19 +62,19 @@ class _GarageViewState extends State<GarageView> {
 
           // Status bar - REMOVED
 
-          /*暫時停用-Logout Button
-          // Positioned(
-          //   top: 10, // Adjust top padding as needed
-          //   right: 10, // Adjust right padding as needed
-          //   child: IconButton(
-          //     icon: const Icon(Icons.logout,
-          //         color: AppColors
-          //             .textPrimary), // Use AppColors if available or Colors.white
-          //     onPressed: _handleLogout,
-          //     tooltip: '登出', // Optional: Add tooltip
-          //   ),
-          // ),
-          */
+          //暫時停用-Logout Button
+          Positioned(
+            top: 50, // Adjust top padding as needed
+            right: 10, // Adjust right padding as needed
+            child: IconButton(
+              icon: const Icon(Icons.logout,
+                  color: Colors.white, // Use AppColors if available or Colors.white
+                    ), // Use AppColors if available or Colors.white
+              onPressed: _handleLogout,
+              tooltip: '登出', // Optional: Add tooltip
+            ),
+          ),
+          
 
           // New Bottom Car Panel
           Align(
@@ -415,7 +415,7 @@ class _GarageViewState extends State<GarageView> {
     );
   }
 
-  /*暫時停用-Logout Button method
+  //暫時停用-Logout Button method
   Future<void> _handleLogout() async {
     await _authViewModel.logout();
     if (mounted) {
@@ -424,7 +424,7 @@ class _GarageViewState extends State<GarageView> {
           .pushNamedAndRemoveUntil('/login', (Route<dynamic> route) => false);
     }
   }
-  */
+  
 }
 
 // Removed unused PixelFloorPainter class

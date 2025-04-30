@@ -1,8 +1,7 @@
-import '../../../core/utils/observer.dart';
-import '../repositories/auth_repository.dart';
-import '../models/user_model.dart';
 import 'package:logger/logger.dart';
-import 'package:flutter/foundation.dart';
+import 'package:volticar_app/core/utils/observer.dart';
+import 'package:volticar_app/features/auth/repositories/auth_repository.dart';
+import 'package:volticar_app/features/auth/models/user_model.dart';
 
 // 定義登入狀態事件
 class LoginStateEvent extends ViewEvent {
@@ -24,6 +23,19 @@ class RegisterStateEvent extends ViewEvent {
   final bool isSuccess;
 
   const RegisterStateEvent({
+    this.isLoading = false,
+    this.error,
+    this.isSuccess = false,
+  });
+}
+
+// 定義郵件驗證狀態事件
+class EmailVerificationEvent extends ViewEvent {
+  final bool isLoading;
+  final String? error;
+  final bool isSuccess;
+
+  const EmailVerificationEvent({
     this.isLoading = false,
     this.error,
     this.isSuccess = false,
@@ -53,6 +65,40 @@ class AuthViewModel extends EventViewModel {
     : _authRepository = authRepository ?? AuthRepository();
 
   User? get currentUser => _currentUser;
+
+  // 發送郵件驗證
+  Future<void> sendEmailVerification(String email) async {
+    try {
+      _logger.i('AuthViewModel: 開始發送郵件驗證');
+      // 通知界面開始加載
+      notify(const EmailVerificationEvent(isLoading: true));
+      _logger.i('AuthViewModel: 已通知界面開始加載');
+
+      _logger.i('AuthViewModel: 調用 AuthRepository.sendEmailVerification...');
+      _logger.i('AuthViewModel: 參數 - email: $email');
+      // 調用存儲庫進行郵件驗證
+      await _authRepository.sendEmailVerification(email);
+      _logger.i('AuthViewModel: AuthRepository.sendEmailVerification 調用完成');
+
+      // 通知界面發送成功
+      notify(const EmailVerificationEvent(isSuccess: true, isLoading: false));
+      _logger.i('AuthViewModel: 郵件驗證發送成功');
+    } catch (e) {
+      // 通知界面發生錯誤
+      String errorMessage = e.toString();
+      // 處理可能的異常信息，使其更友好
+      if (errorMessage.contains('Exception:')) {
+        errorMessage = errorMessage.split('Exception:').last.trim();
+      }
+      // 確保錯誤信息被正確傳遞到 UI
+      notify(EmailVerificationEvent(
+        isLoading: false,
+        isSuccess: false,
+        error: errorMessage,
+      ));
+      _logger.e('AuthViewModel: 郵件驗證發送錯誤 - $errorMessage');
+    }
+  }
 
   // 登入方法
   Future<void> login(String username, String password) async {

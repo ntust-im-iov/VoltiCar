@@ -1,13 +1,13 @@
+import 'package:dio/dio.dart';
+import 'package:logger/logger.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
-import 'package:google_sign_in/google_sign_in.dart';
-import '../models/user_model.dart';
-import 'package:logger/logger.dart';
-import 'package:dio/dio.dart';
-import '../models/register_request.dart';
-import '../../../core/constants/api_constants.dart';
-import '../../../core/network/api_client.dart';
+import 'package:volticar_app/features/auth/models/user_model.dart';
+import 'package:volticar_app/features/auth/models/register_request.dart';
+import 'package:volticar_app/core/constants/api_constants.dart';
+import 'package:volticar_app/core/network/api_client.dart';
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
@@ -23,26 +23,91 @@ class AuthService {
 
   AuthService._internal();
 
+  // 發送郵件驗證
+  Future<void> sendEmailVerification(String email) async {
+    try {
+      _logger.i('開始發送郵件驗證');
+      _logger.i('發送郵件驗證到: $email');
+
+      // 嘗試不同的請求格式
+      // 格式1: 直接使用 email 作為鍵值
+      final requestData = {
+        'email': email,
+      };
+      
+      _logger.i('發送請求數據: $requestData');
+
+      final response = await _apiClient.post(
+        ApiConstants.registerVerification,
+        data: requestData,
+        options: Options(
+          contentType: 'application/x-www-form-urlencoded',
+          headers: {
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      _logger.i('收到郵件驗證響應');
+      _logger.i('響應狀態碼: ${response.statusCode}');
+      _logger.i('響應數據: ${response.data}');
+
+      if (response.statusCode == 200) {
+        _logger.i('郵件驗證已發送');
+      } else {
+        _logger.e('郵件驗證發送失敗: ${response.statusCode}');
+        throw Exception('郵件驗證發送失敗: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      _logger.e('郵件驗證發送錯誤: ${e.type}');
+      _logger.e('錯誤響應: ${e.response?.data}');
+      _logger.e('錯誤消息: ${e.message}');
+      _logger.e('請求數據: ${e.requestOptions.data}'); // 記錄發送了什麼數據
+      _logger.e('請求 URL: ${e.requestOptions.uri}');
+      _logger.e('請求方法: ${e.requestOptions.method}');
+      _logger.e('請求標頭: ${e.requestOptions.headers}');
+      
+      // 檢查是否是缺少 email 字段的錯誤
+      if (e.response?.statusCode == 422 && 
+          e.response?.data != null &&
+          e.response!.data.toString().contains('field required')) {
+        throw Exception('請提供有效的電子郵件地址');
+      }
+      
+      throw Exception(e.response?.data['detail'] ?? '郵件驗證發送失敗');
+    } catch (e) {
+      _logger.e('未預期的錯誤: $e');
+      throw Exception('郵件驗證發送過程中發生錯誤');
+    }
+  }
+
   // 註冊新用戶
   Future<User> register(RegisterRequest request) async {
     try {
       _logger.i('開始註冊請求');
       _logger.i('請求數據: ${request.toJson()}');
 
-      // 先在 Firebase 創建用戶
+      /* 先在 Firebase 創建用戶
       final firebase_auth.UserCredential firebaseCredential =
           await _firebaseAuth.createUserWithEmailAndPassword(
         email: request.email,
         password: request.password,
       );
 
-      // 發送郵件驗證
+      // 發送郵件驗證(Firebase 驗證)
       await firebaseCredential.user?.sendEmailVerification();
       _logger.i('已發送驗證郵件到: ${request.email}');
-
+      */
+  
       final response = await _apiClient.post(
-        ApiConstants.register,
+        ApiConstants.completeRegister,
         data: request.toJson(),
+        options: Options(
+          contentType: 'application/x-www-form-urlencoded',
+          headers: {
+            'Accept': 'application/json',
+          },
+        ),
       );
 
       _logger.i('收到註冊響應');
@@ -50,7 +115,8 @@ class AuthService {
       _logger.i('響應數據: ${response.data}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // 創建用戶對象，使用請求數據和響應的 user_id
+        // 創建用戶對象，使用請求數據和響應的 user_id(api回應的 response body)
+        final accessToken = response.data['access_token'] as String? ?? '';
         final user = User(
           id: response.data['user_id'] as String? ?? '',
           username: request.username,
@@ -58,17 +124,17 @@ class AuthService {
           password: request.password,
           name: request.username, // 使用 username 作為默認名稱
           userUuid: response.data['user_id'] as String?,
-          token: response.data['token'] as String? ?? '',
-          isEmailVerified: false, // 新增郵件驗證狀態
+          token: accessToken,
+          // isEmailVerified: true, // 新增郵件驗證狀態(棄用 後端會自動驗證)
         );
 
         _logger.i('用戶對象創建成功: ${user.toJson()}');
 
         // 如果 API 返回 token，保存它
-        if (response.data['access_token'] != null) {
+        if (accessToken.isNotEmpty) {
           await _secureStorage.write(
             key: 'access_token',
-            value: response.data['access_token'],
+            value: accessToken,
           );
           _logger.i('訪問令牌已保存');
         }
@@ -82,9 +148,6 @@ class AuthService {
         _logger.e('註冊失敗: 狀態碼 ${response.statusCode}');
         throw Exception('註冊失敗: ${response.statusCode}');
       }
-    } on firebase_auth.FirebaseAuthException catch (e) {
-      _logger.e('Firebase 註冊錯誤: ${e.code}');
-      throw Exception(_getFirebaseErrorMessage(e.code));
     } on DioException catch (e) {
       _logger.e('註冊錯誤: ${e.type}');
       _logger.e('錯誤響應: ${e.response?.data}');
@@ -96,7 +159,7 @@ class AuthService {
     }
   }
 
-  // 檢查郵件是否已驗證
+  //檢查郵件是否已驗證(Firebase 驗證)
   Future<bool> isEmailVerified() async {
     final currentUser = _firebaseAuth.currentUser;
     if (currentUser != null) {
@@ -106,7 +169,7 @@ class AuthService {
     return false;
   }
 
-  // Firebase 錯誤訊息轉換
+  //Firebase 錯誤訊息轉換
   String _getFirebaseErrorMessage(String code) {
     switch (code) {
       case 'email-already-in-use':
@@ -131,6 +194,7 @@ class AuthService {
         return '操作失敗：$code';
     }
   }
+  
 
   Future<User?> login(String email, String password) async {
     try {
@@ -144,6 +208,12 @@ class AuthService {
           'email': email, // 改用 email 參數
           'password': password,
         },
+        options: Options(
+          contentType: 'application/x-www-form-urlencoded',
+          headers: {
+            'Accept': 'application/json',
+          },
+        ),
       );
 
       _logger.i('收到登入響應');
@@ -152,7 +222,7 @@ class AuthService {
 
       if (response.statusCode == 200) {
         try {
-          // 使用電子郵件進行 Firebase 驗證
+          /* 使用電子郵件進行 Firebase 驗證
           try {
             final firebaseCredential =
                 await _firebaseAuth.signInWithEmailAndPassword(
@@ -171,6 +241,7 @@ class AuthService {
             _logger.e('Firebase 登入錯誤: ${e.code}');
             throw Exception(_getFirebaseErrorMessage(e.code));
           }
+          */
 
           // 創建用戶對象
           final user = User(
@@ -184,7 +255,7 @@ class AuthService {
                 email.split('@')[0],
             userUuid: response.data['user_id'] ?? '',
             token: response.data['access_token'] ?? '',
-            isEmailVerified: true, // 已通過驗證才能登入
+            // isEmailVerified: true, // 已通過驗證才能登入(棄用 後端會自動驗證)
           );
 
           _logger.i('用戶對象創建成功: ${user.toJson()}');
@@ -253,8 +324,8 @@ class AuthService {
 
       // 清除共享偏好設置中的登入狀態
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.remove('isLoggedIn');
-      await prefs.remove('userId');
+      await prefs.remove('is_logged_in');
+      await prefs.remove('user_id');
       _logger.i('已清除SharedPreferences中的登入狀態');
 
       // 清除安全存儲中的所有令牌
@@ -272,7 +343,10 @@ class AuthService {
   Future<bool> isLoggedIn() async {
     try {
       final token = await _secureStorage.read(key: 'access_token');
-      return token != null;
+      final prefs = await SharedPreferences.getInstance();
+      final isLoggedIn = prefs.getBool('is_logged_in') ?? false;
+
+      return token != null && isLoggedIn;
     } catch (e) {
       _logger.e('Check login status error: $e');
       return false;
@@ -294,7 +368,7 @@ class AuthService {
   Future<String?> getUserId() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      return prefs.getString('userId');
+      return prefs.getString('user_id');
     } catch (e) {
       _logger.e('獲取用戶ID時發生錯誤: $e');
       return null;
@@ -310,9 +384,15 @@ class AuthService {
       final GoogleSignIn googleSignIn = GoogleSignIn(
         scopes: ['email', 'profile'],
       );
-
+      
       _logger.i('嘗試 Google 登入...');
-      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      GoogleSignInAccount? googleUser;
+      try {
+        googleUser = await googleSignIn.signIn();
+      } catch (e) {
+        _logger.e('Google 登入過程中發生錯誤: $e');
+        throw Exception('Google 登入過程中發生錯誤: $e');
+      }
 
       if (googleUser == null) {
         _logger.w('使用者取消了 Google 登入');
@@ -330,7 +410,7 @@ class AuthService {
       );
 
       _logger.i('使用 Firebase 進行身份驗證...');
-      final userCredential = await firebase_auth.FirebaseAuth.instance
+      final userCredential = await _firebaseAuth
           .signInWithCredential(credential);
 
       if (userCredential.user != null) {
