@@ -8,7 +8,6 @@ import 'features/auth/viewmodels/auth_viewmodel.dart';
 import 'features/auth/views/login_view.dart';
 import 'features/auth/views/register_view.dart';
 import 'features/auth/views/reset_password_view.dart';
-// import 'features/home/views/home_view.dart'; // No longer used for /home route
 import 'package:volticar_app/features/home/views/garage_view.dart'; // Import GarageView
 import 'package:volticar_app/features/home/views/charging_view.dart'; // Import ChargingView
 import 'package:volticar_app/features/home/views/my_car_view.dart'; // Import MyCarView
@@ -73,8 +72,7 @@ class MyApp extends StatelessWidget {
           '/register': (context) => const RegisterView(),
           '/reset-password': (context) => const ResetPasswordView(),
           '/home': (context) => const GarageView(), // Point /home to GarageView
-          '/garage': (context) =>
-              const GarageView(), // Keep /garage route pointing to GarageView
+          '/garage': (context) => const GarageView(), // Keep /garage route pointing to GarageView
           '/charging': (context) => const ChargingView(), // Add charging route
           '/mycar': (context) => const MyCarView(), // Add mycar route
         },

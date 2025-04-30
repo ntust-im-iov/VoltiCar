@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/utils/observer.dart';
-import '../viewmodels/auth_viewmodel.dart';
-import '../../../shared/widgets/custom_button.dart';
-import '../../../shared/widgets/custom_text_field.dart';
+import 'package:volticar_app/core/constants/app_colors.dart';
+import 'package:volticar_app/core/utils/observer.dart';
+import 'package:volticar_app/features/auth/viewmodels/auth_viewmodel.dart';
+import 'package:volticar_app/shared/widgets/custom_button.dart';
+import 'package:volticar_app/shared/widgets/custom_text_field.dart';
 
 class ResetPasswordView extends StatefulWidget {
   const ResetPasswordView({super.key});

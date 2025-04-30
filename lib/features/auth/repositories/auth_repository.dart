@@ -1,7 +1,7 @@
-import '../models/user_model.dart';
-import '../models/register_request.dart';
-import '../services/auth_service.dart';
 import 'package:logger/logger.dart';
+import 'package:volticar_app/features/auth/models/user_model.dart';
+import 'package:volticar_app/features/auth/models/register_request.dart';
+import 'package:volticar_app/features/auth/services/auth_service.dart';
 
 class AuthRepository {
   final AuthService _authService = AuthService();

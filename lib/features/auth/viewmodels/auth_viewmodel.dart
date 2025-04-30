@@ -1,8 +1,7 @@
-import '../../../core/utils/observer.dart';
-import '../repositories/auth_repository.dart';
-import '../models/user_model.dart';
 import 'package:logger/logger.dart';
-import 'package:flutter/foundation.dart';
+import 'package:volticar_app/core/utils/observer.dart';
+import 'package:volticar_app/features/auth/repositories/auth_repository.dart';
+import 'package:volticar_app/features/auth/models/user_model.dart';
 
 // 定義登入狀態事件
 class LoginStateEvent extends ViewEvent {

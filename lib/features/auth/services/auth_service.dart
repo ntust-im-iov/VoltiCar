@@ -1,13 +1,13 @@
+import 'package:dio/dio.dart';
+import 'package:logger/logger.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
-import 'package:google_sign_in/google_sign_in.dart';
-import '../models/user_model.dart';
-import 'package:logger/logger.dart';
-import 'package:dio/dio.dart';
-import '../models/register_request.dart';
-import '../../../core/constants/api_constants.dart';
-import '../../../core/network/api_client.dart';
+import 'package:volticar_app/features/auth/models/user_model.dart';
+import 'package:volticar_app/features/auth/models/register_request.dart';
+import 'package:volticar_app/core/constants/api_constants.dart';
+import 'package:volticar_app/core/network/api_client.dart';
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
