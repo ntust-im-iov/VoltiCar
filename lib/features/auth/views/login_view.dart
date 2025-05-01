@@ -94,10 +94,10 @@ class _LoginViewState extends State<LoginView> { // 繼承 State<LoginView>(負�
                       // 用戶名輸入框
                       CustomTextField(
                         controller: _usernameController, // 管理用戶名輸入框的狀態
-                        hintText: '用戶名', // 提示文字
+                        hintText: '電子信箱', // 提示文字
                         validator: (value) { // 驗證器
                           if (value == null || value.isEmpty) { // 如果 value 為 null 或空字串
-                            return '請輸入用戶名';
+                            return '請輸入電子信箱';
                           }
                           if (value.isNotEmpty && !authViewModel.isValidEmail(value)) {
                             return '無效的電子郵件格式';
