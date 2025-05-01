@@ -99,6 +99,9 @@ class _LoginViewState extends State<LoginView> { // 繼承 State<LoginView>(負�
                           if (value == null || value.isEmpty) { // 如果 value 為 null 或空字串
                             return '請輸入用戶名';
                           }
+                          if (value.isNotEmpty && !authViewModel.isValidEmail(value)) {
+                            return '無效的電子郵件格式';
+                          }
                           return null;
                         },
                         suffixIcon: const Icon(Icons.person_outline),
@@ -114,6 +117,9 @@ class _LoginViewState extends State<LoginView> { // 繼承 State<LoginView>(負�
                         validator: (value) { // 驗證器
                           if (value == null || value.isEmpty) {
                             return '請輸入密碼';
+                          }
+                          if (value.isNotEmpty && !authViewModel.isValidPassword(value)) {
+                            return '密碼長度至少為 8 個字符';
                           }
                           return null;
                         },

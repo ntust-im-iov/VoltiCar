@@ -58,6 +58,10 @@ class AuthViewModel extends ChangeNotifier {
     return emailRegex.hasMatch(email);
   }
 
+  bool isValidPassword(String password){
+    return password.length >= 8;
+  }
+
   // 發送郵件驗證
   Future<void> sendEmailVerification(String email) async {
     try {
@@ -94,24 +98,11 @@ class AuthViewModel extends ChangeNotifier {
     _loginError = null;
     notifyListeners();
 
-    if(!isValidEmail(username)){
-      _updateLoginState(
-        isLoading: false,
-        error: '無效的電子郵件格式',
-        isSuccess: false,
-      );
-      _isLoginLoading = false;
-      notifyListeners();
-      return;
-    }
-
     try {
       _logger.i('AuthViewModel: 開始登入流程');
       _updateLoginState(isLoading: true, error: null);
       _logger.i('AuthViewModel: 已通知界面開始加載');
 
-      _logger.i('AuthViewModel: 調用 AuthRepository.login...');
-      _logger.i('AuthViewModel: 參數 - username: $username');
       final user = await _authRepository.login(username, password);
       _logger.i('AuthViewModel: AuthRepository.login 調用完成');
 
@@ -119,13 +110,6 @@ class AuthViewModel extends ChangeNotifier {
         _currentUser = user;
         _updateLoginState(isLoading: false, isSuccess: true);
         _logger.i('AuthViewModel: 登入成功');
-      } else {
-        _updateLoginState(
-          isLoading: false,
-          error: '用戶名或密碼錯誤',
-          isSuccess: false,
-        );
-        _logger.e('AuthViewModel: 登入失敗 - 用戶名或密碼錯誤');
       }
     } catch (e) {
       String errorMessage = e.toString();
