@@ -53,6 +53,11 @@ class AuthViewModel extends ChangeNotifier {
   String? get resetPasswordError => _resetPasswordError;
   bool get isResetPasswordSuccess => _isResetPasswordSuccess;
 
+  bool isValidEmail(String email){
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    return emailRegex.hasMatch(email);
+  }
+
   // 發送郵件驗證
   Future<void> sendEmailVerification(String email) async {
     try {
@@ -83,6 +88,23 @@ class AuthViewModel extends ChangeNotifier {
 
   // 登入方法
   Future<void> login(String username, String password) async {
+    // 登入狀態初始化
+    _isLoginLoading = true;
+    _isLoginSuccess = false;
+    _loginError = null;
+    notifyListeners();
+
+    if(!isValidEmail(username)){
+      _updateLoginState(
+        isLoading: false,
+        error: '無效的電子郵件格式',
+        isSuccess: false,
+      );
+      _isLoginLoading = false;
+      notifyListeners();
+      return;
+    }
+
     try {
       _logger.i('AuthViewModel: 開始登入流程');
       _updateLoginState(isLoading: true, error: null);
