@@ -61,6 +61,16 @@ class AuthViewModel extends ChangeNotifier {
   bool isValidPassword(String password){
     return password.length >= 8;
   }
+  
+  // 自動清除登入錯誤訊息(5秒後)
+  void autoClearLoginError() {
+    Future.delayed(const Duration(seconds: 5), () {
+      if (_loginError != null) {
+        _loginError = null;
+        notifyListeners();
+      }
+    });
+  }
 
   // 發送郵件驗證
   Future<void> sendEmailVerification(String email) async {
@@ -110,6 +120,12 @@ class AuthViewModel extends ChangeNotifier {
         _currentUser = user;
         _updateLoginState(isLoading: false, isSuccess: true);
         _logger.i('AuthViewModel: 登入成功');
+      } else {
+        _updateLoginState(
+          isLoading: false,
+          error: '登入失敗',
+          isSuccess: false,
+        );
       }
     } catch (e) {
       String errorMessage = e.toString();
@@ -257,7 +273,10 @@ class AuthViewModel extends ChangeNotifier {
     bool? isSuccess,
   }) {
     if (isLoading != null) _isLoginLoading = isLoading;
-    if (error != null) _loginError = error;
+    if (error != null) {
+      _loginError = error;
+      autoClearLoginError(); // 自動在5秒後清除錯誤訊息
+    }
     if (isSuccess != null) _isLoginSuccess = isSuccess;
     notifyListeners();
   }

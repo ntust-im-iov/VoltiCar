@@ -42,6 +42,9 @@ class _LoginViewState extends State<LoginView> { // 繼承 State<LoginView>(負�
 
   void _login() {
     if (_formKey.currentState?.validate() ?? false) {
+      // 關閉鍵盤
+      FocusScope.of(context).unfocus();
+      
       final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
       authViewModel.login(
         _usernameController.text.trim(),
@@ -74,22 +77,26 @@ class _LoginViewState extends State<LoginView> { // 繼承 State<LoginView>(負�
         
         return Scaffold(
           backgroundColor: Colors.white,
-          body: SafeArea( // SafeArea 是 Flutter 提供的一個 widget，用於防止 UI 元素超出安全區域
+          body: SafeArea(
+            top: false, // 不在頂部使用安全區域，讓內容可以延伸到狀態欄
             child: Center( 
               child: SingleChildScrollView( // SingleChildScrollView 是 Flutter 提供的一個 widget，用於處理滾動事件
-                padding: const EdgeInsets.all(24.0),
+                padding: const EdgeInsets.symmetric(horizontal: 40.0),
                 child: Form(
                   key: _formKey, // 管理表單驗證
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min, // 使列僅佔用最少必要的空間
+                    mainAxisAlignment: MainAxisAlignment.start, // 從頂部開始
                     children: [
+                      const SizedBox(height: 30), // 為標題提供適當的頂部間距
+                      
                       // Logo
                       Image.asset(
                         'assets/images/volticar_title.png',
                         height: 80,
                         fit: BoxFit.contain,
                       ),
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 70),
 
                       // 用戶名輸入框
                       CustomTextField(
