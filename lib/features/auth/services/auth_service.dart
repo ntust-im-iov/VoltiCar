@@ -313,18 +313,31 @@ class AuthService {
         ),
       );
 
-      return response.statusCode == 200;
+      if (response.statusCode == 200) {
+        // 保存email到安全存儲，供後續步驟使用
+        await _secureStorage.write(key: 'reset_email', value: email);
+        _logger.i('已保存重設密碼使用的電子郵件: $email');
+        return true;
+      }
+      return false;
     } catch (e) {
       _logger.e('忘記密碼錯誤: $e');
       rethrow;
     }
   }
 
-  Future<bool> verifyResetPassword(String email, String optCode) async {
+  Future<bool> verifyResetOtp(String optCode) async {
     try {
+      // 從安全存儲中獲取之前保存的電子郵件
+      final email = await _secureStorage.read(key: 'reset_email');
+      if (email == null || email.isEmpty) {
+        _logger.e('找不到電子郵件，無法驗證重設密碼');
+        throw Exception('找不到電子郵件，請重新開始密碼重設流程');
+      }
+
       final response = await _apiClient.post(
-        ApiConstants.verifyResetPassword,
-        data: {'identifier': email, 'opt_code': optCode},
+        ApiConstants.verifyResetOtp,
+        data: {'identifier': email, 'otp_code': optCode},
         options: Options(
           contentType: 'application/x-www-form-urlencoded',
           headers: {
@@ -355,7 +368,7 @@ class AuthService {
     }
   }
 
-  Future<bool> resetPassword(String email, String newPassword,
+  Future<bool> resetPassword(String newPassword,
       {String? confirmationToken}) async {
     try {
       // 如果沒有提供令牌，則從安全存儲中獲取
