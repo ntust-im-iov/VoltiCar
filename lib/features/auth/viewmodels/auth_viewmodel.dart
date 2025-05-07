@@ -220,6 +220,17 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
+  // 重置重設密碼狀態
+  void resetPasswordState() {
+    _isResetPasswordLoading = false;
+    _resetPasswordError = null;
+    _isResetPasswordSuccess = false;
+    notifyListeners();
+    // 清除安全存儲中的數據
+    _authRepository.clearResetPasswordData();
+    _logger.i('重設密碼狀態和數據已重置');
+  }
+
   // 登出方法
   Future<void> logout() async {
     try {

@@ -123,6 +123,11 @@ class AuthRepository {
     return await _authService.resetPassword(newPassword);
   }
 
+  // 清除重設密碼相關數據
+  Future<void> clearResetPasswordData() async {
+    await _authService.clearResetPasswordData();
+  }
+
   // 取得用戶ID
   Future<String?> getUserId() async {
     return await _authService.getUserId();

@@ -397,15 +397,26 @@ class AuthService {
       );
 
       if (response.statusCode == 200) {
-        // 密碼重置成功後，刪除保存的令牌
-        await _secureStorage.delete(key: 'confirmation_token');
-        _logger.i('密碼重置成功，已刪除已使用的確認令牌');
+        // 密碼重置成功後，清除所有重設密碼相關的數據
+        await clearResetPasswordData();
+        _logger.i('密碼重置成功，已清除相關數據');
         return true;
       }
       return false;
     } catch (e) {
       _logger.e('重置密碼錯誤: $e');
       rethrow;
+    }
+  }
+
+  // 清除所有與重設密碼相關的存儲數據
+  Future<void> clearResetPasswordData() async {
+    try {
+      await _secureStorage.delete(key: 'confirmation_token');
+      await _secureStorage.delete(key: 'reset_email');
+      _logger.i('已清除所有重設密碼相關數據');
+    } catch (e) {
+      _logger.e('清除重設密碼數據時發生錯誤: $e');
     }
   }
 
