@@ -52,8 +52,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // Use Provider instead of ChangeNotifierProvider since AuthViewModel no longer extends ChangeNotifier
-        Provider(create: (_) => AuthViewModel()),
+        ChangeNotifierProvider(create: (_) => AuthViewModel()),
       ],
       child: MaterialApp(
         title: 'VoltiCar App',

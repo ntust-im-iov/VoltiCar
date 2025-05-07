@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:volticar_app/core/constants/app_colors.dart';
-import 'package:volticar_app/core/utils/observer.dart';
 import 'package:volticar_app/features/auth/viewmodels/auth_viewmodel.dart';
 import 'package:volticar_app/shared/widgets/custom_button.dart';
 import 'package:volticar_app/shared/widgets/custom_text_field.dart';
@@ -13,18 +12,14 @@ class ResetPasswordView extends StatefulWidget {
   State<ResetPasswordView> createState() => _ResetPasswordViewState();
 }
 
-class _ResetPasswordViewState extends State<ResetPasswordView>
-    implements EventObserver {
+class _ResetPasswordViewState extends State<ResetPasswordView> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _otpController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  String? _errorMessage;
-  late AuthViewModel _authViewModel;
 
   // 步驟控制
   int _currentStep = 0; // 0: 輸入電子郵件, 1: 輸入OTP, 2: 設置新密碼
@@ -32,8 +27,6 @@ class _ResetPasswordViewState extends State<ResetPasswordView>
   @override
   void initState() {
     super.initState();
-    _authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-    _authViewModel.subscribe(this);
   }
 
   @override
@@ -42,22 +35,17 @@ class _ResetPasswordViewState extends State<ResetPasswordView>
     _otpController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _authViewModel.unsubscribe(this);
     super.dispose();
   }
 
   void _sendOtp() {
     if (_emailController.text.isEmpty) {
-      setState(() {
-        _errorMessage = '請輸入電子郵件';
-      });
       return;
     }
 
     // 這裡模擬發送OTP的過程
     setState(() {
       _currentStep = 1;
-      _errorMessage = null;
     });
 
     // 顯示發送成功提示
@@ -68,42 +56,22 @@ class _ResetPasswordViewState extends State<ResetPasswordView>
 
   void _verifyOtp() {
     if (_otpController.text.isEmpty) {
-      setState(() {
-        _errorMessage = '請輸入驗證碼';
-      });
       return;
     }
 
     // 這裡模擬驗證OTP的過程
     setState(() {
       _currentStep = 2;
-      _errorMessage = null;
     });
   }
 
   void _resetPassword() {
     if (_formKey.currentState?.validate() ?? false) {
-      _authViewModel.resetPassword(
+      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+      authViewModel.resetPassword(
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
-    }
-  }
-
-  @override
-  void notify(ViewEvent event) {
-    if (event is ResetPasswordStateEvent) {
-      setState(() {
-        _isLoading = event.isLoading;
-        _errorMessage = event.error;
-      });
-
-      if (event.isSuccess && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('密碼重設成功，請使用新密碼登入')),
-        );
-        Navigator.of(context).pushReplacementNamed('/login');
-      }
     }
   }
 
@@ -127,11 +95,15 @@ class _ResetPasswordViewState extends State<ResetPasswordView>
           textInputAction: TextInputAction.done,
         ),
         const SizedBox(height: 24),
-        CustomButton(
-          text: '發送驗證碼',
-          onPressed: _sendOtp,
-          isLoading: _isLoading,
-          width: double.infinity,
+        Consumer<AuthViewModel>(
+          builder: (context, authViewModel, _) {
+            return CustomButton(
+              text: '發送驗證碼',
+              onPressed: _sendOtp,
+              isLoading: authViewModel.isResetPasswordLoading,
+              width: double.infinity,
+            );
+          }
         ),
       ],
     );
@@ -153,27 +125,31 @@ class _ResetPasswordViewState extends State<ResetPasswordView>
           textInputAction: TextInputAction.done,
         ),
         const SizedBox(height: 24),
-        Row(
-          children: [
-            Expanded(
-              child: CustomButton(
-                text: '重新發送',
-                onPressed: _sendOtp,
-                backgroundColor: Colors.white,
-                textColor: AppColors.secondaryColor,
-                width: double.infinity,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: CustomButton(
-                text: '驗證',
-                onPressed: _verifyOtp,
-                isLoading: _isLoading,
-                width: double.infinity,
-              ),
-            ),
-          ],
+        Consumer<AuthViewModel>(
+          builder: (context, authViewModel, _) {
+            return Row(
+              children: [
+                Expanded(
+                  child: CustomButton(
+                    text: '重新發送',
+                    onPressed: _sendOtp,
+                    backgroundColor: Colors.white,
+                    textColor: AppColors.secondaryColor,
+                    width: double.infinity,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: CustomButton(
+                    text: '驗證',
+                    onPressed: _verifyOtp,
+                    isLoading: authViewModel.isResetPasswordLoading,
+                    width: double.infinity,
+                  ),
+                ),
+              ],
+            );
+          }
         ),
       ],
     );
@@ -239,11 +215,15 @@ class _ResetPasswordViewState extends State<ResetPasswordView>
           onSubmitted: (_) => _resetPassword(),
         ),
         const SizedBox(height: 24),
-        CustomButton(
-          text: '重設密碼',
-          onPressed: _resetPassword,
-          isLoading: _isLoading,
-          width: double.infinity,
+        Consumer<AuthViewModel>(
+          builder: (context, authViewModel, _) {
+            return CustomButton(
+              text: '重設密碼',
+              onPressed: _resetPassword,
+              isLoading: authViewModel.isResetPasswordLoading,
+              width: double.infinity,
+            );
+          }
         ),
       ],
     );
@@ -264,76 +244,90 @@ class _ResetPasswordViewState extends State<ResetPasswordView>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.of(context).pushReplacementNamed('/login'),
-        ),
-        title: const Text(
-          '重設密碼',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Logo
-                  Image.asset('assets/images/volticar_title.png',
-                      height: 80, fit: BoxFit.contain),
-                  const SizedBox(height: 24),
-
-                  // 標題
-                  const Text(
-                    '重設密碼',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // 步驟進度顯示
-                  Row(
+    return Consumer<AuthViewModel>(
+      builder: (context, authViewModel, _) {
+        // 重設密碼成功時導航到登入頁面
+        if (authViewModel.isResetPasswordSuccess && mounted) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('密碼重設成功，請使用新密碼登入')),
+            );
+            Navigator.of(context).pushReplacementNamed('/login');
+          });
+        }
+        
+        return Scaffold(
+          backgroundColor: Colors.white,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.black),
+              onPressed: () => Navigator.of(context).pushReplacementNamed('/login'),
+            ),
+            title: const Text(
+              '重設密碼',
+              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            ),
+            centerTitle: true,
+          ),
+          body: SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildStepIndicator(0),
-                      _buildStepLine(0),
-                      _buildStepIndicator(1),
-                      _buildStepLine(1),
-                      _buildStepIndicator(2),
+                      // Logo
+                      Image.asset('assets/images/volticar_title.png',
+                          height: 80, fit: BoxFit.contain),
+                      const SizedBox(height: 24),
+
+                      // 標題
+                      const Text(
+                        '重設密碼',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryColor,
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+
+                      // 步驟進度顯示
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _buildStepIndicator(0),
+                          _buildStepLine(0),
+                          _buildStepIndicator(1),
+                          _buildStepLine(1),
+                          _buildStepIndicator(2),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
+
+                      // 錯誤信息
+                      if (authViewModel.resetPasswordError != null) ...[
+                        Text(
+                          authViewModel.resetPasswordError!,
+                          style: const TextStyle(color: AppColors.errorColor),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+
+                      // 當前步驟內容
+                      _getStepContent(),
                     ],
                   ),
-                  const SizedBox(height: 32),
-
-                  // 錯誤信息
-                  if (_errorMessage != null) ...[
-                    Text(
-                      _errorMessage!,
-                      style: const TextStyle(color: AppColors.errorColor),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  // 當前步驟內容
-                  _getStepContent(),
-                ],
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      }
     );
   }
 

@@ -8,6 +8,7 @@ import 'package:volticar_app/shared/widgets/adaptive_component.dart'; //導入�
 import 'package:volticar_app/features/auth/viewmodels/auth_viewmodel.dart'; // 導入身份驗證視圖模型
 import 'package:volticar_app/core/constants/app_colors.dart'; // Import AppColors
 import 'package:volticar_app/shared/widgets/map_overlay.dart'; // Import the new map overlay widget
+import 'package:provider/provider.dart'; // 導入 Provider
 
 class GarageView extends StatefulWidget {
   const GarageView({super.key});
@@ -19,9 +20,6 @@ class GarageView extends StatefulWidget {
 class _GarageViewState extends State<GarageView> {
   int selectedCarIndex = 0;
   bool _isMapVisible = false; // State variable to control map visibility
-  // 替換自訂用戶名變數為身份驗證視圖模型
-  final AuthViewModel _authViewModel =
-      AuthViewModel(); // Re-add AuthViewModel instance
 
   final List<String> cars = [
     'Tesla Model 3',
@@ -417,7 +415,8 @@ class _GarageViewState extends State<GarageView> {
 
   //暫時停用-Logout Button method
   Future<void> _handleLogout() async {
-    await _authViewModel.logout();
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    await authViewModel.logout();
     if (mounted) {
       // Navigate back to login and remove all previous routes
       Navigator.of(context)

@@ -33,6 +33,16 @@ class MockAuthRepository extends _i1.Mock implements _i2.AuthRepository {
   }
 
   @override
+  _i3.Future<void> sendEmailVerification(String? email) => (super.noSuchMethod(
+        Invocation.method(
+          #sendEmailVerification,
+          [email],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
+
+  @override
   _i3.Future<_i4.User?> register({
     required String? username,
     required String? email,
