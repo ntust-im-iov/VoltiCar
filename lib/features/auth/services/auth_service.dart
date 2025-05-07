@@ -34,7 +34,7 @@ class AuthService {
       final requestData = {
         'email': email,
       };
-      
+
       _logger.i('發送請求數據: $requestData');
 
       final response = await _apiClient.post(
@@ -66,14 +66,14 @@ class AuthService {
       _logger.e('請求 URL: ${e.requestOptions.uri}');
       _logger.e('請求方法: ${e.requestOptions.method}');
       _logger.e('請求標頭: ${e.requestOptions.headers}');
-      
+
       // 檢查是否是缺少 email 字段的錯誤
-      if (e.response?.statusCode == 422 && 
+      if (e.response?.statusCode == 422 &&
           e.response?.data != null &&
           e.response!.data.toString().contains('field required')) {
         throw Exception('請提供有效的電子郵件地址');
       }
-      
+
       throw Exception(e.response?.data['detail'] ?? '郵件驗證發送失敗');
     } catch (e) {
       _logger.e('未預期的錯誤: $e');
@@ -98,7 +98,7 @@ class AuthService {
       await firebaseCredential.user?.sendEmailVerification();
       _logger.i('已發送驗證郵件到: ${request.email}');
       */
-  
+
       final response = await _apiClient.post(
         ApiConstants.completeRegister,
         data: request.toJson(),
@@ -194,7 +194,6 @@ class AuthService {
         return '操作失敗：$code';
     }
   }
-  
 
   Future<User?> login(String email, String password) async {
     try {
@@ -301,19 +300,98 @@ class AuthService {
     }
   }
 
-  Future<bool> resetPassword(String email, String newPassword) async {
+  Future<bool> forgotPassword(String email) async {
     try {
       final response = await _apiClient.post(
-        '/auth/reset-password',
-        data: {
-          'email': email,
-          'new_password': newPassword,
-        },
+        ApiConstants.forgotPassword,
+        data: {'identifier': email},
+        options: Options(
+          contentType: 'application/x-www-form-urlencoded',
+          headers: {
+            'Accept': 'application/json',
+          },
+        ),
       );
 
       return response.statusCode == 200;
     } catch (e) {
-      _logger.e('Reset password error: $e');
+      _logger.e('忘記密碼錯誤: $e');
+      rethrow;
+    }
+  }
+
+  Future<bool> verifyResetPassword(String email, String optCode) async {
+    try {
+      final response = await _apiClient.post(
+        ApiConstants.verifyResetPassword,
+        data: {'identifier': email, 'opt_code': optCode},
+        options: Options(
+          contentType: 'application/x-www-form-urlencoded',
+          headers: {
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        // 儲存確認令牌到安全存儲
+        String confirmationToken = response.data['confirmation_token'] ?? '';
+        if (confirmationToken.isNotEmpty) {
+          _logger.i('收到確認令牌，正在儲存...');
+          await _secureStorage.write(
+            key: 'confirmation_token',
+            value: confirmationToken,
+          );
+          _logger.i('確認令牌已儲存');
+        } else {
+          _logger.w('未收到確認令牌或令牌為空');
+        }
+        return true;
+      }
+      return false;
+    } catch (e) {
+      _logger.e('驗證重置密碼錯誤: $e');
+      rethrow;
+    }
+  }
+
+  Future<bool> resetPassword(String email, String newPassword,
+      {String? confirmationToken}) async {
+    try {
+      // 如果沒有提供令牌，則從安全存儲中獲取
+      String token = confirmationToken ?? '';
+      if (token.isEmpty) {
+        _logger.i('從安全存儲中讀取確認令牌...');
+        token = await _secureStorage.read(key: 'confirmation_token') ?? '';
+        if (token.isEmpty) {
+          _logger.e('找不到確認令牌');
+          throw Exception('重置密碼失敗: 找不到確認令牌');
+        }
+      }
+
+      final response = await _apiClient.post(
+        ApiConstants.resetPassword,
+        data: {
+          'confirmation_token': token,
+          'new_password': newPassword,
+        },
+        options: Options(
+          contentType: 'application/x-www-form-urlencoded',
+          headers: {
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        // 密碼重置成功後，刪除保存的令牌
+        await _secureStorage.delete(key: 'confirmation_token');
+        _logger.i('密碼重置成功，已刪除已使用的確認令牌');
+        return true;
+      }
+      return false;
+    } catch (e) {
+      _logger.e('重置密碼錯誤: $e');
       rethrow;
     }
   }
@@ -384,7 +462,7 @@ class AuthService {
       final GoogleSignIn googleSignIn = GoogleSignIn(
         scopes: ['email', 'profile'],
       );
-      
+
       _logger.i('嘗試 Google 登入...');
       GoogleSignInAccount? googleUser;
       try {
@@ -410,8 +488,8 @@ class AuthService {
       );
 
       _logger.i('使用 Firebase 進行身份驗證...');
-      final userCredential = await _firebaseAuth
-          .signInWithCredential(credential);
+      final userCredential =
+          await _firebaseAuth.signInWithCredential(credential);
 
       if (userCredential.user != null) {
         _logger.i('Firebase 認證成功，用戶 ID: ${userCredential.user!.uid}');
