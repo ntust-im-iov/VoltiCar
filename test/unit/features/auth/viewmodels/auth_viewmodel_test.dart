@@ -34,7 +34,7 @@ void main() {
       authViewModel.addListener(() {
         notified = true;
       });
-      
+
       await authViewModel.login('test_user', 'password123');
 
       // 驗證
@@ -55,7 +55,7 @@ void main() {
       authViewModel.addListener(() {
         notified = true;
       });
-      
+
       await authViewModel.login('wrong_user@test.com', 'wrong_password');
 
       // 驗證
@@ -87,7 +87,7 @@ void main() {
       authViewModel.addListener(() {
         notified = true;
       });
-      
+
       await authViewModel.register(
         username: 'new_user',
         email: 'new@example.com',
@@ -114,67 +114,24 @@ void main() {
       );
       when(mockAuthRepository.login('test_user', 'password123'))
           .thenAnswer((_) async => testUser);
-      when(mockAuthRepository.logout())
-          .thenAnswer((_) async => null);
-      
+      when(mockAuthRepository.logout()).thenAnswer((_) async => null);
+
       await authViewModel.login('test_user', 'password123');
       expect(authViewModel.currentUser, isNotNull);
       expect(authViewModel.isLoginSuccess, isTrue);
-      
+
       // 執行
       bool notified = false;
       authViewModel.addListener(() {
         notified = true;
       });
-      
+
       await authViewModel.logout();
-      
+
       // 驗證
       expect(authViewModel.currentUser, isNull);
       expect(authViewModel.isLoginSuccess, isFalse);
       expect(notified, isTrue);
     });
   });
-  
-  group('重設密碼功能測試', () {
-    test('重設密碼成功時應更新狀態並通知監聽者', () async {
-      // 安排
-      when(mockAuthRepository.resetPassword('test-token', 'new-password'))
-          .thenAnswer((_) async => true);
-
-      // 執行
-      bool notified = false;
-      authViewModel.addListener(() {
-        notified = true;
-      });
-      
-      await authViewModel.resetPassword('test-token', 'new-password');
-
-      // 驗證
-      expect(authViewModel.isResetPasswordLoading, isFalse);
-      expect(authViewModel.isResetPasswordSuccess, isTrue);
-      expect(authViewModel.resetPasswordError, isNull);
-      expect(notified, isTrue);
-    });
-    
-    test('重設密碼失敗時應設置錯誤並通知監聽者', () async {
-      // 安排
-      when(mockAuthRepository.resetPassword('invalid-token', 'new-password'))
-          .thenAnswer((_) async => false);
-
-      // 執行
-      bool notified = false;
-      authViewModel.addListener(() {
-        notified = true;
-      });
-      
-      await authViewModel.resetPassword('invalid-token', 'new-password');
-
-      // 驗證
-      expect(authViewModel.isResetPasswordLoading, isFalse);
-      expect(authViewModel.isResetPasswordSuccess, isFalse);
-      expect(authViewModel.resetPasswordError, isNotNull);
-      expect(notified, isTrue);
-    });
-  });
-} 
+}

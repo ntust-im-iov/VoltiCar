@@ -28,8 +28,8 @@ class AuthViewModel extends ChangeNotifier {
   String? _resetPasswordError;
   bool _isResetPasswordSuccess = false;
 
-  AuthViewModel({AuthRepository? authRepository}) 
-    : _authRepository = authRepository ?? AuthRepository();
+  AuthViewModel({AuthRepository? authRepository})
+      : _authRepository = authRepository ?? AuthRepository();
 
   User? get currentUser => _currentUser;
 
@@ -53,15 +53,15 @@ class AuthViewModel extends ChangeNotifier {
   String? get resetPasswordError => _resetPasswordError;
   bool get isResetPasswordSuccess => _isResetPasswordSuccess;
 
-  bool isValidEmail(String email){
+  bool isValidEmail(String email) {
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     return emailRegex.hasMatch(email);
   }
 
-  bool isValidPassword(String password){
+  bool isValidPassword(String password) {
     return password.length >= 8;
   }
-  
+
   // 自動清除登入錯誤訊息(5秒後)
   void autoClearLoginError() {
     Future.delayed(const Duration(seconds: 5), () {
@@ -188,11 +188,19 @@ class AuthViewModel extends ChangeNotifier {
     return await _authRepository.isLoggedIn();
   }
 
+  Future<bool> forgotPassword(String email) async {
+    return await _authRepository.forgotPassword(email);
+  }
+
+  Future<bool> verifyResetOtp(String optCode) async {
+    return await _authRepository.verifyResetOtp(optCode);
+  }
+
   // 重設密碼方法
-  Future<void> resetPassword(String token, String newPassword) async {
+  Future<void> resetPassword(String newPassword) async {
     try {
       _updateResetPasswordState(isLoading: true, error: null);
-      final result = await _authRepository.resetPassword(token, newPassword);
+      final result = await _authRepository.resetPassword(newPassword);
 
       if (result) {
         _updateResetPasswordState(isLoading: false, isSuccess: true);
@@ -210,6 +218,17 @@ class AuthViewModel extends ChangeNotifier {
         isSuccess: false,
       );
     }
+  }
+
+  // 重置重設密碼狀態
+  void resetPasswordState() {
+    _isResetPasswordLoading = false;
+    _resetPasswordError = null;
+    _isResetPasswordSuccess = false;
+    notifyListeners();
+    // 清除安全存儲中的數據
+    _authRepository.clearResetPasswordData();
+    _logger.i('重設密碼狀態和數據已重置');
   }
 
   // 登出方法

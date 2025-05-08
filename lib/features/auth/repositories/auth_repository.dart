@@ -12,9 +12,9 @@ class AuthRepository {
     try {
       _logger.i('Repository: 開始發送郵件驗證請求');
       _logger.i('郵件地址: $email');
-      
+
       await _authService.sendEmailVerification(email);
-      
+
       _logger.i('Repository: 郵件驗證發送成功');
     } catch (e) {
       _logger.e('Repository: 發送郵件驗證失敗: $e');
@@ -109,8 +109,23 @@ class AuthRepository {
   }
 
   // 重設密碼
-  Future<bool> resetPassword(String token, String newPassword) async {
-    return await _authService.resetPassword(token, newPassword);
+  Future<bool> forgotPassword(String email) async {
+    return await _authService.forgotPassword(email);
+  }
+
+  // 驗證重設密碼
+  Future<bool> verifyResetOtp(String optCode) async {
+    return await _authService.verifyResetOtp(optCode);
+  }
+
+  // 重設密碼
+  Future<bool> resetPassword(String newPassword) async {
+    return await _authService.resetPassword(newPassword);
+  }
+
+  // 清除重設密碼相關數據
+  Future<void> clearResetPasswordData() async {
+    await _authService.clearResetPasswordData();
   }
 
   // 取得用戶ID
