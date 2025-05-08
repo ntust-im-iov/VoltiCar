@@ -1,16 +1,15 @@
-name: Block Feature PR to Main
+name: Enforce Feature PR Rules
 
 on:
   pull_request:
-    branches: [main]
 
 jobs:
   block-feature-to-main:
-    name: Block feature/* -> main PR
+    name: Validate feature/* pull request target
     runs-on: self-hosted
 
     steps:
-      - name: Check source and target branches
+      - name: Check feature/* must target develop
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
@@ -22,14 +21,14 @@ jobs:
           echo "來源分支: $HEAD_REF"
           echo "目標分支: $BASE_REF"
 
-          if [[ "$HEAD_REF" =~ ^feature/ && "$BASE_REF" == "main" ]]; then
+          if [[ "$HEAD_REF" =~ ^feature/ && "$BASE_REF" != "develop" ]]; then
             echo "❌ 違規合併！正在發送 Discord 通知..."
 
             curl -H "Content-Type: application/json" \
               -X POST \
               -d "{
                 \"embeds\": [{
-                  \"title\": \"❌ 違規合併阻擋：feature/* → main\",
+                  \"title\": \"❌ 違規合併阻擋：feature/* → $BASE_REF\",
                   \"description\": \"\
                   🔁 **來源分支**：\`$HEAD_REF\`\n\
                   📥 **目標分支**：\`$BASE_REF\`\n\
