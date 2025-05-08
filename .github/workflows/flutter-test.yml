@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: [main, develop]
 
-
 jobs:
   block-feature-to-main:
     name: Block feature/* -> main PR
