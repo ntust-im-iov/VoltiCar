@@ -170,21 +170,41 @@ class MockAuthViewModel extends _i1.Mock implements _i2.AuthViewModel {
       ) as _i3.Future<bool>);
 
   @override
-  _i3.Future<void> resetPassword(
-    String? token,
-    String? newPassword,
-  ) =>
-      (super.noSuchMethod(
+  _i3.Future<bool> forgotPassword(String? email) => (super.noSuchMethod(
+        Invocation.method(
+          #forgotPassword,
+          [email],
+        ),
+        returnValue: _i3.Future<bool>.value(false),
+      ) as _i3.Future<bool>);
+
+  @override
+  _i3.Future<bool> verifyResetOtp(String? optCode) => (super.noSuchMethod(
+        Invocation.method(
+          #verifyResetOtp,
+          [optCode],
+        ),
+        returnValue: _i3.Future<bool>.value(false),
+      ) as _i3.Future<bool>);
+
+  @override
+  _i3.Future<void> resetPassword(String? newPassword) => (super.noSuchMethod(
         Invocation.method(
           #resetPassword,
-          [
-            token,
-            newPassword,
-          ],
+          [newPassword],
         ),
         returnValue: _i3.Future<void>.value(),
         returnValueForMissingStub: _i3.Future<void>.value(),
       ) as _i3.Future<void>);
+
+  @override
+  void resetPasswordState() => super.noSuchMethod(
+        Invocation.method(
+          #resetPasswordState,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
 
   @override
   _i3.Future<void> logout() => (super.noSuchMethod(

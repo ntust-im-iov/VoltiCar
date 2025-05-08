@@ -106,20 +106,41 @@ class MockAuthRepository extends _i1.Mock implements _i2.AuthRepository {
       ) as _i3.Future<bool>);
 
   @override
-  _i3.Future<bool> resetPassword(
-    String? token,
-    String? newPassword,
-  ) =>
-      (super.noSuchMethod(
+  _i3.Future<bool> forgotPassword(String? email) => (super.noSuchMethod(
         Invocation.method(
-          #resetPassword,
-          [
-            token,
-            newPassword,
-          ],
+          #forgotPassword,
+          [email],
         ),
         returnValue: _i3.Future<bool>.value(false),
       ) as _i3.Future<bool>);
+
+  @override
+  _i3.Future<bool> verifyResetOtp(String? optCode) => (super.noSuchMethod(
+        Invocation.method(
+          #verifyResetOtp,
+          [optCode],
+        ),
+        returnValue: _i3.Future<bool>.value(false),
+      ) as _i3.Future<bool>);
+
+  @override
+  _i3.Future<bool> resetPassword(String? newPassword) => (super.noSuchMethod(
+        Invocation.method(
+          #resetPassword,
+          [newPassword],
+        ),
+        returnValue: _i3.Future<bool>.value(false),
+      ) as _i3.Future<bool>);
+
+  @override
+  _i3.Future<void> clearResetPasswordData() => (super.noSuchMethod(
+        Invocation.method(
+          #clearResetPasswordData,
+          [],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
 
   @override
   _i3.Future<String?> getUserId() => (super.noSuchMethod(
