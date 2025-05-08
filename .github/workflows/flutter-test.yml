@@ -1,5 +1,3 @@
-#測試一下
-#測試他會不會自動測試
 name: Flutter Test (Self-hosted)
 
 on:
@@ -8,8 +6,48 @@ on:
   pull_request:
     branches: [main, develop]
 
+
 jobs:
+  block-feature-to-main:
+    name: Block feature/* -> main PR
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Check source and target branches
+        run: |
+          echo "🔍 檢查是否為不允許的合併路徑..."
+
+          HEAD_REF="${{ github.head_ref }}"
+          BASE_REF="${{ github.base_ref }}"
+
+          echo "來源分支: $HEAD_REF"
+          echo "目標分支: $BASE_REF"
+
+          if [[ "$HEAD_REF" =~ ^feature/ && "$BASE_REF" == "main" ]]; then
+            echo "❌ 違規合併！正在發送 Discord 通知..."
+
+            curl -H "Content-Type: application/json" \
+              -X POST \
+              -d "{
+                \"embeds\": [{
+                  \"title\": \"❌ 違規合併阻擋：feature/* → main\",
+                  \"description\": \"\
+                  🔁 **來源分支**：\`$HEAD_REF\`\n\
+                  📥 **目標分支**：\`$BASE_REF\`\n\
+                  👤 **作者**：\`${{ github.actor }}\`\n\n\
+                  🚫 此路徑不允許合併！請改合併至 \`develop\` 分支。\n\
+                  🔗 [查看 PR 詳情](${{ github.event.pull_request.html_url }})\",
+                  \"color\": 16711680
+                }]
+              }" \
+              $DISCORD_WEBHOOK
+
+            exit 1
+          else
+            echo "✅ 合併路徑合法"
+          fi
   test:
+    needs: block-feature-to-main
     name: Run Flutter Tests on Self-Hosted
     runs-on: self-hosted
 
