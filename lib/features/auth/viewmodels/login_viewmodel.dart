@@ -115,6 +115,11 @@ class LoginViewModel extends ChangeNotifier {
     }
   }
 
+  // 檢查登入狀態
+  Future<bool> checkLoginStatus() async {
+    return await _loginRepository.isLoggedIn();
+  }
+
   // 更新登入狀態
   void _updateLoginState({
     bool? isLoading,
@@ -128,5 +133,27 @@ class LoginViewModel extends ChangeNotifier {
     }
     if (isSuccess != null) _isLoginSuccess = isSuccess;
     notifyListeners();
+  }
+
+  // 登出方法
+  Future<void> logout() async {
+    try {
+      _logger.i('AuthViewModel: 開始登出流程');
+      await _loginRepository.logout();
+      _currentUser = null;
+      // 重置登入成功狀態，避免在導航到登入頁面後自動重導向回車庫頁面
+      _updateLoginState(isSuccess: false);
+      _logger.i('AuthViewModel: 登出成功');
+    } catch (e) {
+      _logger.e('AuthViewModel: 登出過程中發生錯誤 - $e');
+      _currentUser = null;
+      // 即使發生錯誤也要重置登入和註冊成功狀態
+      _updateLoginState(isSuccess: false);
+    }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 }
