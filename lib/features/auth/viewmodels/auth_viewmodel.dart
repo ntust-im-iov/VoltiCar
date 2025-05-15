@@ -62,11 +62,15 @@ class AuthViewModel extends ChangeNotifier {
     return password.length >= 8;
   }
 
-  // 自動清除登入錯誤訊息(5秒後)
-  void autoClearLoginError() {
-    Future.delayed(const Duration(seconds: 5), () {
-      if (_loginError != null) {
+  // 自動清除錯誤訊息(3秒後)
+  void autoClearError() {
+    Future.delayed(const Duration(seconds: 3), () {
+      if (_loginError != null ||
+          _registerError != null ||
+          _emailVerificationError != null) {
         _loginError = null;
+        _registerError = null;
+        _emailVerificationError = null;
         notifyListeners();
       }
     });
@@ -174,12 +178,16 @@ class AuthViewModel extends ChangeNotifier {
         _logger.e('AuthViewModel: 註冊失敗');
       }
     } catch (e) {
+      String errorMessage = e.toString();
+      if (errorMessage.contains('Exception:')) {
+        errorMessage = errorMessage.split('Exception:').last.trim();
+      }
       _updateRegisterState(
         isLoading: false,
-        error: e.toString(),
+        error: errorMessage,
         isSuccess: false,
       );
-      _logger.e('AuthViewModel: 註冊錯誤 - ${e.toString()}');
+      _logger.e('AuthViewModel: 註冊錯誤 - $errorMessage');
     }
   }
 
@@ -212,9 +220,13 @@ class AuthViewModel extends ChangeNotifier {
         );
       }
     } catch (e) {
+      String errorMessage = e.toString();
+      if (errorMessage.contains('Exception:')) {
+        errorMessage = errorMessage.split('Exception:').last.trim();
+      }
       _updateResetPasswordState(
         isLoading: false,
-        error: e.toString(),
+        error: errorMessage,
         isSuccess: false,
       );
     }
@@ -239,12 +251,18 @@ class AuthViewModel extends ChangeNotifier {
       _currentUser = null;
       // 重置登入成功狀態，避免在導航到登入頁面後自動重導向回車庫頁面
       _updateLoginState(isSuccess: false);
+      // 同時重置註冊成功狀態，避免在導航到註冊頁面後自動重導向回登入頁面
+      _updateRegisterState(isSuccess: false);
+      // 重置郵件驗證狀態
+      _updateEmailVerificationState(isSuccess: false);
       _logger.i('AuthViewModel: 登出成功');
     } catch (e) {
       _logger.e('AuthViewModel: 登出過程中發生錯誤 - $e');
       _currentUser = null;
-      // 即使發生錯誤也要重置登入成功狀態
+      // 即使發生錯誤也要重置登入和註冊成功狀態
       _updateLoginState(isSuccess: false);
+      _updateRegisterState(isSuccess: false);
+      _updateEmailVerificationState(isSuccess: false);
     }
   }
 
@@ -294,7 +312,7 @@ class AuthViewModel extends ChangeNotifier {
     if (isLoading != null) _isLoginLoading = isLoading;
     if (error != null) {
       _loginError = error;
-      autoClearLoginError(); // 自動在5秒後清除錯誤訊息
+      autoClearError(); // 自動在5秒後清除錯誤訊息
     }
     if (isSuccess != null) _isLoginSuccess = isSuccess;
     notifyListeners();
@@ -307,7 +325,11 @@ class AuthViewModel extends ChangeNotifier {
     bool? isSuccess,
   }) {
     if (isLoading != null) _isRegisterLoading = isLoading;
-    if (error != null) _registerError = error;
+    if (error != null) {
+      _registerError = error;
+      autoClearError(); // 自動在5秒後清除錯誤訊息
+    }
+
     if (isSuccess != null) _isRegisterSuccess = isSuccess;
     notifyListeners();
   }
@@ -319,7 +341,10 @@ class AuthViewModel extends ChangeNotifier {
     bool? isSuccess,
   }) {
     if (isLoading != null) _isEmailVerificationLoading = isLoading;
-    if (error != null) _emailVerificationError = error;
+    if (error != null) {
+      _emailVerificationError = error;
+      autoClearError(); // 自動清除錯誤訊息
+    }
     if (isSuccess != null) _isEmailVerificationSuccess = isSuccess;
     notifyListeners();
   }
