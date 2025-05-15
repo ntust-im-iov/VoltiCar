@@ -105,9 +105,9 @@ class MockAuthViewModel extends _i1.Mock implements _i2.AuthViewModel {
       ) as bool);
 
   @override
-  void autoClearLoginError() => super.noSuchMethod(
+  void autoClearError() => super.noSuchMethod(
         Invocation.method(
-          #autoClearLoginError,
+          #autoClearError,
           [],
         ),
         returnValueForMissingStub: null,
