@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:animations/animations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
@@ -78,16 +79,90 @@ class MyApp extends StatelessWidget {
           fontFamily: 'Inter',
         ),
         initialRoute: '/login',
-        routes: {
-          '/login': (context) => const LoginView(),
-          '/register': (context) => const RegisterView(),
-          '/reset-password': (context) => const ResetPasswordView(),
-          '/home': (context) => const GarageView(),
-          '/garage': (context) => const GarageView(),
-          '/charging': (context) => const ChargingView(),
-          '/mycar': (context) => const MyCarView(),
-          '/setup': (context) => const SetupView(), // Added from feature/game
-          '/game': (context) => const GameView(),   // Added from feature/game
+        onGenerateRoute: (RouteSettings settings) {
+          print('Generating route: ${settings.name}'); // 方便調試
+
+          WidgetBuilder builder; // 用於構建頁面的 Widget
+
+          switch (settings.name) {
+            case '/login':
+              return PageRouteBuilder(
+                settings: settings, // 傳遞路由設定
+                pageBuilder: (context, animation, secondaryAnimation) => const LoginView(),
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  return SharedAxisTransition(
+                    animation: animation,
+                    secondaryAnimation: secondaryAnimation,
+                    transitionType: SharedAxisTransitionType.horizontal,
+                    //transitionType: SharedAxisTransitionType.scaled,
+                    //fillColor: Colors.transparent,
+                    child: child,
+                  );
+                },
+                transitionDuration: const Duration(milliseconds: 400),
+              );
+
+            case '/register': // 自訂 /register 的過場動畫
+              return PageRouteBuilder(
+                settings: settings, // 傳遞路由設定
+                pageBuilder: (context, animation, secondaryAnimation) => const RegisterView(),
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  return SharedAxisTransition(
+                    animation: animation,
+                    secondaryAnimation: secondaryAnimation,
+                    transitionType: SharedAxisTransitionType.horizontal,
+                    //transitionType: SharedAxisTransitionType.scaled,
+                    //fillColor: Colors.transparent,
+                    child: child,
+                  );
+                },
+                transitionDuration: const Duration(milliseconds: 400),
+              );
+
+            case '/reset-password':
+              return PageRouteBuilder(
+                settings: settings, // 傳遞路由設定
+                pageBuilder: (context, animation, secondaryAnimation) => const ResetPasswordView(),
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  return SharedAxisTransition(
+                    animation: animation,
+                    secondaryAnimation: secondaryAnimation,
+                    transitionType: SharedAxisTransitionType.horizontal,
+                    //transitionType: SharedAxisTransitionType.scaled,
+                    //fillColor: Colors.transparent,
+                    child: child,
+                  );
+                },
+                transitionDuration: const Duration(milliseconds: 400),
+              );
+            case '/home':
+              builder = (BuildContext _) => const GarageView();
+              return MaterialPageRoute(builder: builder, settings: settings);
+            case '/garage':
+              builder = (BuildContext _) => const GarageView();
+              return MaterialPageRoute(builder: builder, settings: settings);
+            case '/charging':
+              builder = (BuildContext _) => const ChargingView();
+              return MaterialPageRoute(builder: builder, settings: settings);
+            case '/mycar':
+              builder = (BuildContext _) => const MyCarView();
+              return MaterialPageRoute(builder: builder, settings: settings);
+            case '/setup':
+              builder = (BuildContext _) => const SetupView();
+              return MaterialPageRoute(builder: builder, settings: settings);
+            case '/game':
+              builder = (BuildContext _) => const GameView();
+              return MaterialPageRoute(builder: builder, settings: settings);
+
+            default:
+              // 處理未知路由
+              builder = (BuildContext _) => Scaffold(
+                    body: Center(
+                      child: Text('Error: Route not found: ${settings.name}'),
+                    ),
+                  );
+              return MaterialPageRoute(builder: builder, settings: settings);
+          }
         },
       ),
     );
