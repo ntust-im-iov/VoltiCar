@@ -23,6 +23,11 @@ class LoginViewModel extends ChangeNotifier {
   String? get loginError => _loginError;
   bool get isLoginSuccess => _isLoginSuccess;
 
+  bool isValidEmail(String email) {
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    return emailRegex.hasMatch(email);
+  }
+
   // 驗證密碼
   bool isValidPassword(String password) {
     return password.length >= 8;
