@@ -92,6 +92,21 @@ class ResetPasswordViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // 新增此方法：標記重設密碼成功狀態已被處理
+  void markResetPasswordSuccessAsHandled() {
+    if (_isResetPasswordSuccess) {
+      _isResetPasswordSuccess = false;
+      _resetPasswordError = null;
+      _isResetPasswordLoading = false;
+      notifyListeners();
+      // 清除安全存儲中的數據
+      _resetPasswordRepository.clearResetPasswordData();
+      _logger.i(
+          'ResetPasswordViewModel: Reset password success state has been reset.');
+      _logger.i('重設密碼狀態和數據已重置');
+    }
+  }
+
   @override
   void dispose() {
     super.dispose();

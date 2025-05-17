@@ -274,7 +274,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
             const SnackBar(content: Text('密碼重設成功，請使用新密碼登入')),
           );
           // 重置狀態後導航
-          resetPasswordViewModel.resetPasswordState();
+          resetPasswordViewModel.markResetPasswordSuccessAsHandled();
           Navigator.of(context).pushReplacementNamed('/login');
         });
       }
