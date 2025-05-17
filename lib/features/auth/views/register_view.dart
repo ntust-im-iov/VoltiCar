@@ -118,18 +118,7 @@ class _RegisterViewState extends State<RegisterView> {
             top: false, // 不設置頂部安全區域
             child: Stack(
               children: [
-                // 返回按鈕
-                Positioned(
-                  top: 50,
-                  left: 16,
-                  child: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.black),
-                    onPressed: () =>
-                        Navigator.of(context).pushReplacementNamed('/login'),
-                  ),
-                ),
-
-                // 主要內容
+                // 主要內容 (先放置)
                 Center(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(24.0),
@@ -166,7 +155,7 @@ class _RegisterViewState extends State<RegisterView> {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 70),
+                          const SizedBox(height: 50),
 
                           // 使用者名稱輸入框
                           CustomTextField(
@@ -327,6 +316,15 @@ class _RegisterViewState extends State<RegisterView> {
                       ),
                     ),
                   ),
+                ),
+                // 返回按鈕 (後放置，會疊加在 Center 之上)
+                Positioned(
+                  top: 50, // 你可以根據需要調整這個值，例如 50
+                  left: 16,
+                  child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.black),
+                      onPressed: () =>
+                          Navigator.of(context).pushNamed('/login')),
                 ),
               ],
             ),
