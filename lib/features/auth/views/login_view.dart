@@ -2,7 +2,7 @@ import 'package:flutter/material.dart'; // Flutter UI 庫
 import 'package:flutter/gestures.dart'; // 手勢處理
 import 'package:provider/provider.dart'; // Provider 狀態管理
 import 'package:volticar_app/core/constants/app_colors.dart'; // 自定義顏色常量
-import 'package:volticar_app/features/auth/viewmodels/auth_viewmodel.dart'; // 身分驗證 viewmodel
+import 'package:volticar_app/features/auth/viewmodels/login_viewmodel.dart'; // 身分驗證 viewmodel
 import 'package:volticar_app/shared/widgets/custom_button.dart'; // 自定義按鈕
 import 'package:volticar_app/shared/widgets/custom_text_field.dart'; // 自定義文本輸入框
 
@@ -39,8 +39,8 @@ class _LoginViewState extends State<LoginView> {
 
   void _checkLoginStatus() async {
     // 檢查用戶是否已登入(async 異步處理)
-    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-    final isLoggedIn = await authViewModel
+    final loginViewModel = Provider.of<LoginViewModel>(context, listen: false);
+    final isLoggedIn = await loginViewModel
         .checkLoginStatus(); // await 暫停執行，直到 checkLoginStatus 完成
     if (isLoggedIn && mounted) {
       // 用戶已登入且當前視圖仍然存在
@@ -54,8 +54,9 @@ class _LoginViewState extends State<LoginView> {
       // 關閉鍵盤
       FocusScope.of(context).unfocus();
 
-      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-      authViewModel.login(
+      final loginViewModel =
+          Provider.of<LoginViewModel>(context, listen: false);
+      loginViewModel.login(
         _usernameController.text.trim(),
         _passwordController.text.trim(),
       );
@@ -73,9 +74,9 @@ class _LoginViewState extends State<LoginView> {
   @override
   Widget build(BuildContext context) {
     // 構建 UI
-    return Consumer<AuthViewModel>(builder: (context, authViewModel, _) {
+    return Consumer<LoginViewModel>(builder: (context, loginViewModel, _) {
       // 登入成功時導航到主頁
-      if (authViewModel.isLoginSuccess && mounted) {
+      if (loginViewModel.isLoginSuccess && mounted) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           Navigator.of(context).pushReplacementNamed('/garage');
           ScaffoldMessenger.of(context)
@@ -118,7 +119,7 @@ class _LoginViewState extends State<LoginView> {
                           return '請輸入電子信箱';
                         }
                         if (value.isNotEmpty &&
-                            !authViewModel.isValidEmail(value)) {
+                            !loginViewModel.isValidEmail(value)) {
                           return '無效的電子信箱格式';
                         }
                         return null;
@@ -139,7 +140,7 @@ class _LoginViewState extends State<LoginView> {
                           return '請輸入密碼';
                         }
                         if (value.isNotEmpty &&
-                            !authViewModel.isValidPassword(value)) {
+                            !loginViewModel.isValidPassword(value)) {
                           return '密碼長度至少為 8 個字符';
                         }
                         return null;
@@ -180,9 +181,9 @@ class _LoginViewState extends State<LoginView> {
                     const SizedBox(height: 24),
 
                     // 錯誤信息
-                    if (authViewModel.loginError != null) ...[
+                    if (loginViewModel.loginError != null) ...[
                       Text(
-                        authViewModel.loginError!,
+                        loginViewModel.loginError!,
                         style: const TextStyle(color: AppColors.errorColor),
                       ),
                       const SizedBox(height: 16),
@@ -192,7 +193,7 @@ class _LoginViewState extends State<LoginView> {
                     CustomButton(
                       text: '登入', // 按鈕文字
                       onPressed: _login, // 按鈕點擊事件
-                      isLoading: authViewModel.isLoginLoading, // 是否處於載入狀態
+                      isLoading: loginViewModel.isLoginLoading, // 是否處於載入狀態
                       width: double.infinity, // 寬度
                     ),
                     const SizedBox(height: 24),
@@ -223,7 +224,7 @@ class _LoginViewState extends State<LoginView> {
                     // Google登入按鈕
                     OutlinedButton.icon(
                       onPressed: () {
-                        authViewModel
+                        loginViewModel
                             .signInWithGoogle(); // 呼叫 ViewModel 中的 Google 登入方法
                       },
                       icon: Image.asset(

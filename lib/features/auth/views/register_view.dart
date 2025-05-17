@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
 import 'package:volticar_app/core/constants/app_colors.dart';
-import 'package:volticar_app/features/auth/viewmodels/auth_viewmodel.dart';
+import 'package:volticar_app/features/auth/viewmodels/register_viewmodel.dart';
 import 'package:volticar_app/shared/widgets/custom_button.dart';
 import 'package:volticar_app/shared/widgets/custom_text_field.dart';
 
@@ -46,8 +46,9 @@ class _RegisterViewState extends State<RegisterView> {
     final isValid = _formKey.currentState!.validate();
 
     if (isValid) {
-      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-      authViewModel.register(
+      final registerViewModel =
+          Provider.of<RegisterViewModel>(context, listen: false);
+      registerViewModel.register(
         username: _accountController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
@@ -69,15 +70,17 @@ class _RegisterViewState extends State<RegisterView> {
       return;
     }
 
-    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-    authViewModel.sendEmailVerification(_emailController.text.trim());
+    final registerViewModel =
+        Provider.of<RegisterViewModel>(context, listen: false);
+    registerViewModel.sendEmailVerification(_emailController.text.trim());
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthViewModel>(builder: (context, authViewModel, _) {
+    return Consumer<RegisterViewModel>(
+        builder: (context, registerViewModel, _) {
       // 註冊成功時導航到登入頁面
-      if (authViewModel.isRegisterSuccess && mounted) {
+      if (registerViewModel.isRegisterSuccess && mounted) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('註冊成功')),
@@ -90,7 +93,7 @@ class _RegisterViewState extends State<RegisterView> {
       }
 
       // 郵件驗證成功時顯示提示
-      if (authViewModel.isEmailVerificationSuccess && mounted) {
+      if (registerViewModel.isEmailVerificationSuccess && mounted) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('驗證郵件已發送，請查收')),
@@ -198,8 +201,8 @@ class _RegisterViewState extends State<RegisterView> {
                               child: CustomButton(
                                 text: '驗證',
                                 onPressed: _verifyEmail,
-                                isLoading:
-                                    authViewModel.isEmailVerificationLoading,
+                                isLoading: registerViewModel
+                                    .isEmailVerificationLoading,
                                 width: 90,
                               ),
                             ),
@@ -270,11 +273,12 @@ class _RegisterViewState extends State<RegisterView> {
                         const SizedBox(height: 24),
 
                         // 錯誤信息 - 註冊錯誤或郵件驗證錯誤
-                        if (authViewModel.registerError != null ||
-                            authViewModel.emailVerificationError != null) ...[
+                        if (registerViewModel.registerError != null ||
+                            registerViewModel.emailVerificationError !=
+                                null) ...[
                           Text(
-                            authViewModel.registerError ??
-                                authViewModel.emailVerificationError!,
+                            registerViewModel.registerError ??
+                                registerViewModel.emailVerificationError!,
                             style: const TextStyle(color: AppColors.errorColor),
                           ),
                           const SizedBox(height: 16),
@@ -284,7 +288,7 @@ class _RegisterViewState extends State<RegisterView> {
                         CustomButton(
                           text: '註冊',
                           onPressed: _register,
-                          isLoading: authViewModel.isRegisterLoading,
+                          isLoading: registerViewModel.isRegisterLoading,
                           width: double.infinity,
                         ),
                         const SizedBox(height: 32),
