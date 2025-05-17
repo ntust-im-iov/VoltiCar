@@ -157,6 +157,15 @@ class LoginViewModel extends ChangeNotifier {
     }
   }
 
+  // 新增此方法：標記登入成功狀態已被處理
+  void markLoginSuccessAsHandled() {
+    if (_isLoginSuccess) {
+      _isLoginSuccess = false;
+      notifyListeners();
+      _logger.i('LoginViewModel: Login success state has been reset.');
+    }
+  }
+
   @override
   void dispose() {
     super.dispose();

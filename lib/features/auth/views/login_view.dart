@@ -81,6 +81,7 @@ class _LoginViewState extends State<LoginView> {
           Navigator.of(context).pushReplacementNamed('/garage');
           ScaffoldMessenger.of(context)
               .showSnackBar(const SnackBar(content: Text('登入成功')));
+          loginViewModel.markLoginSuccessAsHandled();
         });
       }
 
