@@ -158,6 +158,29 @@ class RegisterViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // 新增此方法：標記郵件驗證成功狀態已被處理
+  void markEmailVerificationSuccessAsHandled() {
+    if (_isEmailVerificationSuccess) {
+      _isEmailVerificationSuccess = false;
+      // 考慮是否真的需要 notifyListeners()。
+      // 如果這個狀態的重置不需要立即觸發 UI 的其他部分重繪（除了防止 SnackBar 重複顯示），
+      // 有時可以省略 notifyListeners() 以避免不必要的重建。
+      // 但為了確保狀態一致性，通常還是建議調用。
+      notifyListeners();
+      _logger.i(
+          'RegisterViewModel: Email verification success state has been reset.');
+    }
+  }
+
+  // 新增此方法：標記註冊成功狀態已被處理
+  void markRegisterSuccessAsHandled() {
+    if (_isRegisterSuccess) {
+      _isRegisterSuccess = false;
+      notifyListeners();
+      _logger.i('RegisterViewModel: Register success state has been reset.');
+    }
+  }
+
   @override
   void dispose() {
     super.dispose();

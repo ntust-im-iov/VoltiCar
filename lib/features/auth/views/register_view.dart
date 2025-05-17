@@ -86,8 +86,11 @@ class _RegisterViewState extends State<RegisterView> {
             const SnackBar(content: Text('註冊成功')),
           );
 
+          // 在顯示 SnackBar 後重置狀態
+          registerViewModel.markRegisterSuccessAsHandled();
+
           Future.delayed(const Duration(seconds: 1), () {
-            Navigator.of(context).pushReplacementNamed('/login');
+            Navigator.of(context).pushReplacementNamed('/garage');
           });
         });
       }
@@ -98,6 +101,8 @@ class _RegisterViewState extends State<RegisterView> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('驗證郵件已發送，請查收')),
           );
+          // 在顯示 SnackBar 後重置狀態
+          registerViewModel.markEmailVerificationSuccessAsHandled();
         });
       }
 
