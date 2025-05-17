@@ -7,7 +7,7 @@ import 'dart:async' as _i3;
 import 'dart:ui' as _i4;
 
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:volticar_app/features/auth/viewmodels/auth_viewmodel.dart'
+import 'package:volticar_app/features/auth/viewmodels/login_viewmodel.dart'
     as _i2;
 
 // ignore_for_file: type=lint
@@ -24,11 +24,11 @@ import 'package:volticar_app/features/auth/viewmodels/auth_viewmodel.dart'
 // ignore_for_file: camel_case_types
 // ignore_for_file: subtype_of_sealed_class
 
-/// A class which mocks [AuthViewModel].
+/// A class which mocks [LoginViewModel].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockAuthViewModel extends _i1.Mock implements _i2.AuthViewModel {
-  MockAuthViewModel() {
+class MockLoginViewModel extends _i1.Mock implements _i2.LoginViewModel {
+  MockLoginViewModel() {
     _i1.throwOnMissingStub(this);
   }
 
@@ -41,42 +41,6 @@ class MockAuthViewModel extends _i1.Mock implements _i2.AuthViewModel {
   @override
   bool get isLoginSuccess => (super.noSuchMethod(
         Invocation.getter(#isLoginSuccess),
-        returnValue: false,
-      ) as bool);
-
-  @override
-  bool get isRegisterLoading => (super.noSuchMethod(
-        Invocation.getter(#isRegisterLoading),
-        returnValue: false,
-      ) as bool);
-
-  @override
-  bool get isRegisterSuccess => (super.noSuchMethod(
-        Invocation.getter(#isRegisterSuccess),
-        returnValue: false,
-      ) as bool);
-
-  @override
-  bool get isEmailVerificationLoading => (super.noSuchMethod(
-        Invocation.getter(#isEmailVerificationLoading),
-        returnValue: false,
-      ) as bool);
-
-  @override
-  bool get isEmailVerificationSuccess => (super.noSuchMethod(
-        Invocation.getter(#isEmailVerificationSuccess),
-        returnValue: false,
-      ) as bool);
-
-  @override
-  bool get isResetPasswordLoading => (super.noSuchMethod(
-        Invocation.getter(#isResetPasswordLoading),
-        returnValue: false,
-      ) as bool);
-
-  @override
-  bool get isResetPasswordSuccess => (super.noSuchMethod(
-        Invocation.getter(#isResetPasswordSuccess),
         returnValue: false,
       ) as bool);
 
@@ -114,16 +78,6 @@ class MockAuthViewModel extends _i1.Mock implements _i2.AuthViewModel {
       );
 
   @override
-  _i3.Future<void> sendEmailVerification(String? email) => (super.noSuchMethod(
-        Invocation.method(
-          #sendEmailVerification,
-          [email],
-        ),
-        returnValue: _i3.Future<void>.value(),
-        returnValueForMissingStub: _i3.Future<void>.value(),
-      ) as _i3.Future<void>);
-
-  @override
   _i3.Future<void> login(
     String? username,
     String? password,
@@ -141,20 +95,10 @@ class MockAuthViewModel extends _i1.Mock implements _i2.AuthViewModel {
       ) as _i3.Future<void>);
 
   @override
-  _i3.Future<void> register({
-    required String? username,
-    required String? email,
-    required String? password,
-  }) =>
-      (super.noSuchMethod(
+  _i3.Future<void> signInWithGoogle() => (super.noSuchMethod(
         Invocation.method(
-          #register,
+          #signInWithGoogle,
           [],
-          {
-            #username: username,
-            #email: email,
-            #password: password,
-          },
         ),
         returnValue: _i3.Future<void>.value(),
         returnValueForMissingStub: _i3.Future<void>.value(),
@@ -170,43 +114,6 @@ class MockAuthViewModel extends _i1.Mock implements _i2.AuthViewModel {
       ) as _i3.Future<bool>);
 
   @override
-  _i3.Future<bool> forgotPassword(String? email) => (super.noSuchMethod(
-        Invocation.method(
-          #forgotPassword,
-          [email],
-        ),
-        returnValue: _i3.Future<bool>.value(false),
-      ) as _i3.Future<bool>);
-
-  @override
-  _i3.Future<bool> verifyResetOtp(String? optCode) => (super.noSuchMethod(
-        Invocation.method(
-          #verifyResetOtp,
-          [optCode],
-        ),
-        returnValue: _i3.Future<bool>.value(false),
-      ) as _i3.Future<bool>);
-
-  @override
-  _i3.Future<void> resetPassword(String? newPassword) => (super.noSuchMethod(
-        Invocation.method(
-          #resetPassword,
-          [newPassword],
-        ),
-        returnValue: _i3.Future<void>.value(),
-        returnValueForMissingStub: _i3.Future<void>.value(),
-      ) as _i3.Future<void>);
-
-  @override
-  void resetPasswordState() => super.noSuchMethod(
-        Invocation.method(
-          #resetPasswordState,
-          [],
-        ),
-        returnValueForMissingStub: null,
-      );
-
-  @override
   _i3.Future<void> logout() => (super.noSuchMethod(
         Invocation.method(
           #logout,
@@ -217,14 +124,13 @@ class MockAuthViewModel extends _i1.Mock implements _i2.AuthViewModel {
       ) as _i3.Future<void>);
 
   @override
-  _i3.Future<void> signInWithGoogle() => (super.noSuchMethod(
+  void markLoginSuccessAsHandled() => super.noSuchMethod(
         Invocation.method(
-          #signInWithGoogle,
+          #markLoginSuccessAsHandled,
           [],
         ),
-        returnValue: _i3.Future<void>.value(),
-        returnValueForMissingStub: _i3.Future<void>.value(),
-      ) as _i3.Future<void>);
+        returnValueForMissingStub: null,
+      );
 
   @override
   void dispose() => super.noSuchMethod(
