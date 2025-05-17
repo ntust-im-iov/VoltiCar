@@ -15,6 +15,7 @@ class RegisterView extends StatefulWidget {
 
 class _RegisterViewState extends State<RegisterView> {
   final _formKey = GlobalKey<FormState>();
+  final _emailFieldKey = GlobalKey<FormFieldState<String>>();
   final _accountController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -61,18 +62,18 @@ class _RegisterViewState extends State<RegisterView> {
   }
 
   void _verifyEmail() {
-    if (_emailController.text.isEmpty) {
+    if (_emailFieldKey.currentState == null) {
       return;
     }
+    final isEmailFormatValid = _emailFieldKey.currentState!.validate();
 
-    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-        .hasMatch(_emailController.text)) {
-      return;
+    if (isEmailFormatValid) {
+      final email = _emailController.text.trim();
+      final registerViewModel =
+          Provider.of<RegisterViewModel>(context, listen: false);
+
+      registerViewModel.sendEmailVerification(email);
     }
-
-    final registerViewModel =
-        Provider.of<RegisterViewModel>(context, listen: false);
-    registerViewModel.sendEmailVerification(_emailController.text.trim());
   }
 
   @override
@@ -177,6 +178,7 @@ class _RegisterViewState extends State<RegisterView> {
                             children: [
                               Expanded(
                                 child: CustomTextField(
+                                  fieldKey: _emailFieldKey,
                                   controller: _emailController,
                                   hintText: '電子信箱',
                                   keyboardType: TextInputType.emailAddress,
@@ -184,10 +186,10 @@ class _RegisterViewState extends State<RegisterView> {
                                     if (value == null || value.isEmpty) {
                                       return '請輸入電子信箱';
                                     }
-                                    if (!RegExp(
-                                            r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                                        .hasMatch(value)) {
-                                      return '請輸入有效的電子信箱';
+                                    if (value.isNotEmpty &&
+                                        !registerViewModel
+                                            .isValidEmail(value)) {
+                                      return '請輸入有效的電子信箱格式';
                                     }
                                     return null;
                                   },
