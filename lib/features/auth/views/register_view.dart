@@ -16,11 +16,10 @@ class RegisterView extends StatefulWidget {
 class _RegisterViewState extends State<RegisterView> {
   final _formKey = GlobalKey<FormState>();
   final _emailFieldKey = GlobalKey<FormFieldState<String>>();
-  final _accountController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _nameController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
@@ -31,11 +30,10 @@ class _RegisterViewState extends State<RegisterView> {
 
   @override
   void dispose() {
-    _accountController.dispose();
+    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _nameController.dispose();
     super.dispose();
   }
 
@@ -49,7 +47,7 @@ class _RegisterViewState extends State<RegisterView> {
     if (isValid) {
       final registerViewModel = Provider.of<RegisterViewModel>(context, listen: false);
       registerViewModel.register(
-        username: _accountController.text.trim(),
+        username: _usernameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
@@ -157,11 +155,17 @@ class _RegisterViewState extends State<RegisterView> {
 
                           // 使用者名稱輸入框
                           CustomTextField(
-                            controller: _accountController,
+                            controller: _usernameController,
                             hintText: '使用者名稱',
+                            autovalidateMode: AutovalidateMode.onUserInteraction,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return '請輸入使用者名稱';
+                              }
+                              if (registerViewModel.usernameFormatError != null &&
+                                  _usernameController.text.isNotEmpty &&
+                                  !registerViewModel.isValidUserName(value.trim())) {
+                                return registerViewModel.usernameFormatError; // "使用者名稱格式不符。"
                               }
                               return null;
                             },
@@ -174,29 +178,19 @@ class _RegisterViewState extends State<RegisterView> {
                                     width: 20,
                                     child: CircularProgressIndicator(strokeWidth: 2.0))
                                 : (registerViewModel.usernameAvailabilityMessage != null &&
-                                        _accountController.text.isNotEmpty
+                                        _usernameController.text.isNotEmpty
                                     ? (registerViewModel.isUsernameAvailable
                                         ? const Icon(Icons.check_circle_outline,
                                             color: Colors.green)
                                         : const Icon(Icons.error_outline,
                                             color: AppColors.errorColor))
-                                    : const Icon(Icons.person_outline)),
+                                    : (registerViewModel.usernameFormatError != null &&
+                                            _usernameController.text.isNotEmpty
+                                        ? const Icon(Icons.warning_amber_rounded,
+                                            color: AppColors.errorColor) // Icon for format error
+                                        : const Icon(Icons.person_outline))),
                             textInputAction: TextInputAction.next,
                           ),
-                          // 顯示使用者名稱可用性訊息
-                          if (registerViewModel.usernameAvailabilityMessage != null &&
-                              _accountController.text.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
-                              child: Text(
-                                registerViewModel.usernameAvailabilityMessage!,
-                                style: TextStyle(
-                                  color: registerViewModel.isUsernameAvailable
-                                      ? Colors.green
-                                      : AppColors.errorColor,
-                                ),
-                              ),
-                            ),
                           const SizedBox(height: 16),
 
                           // 電子信箱輸入框
@@ -208,6 +202,7 @@ class _RegisterViewState extends State<RegisterView> {
                                   controller: _emailController,
                                   hintText: '電子信箱',
                                   keyboardType: TextInputType.emailAddress,
+                                  autovalidateMode: AutovalidateMode.onUserInteraction,
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
                                       return '請輸入電子信箱';

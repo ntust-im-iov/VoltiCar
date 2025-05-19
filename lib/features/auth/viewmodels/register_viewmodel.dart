@@ -25,6 +25,7 @@ class RegisterViewModel extends ChangeNotifier {
   bool _isCheckingUsername = false;
   String? _usernameAvailabilityMessage;
   bool _isUsernameAvailable = false;
+  String? _usernameFormatError;
 
   RegisterViewModel({RegisterRepository? registerRepository})
       : _registerRepository = registerRepository ?? RegisterRepository();
@@ -45,6 +46,7 @@ class RegisterViewModel extends ChangeNotifier {
   bool get isCheckingUsername => _isCheckingUsername;
   String? get usernameAvailabilityMessage => _usernameAvailabilityMessage;
   bool get isUsernameAvailable => _isUsernameAvailable;
+  String? get usernameFormatError => _usernameFormatError;
 
   bool isValidEmail(String email) {
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
@@ -55,6 +57,32 @@ class RegisterViewModel extends ChangeNotifier {
     return password.length >= 8;
   }
 
+  // 驗證使用者名稱格式
+  bool isValidUserName(String username) {
+    if (username.isEmpty) {
+      return false;
+    }
+    // 規則：
+    // 1. 長度 4-20 字元。
+    // 2. 只能包含英文大小寫字母 (a-z, A-Z), 數字 (0-9), 底線 (_)。
+    // 3. 必須以字母或數字開頭。
+    // 4. 必須以字母或數字結尾。
+    // 5. 不允許連續的底線 (__)。
+    final RegExp usernameRegExp =
+        RegExp(r"^(?=[a-zA-Z0-9_]{4,20}$)(?!.*__)[a-zA-Z0-9][a-zA-Z0-9_]*[a-zA-Z0-9]$");
+
+    // 處理一個特殊情況：如果使用者名稱長度剛好是1，且上述正規表示式可能不匹配（因為它期望首尾之間至少有0個字符給中間的 `[a-zA-Z0-9_]*`）
+    // 但我們的長度預查 `(?=[a-zA-Z0-9_]{4,20}$)` 已經確保長度至少為4。
+    // 因此，上述正規表達式應該能正確處理。
+    // 例如 "ab_c" (長度4) -> true
+    // "abc" (長度3) -> false (因長度不足)
+    // "a__b" (長度4) -> false (因連續底線)
+    // "_abc" (長度4) -> false (非字母數字開頭)
+    // "abc_" (長度4) -> false (非字母數字結尾)
+
+    return usernameRegExp.hasMatch(username);
+  }
+
   // 自動清除錯誤訊息(3秒後)
   void autoClearError() {
     Future.delayed(const Duration(seconds: 3), () {
@@ -63,6 +91,7 @@ class RegisterViewModel extends ChangeNotifier {
           _usernameAvailabilityMessage != null) {
         _registerError = null;
         _emailVerificationError = null;
+        _usernameAvailabilityMessage = null;
         notifyListeners();
       }
     });
@@ -72,21 +101,48 @@ class RegisterViewModel extends ChangeNotifier {
   Future<void> checkUsernameAvailability(String username) async {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
 
-    if (username.isEmpty) {
+    // 首先，立即檢查格式
+    if (username.isNotEmpty && !isValidUserName(username)) {
+      _usernameFormatError = '使用者名稱格式不符。'; // ViewModel 只設定簡單錯誤訊息
       _isCheckingUsername = false;
       _usernameAvailabilityMessage = null;
       _isUsernameAvailable = false;
       notifyListeners();
+      _debounce?.cancel();
+      return;
+    } else {
+      _usernameFormatError = null; // 格式正確，清除格式錯誤訊息
+      // (如果 username 為空，也會清除 format error)
+    }
+
+    if (username.isEmpty) {
+      _isCheckingUsername = false;
+      _usernameAvailabilityMessage = null;
+      _isUsernameAvailable = false;
+      _usernameFormatError = null; // Username is empty, so no format error
+      notifyListeners();
       return;
     }
 
+    // 格式正確，準備檢查可用性
     _isCheckingUsername = true;
     _usernameAvailabilityMessage = null;
     _isUsernameAvailable = false;
+    // _usernameFormatError 應該已經被設為 null 或在上面處理了
     notifyListeners();
 
     _debounce = Timer(const Duration(milliseconds: 700), () async {
       try {
+        // 再次確認格式，以防萬一 (理論上不會到這一步如果格式初次就錯誤)
+        if (!isValidUserName(username)) {
+          _usernameFormatError = '使用者名稱格式不符。'; // 簡短訊息
+          _isCheckingUsername = false;
+          _usernameAvailabilityMessage = null;
+          notifyListeners();
+          return;
+        }
+        _usernameFormatError = null; // 確保清除
+
         final isAvailable = await _registerRepository.isUsernameAvailable(username);
         _isUsernameAvailable = isAvailable;
         if (isAvailable) {
