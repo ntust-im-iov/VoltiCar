@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:volticar_app/features/auth/repositories/register_repository.dart';
@@ -18,6 +20,12 @@ class RegisterViewModel extends ChangeNotifier {
   String? _emailVerificationError;
   bool _isEmailVerificationSuccess = false;
 
+  // 使用者名稱檢查相關狀態
+  Timer? _debounce;
+  bool _isCheckingUsername = false;
+  String? _usernameAvailabilityMessage;
+  bool _isUsernameAvailable = false;
+
   RegisterViewModel({RegisterRepository? registerRepository})
       : _registerRepository = registerRepository ?? RegisterRepository();
 
@@ -33,6 +41,11 @@ class RegisterViewModel extends ChangeNotifier {
   String? get emailVerificationError => _emailVerificationError;
   bool get isEmailVerificationSuccess => _isEmailVerificationSuccess;
 
+  // 使用者名稱檢查狀態 getter
+  bool get isCheckingUsername => _isCheckingUsername;
+  String? get usernameAvailabilityMessage => _usernameAvailabilityMessage;
+  bool get isUsernameAvailable => _isUsernameAvailable;
+
   bool isValidEmail(String email) {
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     return emailRegex.hasMatch(email);
@@ -45,9 +58,52 @@ class RegisterViewModel extends ChangeNotifier {
   // 自動清除錯誤訊息(3秒後)
   void autoClearError() {
     Future.delayed(const Duration(seconds: 3), () {
-      if (_registerError != null || _emailVerificationError != null) {
+      if (_registerError != null ||
+          _emailVerificationError != null ||
+          _usernameAvailabilityMessage != null) {
         _registerError = null;
         _emailVerificationError = null;
+        notifyListeners();
+      }
+    });
+  }
+
+  // 檢查使用者名稱是否可用 (帶 Debounce)
+  Future<void> checkUsernameAvailability(String username) async {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+    if (username.isEmpty) {
+      _isCheckingUsername = false;
+      _usernameAvailabilityMessage = null;
+      _isUsernameAvailable = false;
+      notifyListeners();
+      return;
+    }
+
+    _isCheckingUsername = true;
+    _usernameAvailabilityMessage = null;
+    _isUsernameAvailable = false;
+    notifyListeners();
+
+    _debounce = Timer(const Duration(milliseconds: 700), () async {
+      try {
+        final isAvailable = await _registerRepository.isUsernameAvailable(username);
+        _isUsernameAvailable = isAvailable;
+        if (isAvailable) {
+          _usernameAvailabilityMessage = '使用者名稱 "$username" 可用';
+        } else {
+          _usernameAvailabilityMessage = '使用者名稱 "$username" 已被使用';
+        }
+      } catch (e) {
+        _isUsernameAvailable = false;
+        String errorMessage = e.toString();
+        if (errorMessage.contains('Exception:')) {
+          errorMessage = errorMessage.split('Exception:').last.trim();
+        }
+        _usernameAvailabilityMessage = '檢查使用者名稱失敗: $errorMessage';
+        _logger.e('檢查使用者名稱 "$username" 時發生錯誤: $e');
+      } finally {
+        _isCheckingUsername = false;
         notifyListeners();
       }
     });
@@ -162,13 +218,8 @@ class RegisterViewModel extends ChangeNotifier {
   void markEmailVerificationSuccessAsHandled() {
     if (_isEmailVerificationSuccess) {
       _isEmailVerificationSuccess = false;
-      // 考慮是否真的需要 notifyListeners()。
-      // 如果這個狀態的重置不需要立即觸發 UI 的其他部分重繪（除了防止 SnackBar 重複顯示），
-      // 有時可以省略 notifyListeners() 以避免不必要的重建。
-      // 但為了確保狀態一致性，通常還是建議調用。
       notifyListeners();
-      _logger.i(
-          'RegisterViewModel: Email verification success state has been reset.');
+      _logger.i('RegisterViewModel: Email verification success state has been reset.');
     }
   }
 
@@ -183,6 +234,7 @@ class RegisterViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     super.dispose();
   }
 }

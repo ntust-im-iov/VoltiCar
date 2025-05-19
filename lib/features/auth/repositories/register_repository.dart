@@ -49,4 +49,19 @@ class RegisterRepository {
       rethrow;
     }
   }
+
+  // 檢查用戶名稱是否可用
+  Future<bool> isUsernameAvailable(String username) async {
+    try {
+      _logger.i('Repository: 開始檢查用戶名稱 "$username" 是否可用');
+      final bool isAvailable = await _registerService.checkUsername(username);
+      _logger.i('Repository: 用戶名稱 "$username" 可用性: $isAvailable');
+      return isAvailable;
+    } catch (e) {
+      _logger.e('Repository: 檢查用戶名稱 "$username" 時發生錯誤: $e');
+      // 根據需求，這裡可以 rethrow 錯誤，或者回傳一個預設值 (例如 false)
+      // 為了讓呼叫端能感知到錯誤，建議 rethrow
+      rethrow;
+    }
+  }
 }

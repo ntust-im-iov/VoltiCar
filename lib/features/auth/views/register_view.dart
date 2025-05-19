@@ -47,8 +47,7 @@ class _RegisterViewState extends State<RegisterView> {
     final isValid = _formKey.currentState!.validate();
 
     if (isValid) {
-      final registerViewModel =
-          Provider.of<RegisterViewModel>(context, listen: false);
+      final registerViewModel = Provider.of<RegisterViewModel>(context, listen: false);
       registerViewModel.register(
         username: _accountController.text.trim(),
         email: _emailController.text.trim(),
@@ -69,8 +68,7 @@ class _RegisterViewState extends State<RegisterView> {
 
     if (isEmailFormatValid) {
       final email = _emailController.text.trim();
-      final registerViewModel =
-          Provider.of<RegisterViewModel>(context, listen: false);
+      final registerViewModel = Provider.of<RegisterViewModel>(context, listen: false);
 
       registerViewModel.sendEmailVerification(email);
     }
@@ -78,8 +76,7 @@ class _RegisterViewState extends State<RegisterView> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<RegisterViewModel>(
-        builder: (context, registerViewModel, _) {
+    return Consumer<RegisterViewModel>(builder: (context, registerViewModel, _) {
       // 註冊成功時導航到登入頁面
       if (registerViewModel.isRegisterSuccess && mounted) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -168,9 +165,38 @@ class _RegisterViewState extends State<RegisterView> {
                               }
                               return null;
                             },
-                            suffixIcon: const Icon(Icons.person_outline),
+                            onChanged: (value) {
+                              registerViewModel.checkUsernameAvailability(value.trim());
+                            },
+                            suffixIcon: registerViewModel.isCheckingUsername
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2.0))
+                                : (registerViewModel.usernameAvailabilityMessage != null &&
+                                        _accountController.text.isNotEmpty
+                                    ? (registerViewModel.isUsernameAvailable
+                                        ? const Icon(Icons.check_circle_outline,
+                                            color: Colors.green)
+                                        : const Icon(Icons.error_outline,
+                                            color: AppColors.errorColor))
+                                    : const Icon(Icons.person_outline)),
                             textInputAction: TextInputAction.next,
                           ),
+                          // 顯示使用者名稱可用性訊息
+                          if (registerViewModel.usernameAvailabilityMessage != null &&
+                              _accountController.text.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Text(
+                                registerViewModel.usernameAvailabilityMessage!,
+                                style: TextStyle(
+                                  color: registerViewModel.isUsernameAvailable
+                                      ? Colors.green
+                                      : AppColors.errorColor,
+                                ),
+                              ),
+                            ),
                           const SizedBox(height: 16),
 
                           // 電子信箱輸入框
@@ -187,8 +213,7 @@ class _RegisterViewState extends State<RegisterView> {
                                       return '請輸入電子信箱';
                                     }
                                     if (value.isNotEmpty &&
-                                        !registerViewModel
-                                            .isValidEmail(value)) {
+                                        !registerViewModel.isValidEmail(value)) {
                                       return '請輸入有效的電子信箱格式';
                                     }
                                     return null;
@@ -203,8 +228,7 @@ class _RegisterViewState extends State<RegisterView> {
                                 child: CustomButton(
                                   text: '驗證',
                                   onPressed: _verifyEmail,
-                                  isLoading: registerViewModel
-                                      .isEmailVerificationLoading,
+                                  isLoading: registerViewModel.isEmailVerificationLoading,
                                   width: 90,
                                 ),
                               ),
@@ -264,8 +288,7 @@ class _RegisterViewState extends State<RegisterView> {
                               ),
                               onPressed: () {
                                 setState(() {
-                                  _obscureConfirmPassword =
-                                      !_obscureConfirmPassword;
+                                  _obscureConfirmPassword = !_obscureConfirmPassword;
                                 });
                               },
                             ),
@@ -276,13 +299,11 @@ class _RegisterViewState extends State<RegisterView> {
 
                           // 錯誤信息 - 註冊錯誤或郵件驗證錯誤
                           if (registerViewModel.registerError != null ||
-                              registerViewModel.emailVerificationError !=
-                                  null) ...[
+                              registerViewModel.emailVerificationError != null) ...[
                             Text(
                               registerViewModel.registerError ??
                                   registerViewModel.emailVerificationError!,
-                              style:
-                                  const TextStyle(color: AppColors.errorColor),
+                              style: const TextStyle(color: AppColors.errorColor),
                             ),
                             const SizedBox(height: 16),
                           ],
@@ -308,8 +329,7 @@ class _RegisterViewState extends State<RegisterView> {
                                     color: AppColors.linkColor,
                                     fontWeight: FontWeight.bold,
                                   ),
-                                  recognizer: TapGestureRecognizer()
-                                    ..onTap = _navigateToLogin,
+                                  recognizer: TapGestureRecognizer()..onTap = _navigateToLogin,
                                 ),
                               ],
                             ),
@@ -325,8 +345,7 @@ class _RegisterViewState extends State<RegisterView> {
                   left: 16,
                   child: IconButton(
                       icon: const Icon(Icons.arrow_back, color: Colors.black),
-                      onPressed: () =>
-                          Navigator.of(context).pushNamed('/login')),
+                      onPressed: () => Navigator.of(context).pushNamed('/login')),
                 ),
               ],
             ),
