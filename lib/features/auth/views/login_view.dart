@@ -50,17 +50,17 @@ class _LoginViewState extends State<LoginView> {
   }
 
   void _login() {
-    Navigator.of(context).pushReplacementNamed('/garage');
-    // if (_formKey.currentState?.validate() ?? false) {
-    //   // 關閉鍵盤
-    //   FocusScope.of(context).unfocus();
+    // Navigator.of(context).pushReplacementNamed('/garage');
+    if (_formKey.currentState?.validate() ?? false) {
+      // 關閉鍵盤
+      FocusScope.of(context).unfocus();
 
-    //   final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-    //   authViewModel.login(
-    //     _usernameController.text.trim(),
-    //     _passwordController.text.trim(),
-    //   );
-    // }
+      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+      authViewModel.login(
+        _usernameController.text.trim(),
+        _passwordController.text.trim(),
+      );
+    }
   }
 
   void _navigateToRegister() {
