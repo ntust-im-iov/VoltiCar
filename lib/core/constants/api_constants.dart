@@ -11,6 +11,9 @@ class ApiConstants {
   static const String resetPassword = '/users/reset-password'; // 重置密碼
   static const String googleLogin = '/users/login/google'; // 再次修正為正確的路徑
 
+  // Station endpoints
+  static const String stationsOverview = '/stations/overview'; // 充電站概覽
+
   // API version
   static const String apiVersion = '/api/v1';
 

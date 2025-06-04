@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:volticar_app/core/constants/app_colors.dart';
+import 'package:provider/provider.dart';
+import '../viewmodels/map_provider.dart';
+import '../viewmodels/map_overlay.dart';
 
 class ChargingView extends StatefulWidget {
   const ChargingView({super.key});
@@ -17,11 +20,34 @@ class _ChargingViewState extends State<ChargingView> {
   bool _isCharging = false; // 充電狀態
   int _chargingSpeed = 0; // 充電速度 (kW)
   int _estimatedTimeRemaining = 0; // 剩餘充電時間 (分鐘)
+  bool _isMapVisible = false; // 地圖顯示狀態
 
   @override
   void initState() {
     super.initState();
     _logger.i('ChargingView initialized');
+
+    // 確保MapProvider已初始化
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final mapProvider = Provider.of<MapProvider>(context, listen: false);
+      if (!mapProvider.isInitialized) {
+        mapProvider.initialize();
+      }
+    });
+  }
+
+  // 切換地圖顯示
+  void _toggleMap() {
+    setState(() {
+      _isMapVisible = !_isMapVisible;
+    });
+  }
+
+  // 關閉地圖
+  void _closeMap() {
+    setState(() {
+      _isMapVisible = false;
+    });
   }
 
   @override
@@ -38,8 +64,18 @@ class _ChargingViewState extends State<ChargingView> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          // 添加地圖按鈕
+          IconButton(
+            icon: const Icon(Icons.map, color: Colors.white),
+            onPressed: _toggleMap,
+            tooltip: '查看充電站地圖',
+          ),
+        ],
       ),
-      body: Container(
+      body: Stack(
+        children: [
+          Container(
         color: const Color(0xFF2A1E47),
         child: SingleChildScrollView(
           child: Padding(
@@ -64,11 +100,56 @@ class _ChargingViewState extends State<ChargingView> {
 
                 // 充電詳細信息
                 _buildChargingDetails(),
+
+                    const SizedBox(height: 24),
+
+                    // 查找充電站按鈕
+                    _buildFindChargingStationButton(),
               ],
             ),
           ),
+            ),
+          ),
+
+          // 地圖覆蓋層
+          if (_isMapVisible) _buildMapOverlay(),
+        ],
+      ),
+    );
+  }
+
+  // 新增查找充電站按鈕
+  Widget _buildFindChargingStationButton() {
+    return ElevatedButton.icon(
+      onPressed: _toggleMap,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF5C4EB4),
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        elevation: 3,
+      ),
+      icon: const Icon(Icons.search_outlined),
+      label: const Text(
+        '查找附近充電站',
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
         ),
       ),
+    );
+  }
+
+  // 構建地圖覆蓋層
+  Widget _buildMapOverlay() {
+    // final mapProvider = Provider.of<MapProvider>(context); // MapProvider 可能需要在 Widget Tree 更高層級提供
+    // final stationService = Provider.of(context); // 如果 MapOverlay 不再需要 stationService，此行可能也需要移除或修改
+
+    return MapOverlay(
+      onClose: _closeMap,
+      // stationService: stationService, // stationService 參數已從 MapOverlay 移除
     );
   }
 
