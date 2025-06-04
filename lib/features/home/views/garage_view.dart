@@ -56,7 +56,10 @@ class _GarageViewState extends State<GarageView> {
                     // Pass navigation logic to the game
                     Navigator.pushNamed(context, '/charging');
                   },
-                  onCarPressed: () {})),
+                  onCarPressed: () {
+                    Navigator.pushNamed(context, '/setup');
+                  },
+                  Function: () {})),
 
           // Status bar - REMOVED
 
@@ -435,15 +438,15 @@ class VoltiCarGame extends FlameGame with HasGameRef {
   final VoidCallback? onInfoButtonPressed; // Callback for info button
   final VoidCallback? onMapButtonPressed; // Callback for map button
   final VoidCallback? onGasStationPressed; // Callback for gas station
+  final VoidCallback? onCarPressed;
 
   VoltiCarGame({
     this.onInfoButtonPressed,
     this.onMapButtonPressed,
     this.onGasStationPressed,
-    required Null Function() onCarPressed, // Add gas station callback
+    this.onCarPressed,
+    required Null Function(), // Add gas station callback
   });
-
-  VoidCallback? get onCarPressed => null;
 
   // Override backgroundColor to make it transparent
   @override
@@ -478,94 +481,26 @@ class VoltiCarGame extends FlameGame with HasGameRef {
     )..priority = 0; // Layer 1: Background Component
     add(backgroundComponent);
 
-    // Button size
-    final buttonSize = Vector2(150, 50);
-    const verticalSpacing = 20.0; // Spacing between buttons
-
-    // Button positions (grid layout) - Adjusted for potential smaller game area
-    // Note: These positions might need further tweaking depending on how GameWidget is sized
-    final buttonPositions = [
-      Vector2(size.x / 2 - buttonSize.x / 2, size.y / 3 - buttonSize.y / 2),
-      Vector2(size.x * 3 / 4 - buttonSize.x / 2, size.y / 3 - buttonSize.y / 2),
-    ];
-
-    // Button texts and associated actions/styles
-    final buttonData = [
-      {
-        'text': '地圖',
-        'action': onMapButtonPressed, // Use the new map callback
-        'style': 'default'
-      },
-      {
-        'text': '資訊頁面',
-        'action': onInfoButtonPressed, // Keep info callback
-        'style': 'computer'
-      },
-    ];
-
-    // --- Create Buttons ---
-    Vector2 mapButtonPosition = Vector2.zero(); // To store map button position
-
-    for (int i = 0; i < buttonData.length; i++) {
-      final data = buttonData[i];
-      final buttonText = data['text'] as String;
-      final onPressed = data['action'] as VoidCallback?;
-      final style = data['style'] as String;
-
-      Vector2 currentPosition;
-      Color backgroundColor;
-      Color borderColor;
-      double borderWidth;
-      Color textColor;
-
-      // Determine position and style
-      if (buttonText == '地圖') {
-        currentPosition = buttonPositions[0];
-        mapButtonPosition = currentPosition; // Store map button position
-        // Apply computer button style
-        backgroundColor = const Color(0xFF1F1638).withOpacity(0.7);
-        borderColor = const Color(0xFF5DE8EB);
-        borderWidth = 2;
-        textColor = Colors.white;
-      } else if (buttonText == '資訊頁面') {
-        // Position below the map button
-        currentPosition = Vector2(mapButtonPosition.x,
-            mapButtonPosition.y + buttonSize.y + verticalSpacing);
-        // Apply computer button style
-        backgroundColor = const Color(0xFF1F1638).withOpacity(0.7);
-        borderColor = const Color(0xFF5DE8EB);
-        borderWidth = 2;
-        textColor = Colors.white;
-      } else {
-        currentPosition = Vector2(0, 0);
-        backgroundColor = BasicPalette.lightGray.withAlpha(200).color;
-        borderColor = Colors.transparent;
-        borderWidth = 0;
-        textColor = BasicPalette.black.color;
-      }
-
-      final button = ButtonComponent(
-        buttonSize: buttonSize,
-        buttonPosition: currentPosition,
-        buttonText: buttonText,
-        backgroundColor: backgroundColor,
-        borderColor: borderColor,
-        borderWidth: borderWidth,
-        textColor: textColor,
-        onPressed: onPressed, // Use the action from buttonData
-      )..priority = 2; // Layer 2: Interactive Buttons
-      add(button);
-    }
+    // --- Add PC Component ---
+    final pcComponent = AdaptiveComponent(gameRef.size, 0.3, (160 / 100),
+        'pc.png', 0.145, 0.625, onInfoButtonPressed)
+      ..priority = 2;
+    add(pcComponent);
+    // --- Add Map Component ---
+    final mapComponent = AdaptiveComponent(gameRef.size, 0.17, (230 / 100),
+        'map.png', 0.087, 0.42, onMapButtonPressed)
+      ..priority = 1;
+    add(mapComponent);
 
     // --- Add Gas Station Component ---
-    final gasStation = AdaptiveComponent(gameRef.size, 0.5, (250 / 230),
-        'gas.png', 0.8, 0.6, onGasStationPressed)
+    final gasStation = AdaptiveComponent(gameRef.size, 0.35, (160 / 100),
+        'gas.png', 0.86, 0.65, onGasStationPressed)
       ..priority = 2; // Layer 2: Interactive Elements
     add(gasStation); // Add the gas station to the game
 
     // --- Add Car Component ---
     final carComponent = AdaptiveComponent(
-        gameRef.size, 0.55, (230 / 250), 'car.png', 0.5, 0.68, onCarPressed)
+        gameRef.size, 0.4, (230 / 250), 'car.png', 0.5, 0.61, onCarPressed)
       ..priority = 2; // Layer 2: Interactive Elements
     add(carComponent); // Add the car to the game
   }

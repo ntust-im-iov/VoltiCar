@@ -7,55 +7,43 @@ import 'package:volticar_app/shared/widgets/custom_button.dart'; // 自定義按
 import 'package:volticar_app/shared/widgets/custom_text_field.dart'; // 自定義文本輸入框
 
 class LoginView extends StatefulWidget {
-  // 繼承 StatefulWidget (LoginView是個有狀態的元件)
-  const LoginView({super.key}); // 構造函數，super.key 用於傳遞父類別的 key
+  const LoginView({super.key});
 
   @override
-  State<LoginView> createState() =>
-      _LoginViewState(); // 返回 _LoginViewState 實例(下劃線前綴表示 _LoginViewState 是一個'私有類'，只在當前檔案內可見)
+  State<LoginView> createState() => _LoginViewState();
 }
 
 class _LoginViewState extends State<LoginView> {
-  // 繼承 State<LoginView>(負責管理 LoginView 的狀態)
-  final _formKey = GlobalKey<FormState>(); // 管理表單的狀態
-  final _usernameController = TextEditingController(); // 管理用戶名輸入框的狀態
-  final _passwordController = TextEditingController(); // 管理密碼輸入框的狀態
-  bool _obscurePassword = true; // 控制密碼是否可見
+  final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
 
-  @override // 覆寫 父類別 initState 方法
+  @override
   void initState() {
-    // 初始化狀態
-    super.initState(); // 調用父類別的 initState 方法
-    _checkLoginStatus(); // 檢查用戶是否已登入
+    super.initState();
+    _checkLoginStatus();
   }
 
   @override
   void dispose() {
-    // 資源釋放
-    _usernameController.dispose(); // 釋放用戶名輸入框的資源
-    _passwordController.dispose(); // 釋放密碼輸入框的資源
-    super.dispose(); // 調用父類別的 dispose 方法
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   void _checkLoginStatus() async {
-    // 檢查用戶是否已登入(async 異步處理)
     final loginViewModel = Provider.of<LoginViewModel>(context, listen: false);
-    final isLoggedIn = await loginViewModel
-        .checkLoginStatus(); // await 暫停執行，直到 checkLoginStatus 完成
+    final isLoggedIn = await loginViewModel.checkLoginStatus();
     if (isLoggedIn && mounted) {
-      // 用戶已登入且當前視圖仍然存在
-      Navigator.of(context)
-          .pushReplacementNamed('/garage'); // 條件成立 立即導航到 garage 頁面
+      Navigator.of(context).pushReplacementNamed('/garage');
     }
   }
 
   void _login() {
     if (_formKey.currentState?.validate() ?? false) {
-      // 關閉鍵盤
       FocusScope.of(context).unfocus();
-
-      final loginViewModel =
-          Provider.of<LoginViewModel>(context, listen: false);
+      final loginViewModel = Provider.of<LoginViewModel>(context, listen: false);
       loginViewModel.login(
         _usernameController.text.trim(),
         _passwordController.text.trim(),
@@ -73,9 +61,7 @@ class _LoginViewState extends State<LoginView> {
 
   @override
   Widget build(BuildContext context) {
-    // 構建 UI
     return Consumer<LoginViewModel>(builder: (context, loginViewModel, _) {
-      // 登入成功時導航到主頁
       if (loginViewModel.isLoginSuccess && mounted) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           Navigator.of(context).pushReplacementNamed('/garage');
@@ -88,35 +74,28 @@ class _LoginViewState extends State<LoginView> {
       return Scaffold(
         backgroundColor: Colors.white,
         body: SafeArea(
-          top: false, // 不在頂部使用安全區域，讓內容可以延伸到狀態欄
+          top: false,
           child: Center(
             child: SingleChildScrollView(
-              // SingleChildScrollView 是 Flutter 提供的一個 widget，用於處理滾動事件
               padding: const EdgeInsets.symmetric(horizontal: 40.0),
               child: Form(
-                key: _formKey, // 管理表單驗證
+                key: _formKey,
                 child: Column(
-                  mainAxisSize: MainAxisSize.min, // 使列僅佔用最少必要的空間
-                  mainAxisAlignment: MainAxisAlignment.start, // 從頂部開始
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 30), // 為標題提供適當的頂部間距
-
-                    // Logo
+                    const SizedBox(height: 30),
                     Image.asset(
                       'assets/images/volticar_title.png',
                       height: 80,
                       fit: BoxFit.contain,
                     ),
                     const SizedBox(height: 70),
-
-                    // 用戶名輸入框
                     CustomTextField(
-                      controller: _usernameController, // 管理用戶名輸入框的狀態
-                      hintText: '電子信箱', // 提示文字
+                      controller: _usernameController,
+                      hintText: '電子信箱',
                       validator: (value) {
-                        // 驗證器
                         if (value == null || value.isEmpty) {
-                          // 如果 value 為 null 或空字串
                           return '請輸入電子信箱';
                         }
                         if (value.isNotEmpty &&
@@ -129,14 +108,11 @@ class _LoginViewState extends State<LoginView> {
                       textInputAction: TextInputAction.next,
                     ),
                     const SizedBox(height: 16),
-
-                    // 密碼輸入框
                     CustomTextField(
-                      controller: _passwordController, // 管理密碼輸入框的狀態
-                      hintText: '密碼', // 提示文字
-                      obscureText: _obscurePassword, // 控制密碼是否可見
+                      controller: _passwordController,
+                      hintText: '密碼',
+                      obscureText: _obscurePassword,
                       validator: (value) {
-                        // 驗證器
                         if (value == null || value.isEmpty) {
                           return '請輸入密碼';
                         }
@@ -159,12 +135,9 @@ class _LoginViewState extends State<LoginView> {
                         },
                       ),
                       textInputAction: TextInputAction.done,
-                      onSubmitted: (_) =>
-                          _login(), // 當用戶按下 Enter 鍵時，調用 _login 方法
+                      onSubmitted: (_) => _login(),
                     ),
                     const SizedBox(height: 8),
-
-                    // 忘記密碼
                     Align(
                       alignment: Alignment.centerRight,
                       child: GestureDetector(
@@ -180,8 +153,6 @@ class _LoginViewState extends State<LoginView> {
                       ),
                     ),
                     const SizedBox(height: 24),
-
-                    // 錯誤信息
                     if (loginViewModel.loginError != null) ...[
                       Text(
                         loginViewModel.loginError!,
@@ -189,17 +160,13 @@ class _LoginViewState extends State<LoginView> {
                       ),
                       const SizedBox(height: 16),
                     ],
-
-                    // 登入按鈕
                     CustomButton(
-                      text: '登入', // 按鈕文字
-                      onPressed: _login, // 按鈕點擊事件
-                      isLoading: loginViewModel.isLoginLoading, // 是否處於載入狀態
-                      width: double.infinity, // 寬度
+                      text: '登入',
+                      onPressed: _login,
+                      isLoading: loginViewModel.isLoginLoading,
+                      width: double.infinity,
                     ),
                     const SizedBox(height: 24),
-
-                    // 分隔線
                     Row(
                       children: [
                         const Expanded(
@@ -221,15 +188,12 @@ class _LoginViewState extends State<LoginView> {
                       ],
                     ),
                     const SizedBox(height: 24),
-
-                    // Google登入按鈕
                     OutlinedButton.icon(
                       onPressed: () {
-                        loginViewModel
-                            .signInWithGoogle(); // 呼叫 ViewModel 中的 Google 登入方法
+                        loginViewModel.signInWithGoogle();
                       },
                       icon: Image.asset(
-                        'assets/images/google_icon.png', // 使用 Google 圖示
+                        'assets/images/google_icon.png',
                         width: 24,
                         height: 24,
                       ),
@@ -245,8 +209,6 @@ class _LoginViewState extends State<LoginView> {
                       ),
                     ),
                     const SizedBox(height: 32),
-
-                    // 註冊鏈接
                     RichText(
                       text: TextSpan(
                         text: '還沒有帳號? ',
