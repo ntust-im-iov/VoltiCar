@@ -63,18 +63,45 @@ class ChargingStation {
     }
     // 如果 overview API 的 StationName 是一個 Map，且裡面有城市資訊，也需要處理
     // 例如: json['StationName']['City']，但這不常見
+    // API 更新：overview 現在也提供地址資訊。 StationID, StationName, PositionLat, PositionLon, 和地址。
+
+    // String? overviewCity; // 移除此處的重複定義，使用上面已定義的 overviewCity
+    String? overviewFullAddress;
+
+    if (json['Location'] is Map && (json['Location'] as Map)['Address'] is Map) {
+        final addressMap = (json['Location'] as Map)['Address'] as Map<String, dynamic>;
+        overviewCity = addressMap['City'] as String?;
+        final town = addressMap['Town'] as String? ?? '';
+        final road = addressMap['Road'] as String? ?? '';
+        final no = addressMap['No'] as String? ?? '';
+        if (overviewCity != null && overviewCity.isNotEmpty) {
+            overviewFullAddress = '$overviewCity$town$road$no'.trim();
+            if (overviewFullAddress.isEmpty) overviewFullAddress = null;
+        }
+    } else if (json['Address'] is String && (json['Address'] as String).isNotEmpty) { // 如果直接提供 Address 字串
+        overviewFullAddress = json['Address'] as String;
+        // 嘗試從 Address 字串中提取 City (這比較困難且不可靠，暫時不處理，除非有明確格式)
+        // overviewCity = ... ;
+    }
+
 
     return ChargingStation(
       stationID: json['StationID'] as String,
-      stationName: name,
-      city: overviewCity, // 新增
+      stationName: name, // Name 仍然從 StationName 解析
       latitude: (json['PositionLat'] as num).toDouble(),
       longitude: (json['PositionLon'] as num).toDouble(),
-      chargingPoints: json['ChargingPoints'] as int? ?? 0,
-      connectors: connectorsList,
-      parkingRate: json['ParkingRate'] as String? ?? '未知',
-      chargingRate: json['ChargingRate'] as String? ?? '未知',
-      serviceTime: json['ServiceTime'] as String? ?? '未知',
+      city: overviewCity, // 使用上面第一次定義並賦值的 overviewCity
+      fullAddress: overviewFullAddress,
+      // 根據 API 更新，以下欄位在 overview API 中不再提供，使用確定的預設值
+      chargingPoints: 0,
+      connectors: [], // connectorsList 在此 scope 未被賦值，應直接用空列表
+      parkingRate: '未知',
+      chargingRate: '未知',
+      serviceTime: '未知',
+      // description, photoURLs, telephone 這些本來就是 optional，在 overview 中應為 null
+      description: null,
+      photoURLs: null,
+      telephone: null
     );
   }
 
