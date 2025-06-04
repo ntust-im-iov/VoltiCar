@@ -4,7 +4,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
 import 'firebase_options.dart';
-import 'features/auth/viewmodels/auth_viewmodel.dart';
+import 'features/auth/viewmodels/login_viewmodel.dart';
+import 'features/auth/viewmodels/register_viewmodel.dart';
+import 'features/auth/viewmodels/reset_password_viewmodel.dart';
 import 'features/auth/views/login_view.dart';
 import 'features/auth/views/register_view.dart';
 import 'features/auth/views/reset_password_view.dart';
@@ -52,7 +54,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthViewModel()),
+        ChangeNotifierProvider(create: (_) => LoginViewModel()),
+        ChangeNotifierProvider(create: (_) => RegisterViewModel()),
+        ChangeNotifierProvider(create: (_) => ResetPasswordViewModel()),
       ],
       child: MaterialApp(
         title: 'VoltiCar App',
@@ -71,7 +75,8 @@ class MyApp extends StatelessWidget {
           '/register': (context) => const RegisterView(),
           '/reset-password': (context) => const ResetPasswordView(),
           '/home': (context) => const GarageView(), // Point /home to GarageView
-          '/garage': (context) => const GarageView(), // Keep /garage route pointing to GarageView
+          '/garage': (context) =>
+              const GarageView(), // Keep /garage route pointing to GarageView
           '/charging': (context) => const ChargingView(), // Add charging route
           '/mycar': (context) => const MyCarView(), // Add mycar route
         },

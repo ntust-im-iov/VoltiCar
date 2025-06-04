@@ -1,28 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:volticar_app/features/auth/views/register_view.dart';
-import 'package:volticar_app/features/auth/viewmodels/auth_viewmodel.dart';
+import 'package:volticar_app/features/auth/viewmodels/register_viewmodel.dart';
 import 'package:provider/provider.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 
 // 生成 AuthViewModel 的 Mock 類
-@GenerateMocks([AuthViewModel])
+@GenerateMocks([RegisterViewModel])
 import 'register_view_test.mocks.dart';
 
 void main() {
-  late MockAuthViewModel mockAuthViewModel;
+  late MockRegisterViewModel mockRegisterViewModel;
 
   setUp(() {
-    mockAuthViewModel = MockAuthViewModel();
+    mockRegisterViewModel = MockRegisterViewModel();
 
     // 預設常用屬性的行為
-    when(mockAuthViewModel.isRegisterLoading).thenReturn(false);
-    when(mockAuthViewModel.isRegisterSuccess).thenReturn(false);
-    when(mockAuthViewModel.registerError).thenReturn(null);
-    when(mockAuthViewModel.isEmailVerificationLoading).thenReturn(false);
-    when(mockAuthViewModel.isEmailVerificationSuccess).thenReturn(false);
-    when(mockAuthViewModel.emailVerificationError).thenReturn(null);
+    when(mockRegisterViewModel.isRegisterLoading).thenReturn(false);
+    when(mockRegisterViewModel.isRegisterSuccess).thenReturn(false);
+    when(mockRegisterViewModel.registerError).thenReturn(null);
+    when(mockRegisterViewModel.isEmailVerificationLoading).thenReturn(false);
+    when(mockRegisterViewModel.isEmailVerificationSuccess).thenReturn(false);
+    when(mockRegisterViewModel.emailVerificationError).thenReturn(null);
   });
 
   testWidgets('RegisterView 應該顯示註冊表單', (WidgetTester tester) async {
@@ -34,8 +34,8 @@ void main() {
     // 構建我們的 app 並觸發一個 frame
     await tester.pumpWidget(
       MaterialApp(
-        home: ChangeNotifierProvider<AuthViewModel>.value(
-          value: mockAuthViewModel,
+        home: ChangeNotifierProvider<RegisterViewModel>.value(
+          value: mockRegisterViewModel,
           child: const RegisterView(),
         ),
       ),
@@ -62,8 +62,8 @@ void main() {
     // 構建我們的 app 並觸發一個 frame
     await tester.pumpWidget(
       MaterialApp(
-        home: ChangeNotifierProvider<AuthViewModel>.value(
-          value: mockAuthViewModel,
+        home: ChangeNotifierProvider<RegisterViewModel>.value(
+          value: mockRegisterViewModel,
           child: const RegisterView(),
         ),
       ),
@@ -108,8 +108,8 @@ void main() {
     // 構建我們的 app 並觸發一個 frame
     await tester.pumpWidget(
       MaterialApp(
-        home: ChangeNotifierProvider<AuthViewModel>.value(
-          value: mockAuthViewModel,
+        home: ChangeNotifierProvider<RegisterViewModel>.value(
+          value: mockRegisterViewModel,
           child: const RegisterView(),
         ),
         routes: {
@@ -138,14 +138,14 @@ void main() {
     await tester.enterText(confirmPasswordField, 'password123');
 
     // 設置 register 方法的模擬行為
-    when(mockAuthViewModel.register(
+    when(mockRegisterViewModel.register(
       username: 'newuser',
       email: 'new@example.com',
       password: 'password123',
     )).thenAnswer((_) async {
       // 註冊成功後設置狀態
-      when(mockAuthViewModel.isRegisterSuccess).thenReturn(true);
-      mockAuthViewModel.notifyListeners();
+      when(mockRegisterViewModel.isRegisterSuccess).thenReturn(true);
+      mockRegisterViewModel.notifyListeners();
     });
 
     // 找到註冊按鈕
@@ -160,14 +160,14 @@ void main() {
     await tester.pumpAndSettle();
 
     // 驗證 register 方法被調用
-    verify(mockAuthViewModel.register(
+    verify(mockRegisterViewModel.register(
       username: 'newuser',
       email: 'new@example.com',
       password: 'password123',
     )).called(1);
 
     // 驗證成功狀態被設置
-    expect(mockAuthViewModel.isRegisterSuccess, isTrue);
+    expect(mockRegisterViewModel.isRegisterSuccess, isTrue);
 
     // 等待成功後的導航
     await tester.pumpAndSettle(const Duration(seconds: 2));
@@ -185,8 +185,8 @@ void main() {
     // 構建我們的 app 並觸發一個 frame
     await tester.pumpWidget(
       MaterialApp(
-        home: ChangeNotifierProvider<AuthViewModel>.value(
-          value: mockAuthViewModel,
+        home: ChangeNotifierProvider<RegisterViewModel>.value(
+          value: mockRegisterViewModel,
           child: const RegisterView(),
         ),
       ),
@@ -200,11 +200,11 @@ void main() {
     await tester.enterText(emailField, 'test@example.com');
 
     // 設置驗證郵件方法的模擬行為
-    when(mockAuthViewModel.sendEmailVerification('test@example.com'))
+    when(mockRegisterViewModel.sendEmailVerification('test@example.com'))
         .thenAnswer((_) async {
       // 設置郵件驗證成功
-      when(mockAuthViewModel.isEmailVerificationSuccess).thenReturn(true);
-      mockAuthViewModel.notifyListeners();
+      when(mockRegisterViewModel.isEmailVerificationSuccess).thenReturn(true);
+      mockRegisterViewModel.notifyListeners();
     });
 
     // 點擊驗證按鈕
@@ -213,13 +213,13 @@ void main() {
     await tester.tap(verifyButton);
 
     // 驗證 sendEmailVerification 方法被調用
-    verify(mockAuthViewModel.sendEmailVerification('test@example.com'))
+    verify(mockRegisterViewModel.sendEmailVerification('test@example.com'))
         .called(1);
 
     // 由於我們無法可靠地測試 SnackBar 顯示，因此我們只驗證以下內容：
     // 1. 方法被調用
     // 2. isEmailVerificationSuccess 被設置為 true
-    expect(mockAuthViewModel.isEmailVerificationSuccess, isTrue);
+    expect(mockRegisterViewModel.isEmailVerificationSuccess, isTrue);
 
     // 如果必須測試 SnackBar 顯示，可以考慮修改 RegisterView 邏輯，
     // 讓它在測試環境下更容易測試

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:volticar_app/core/constants/app_colors.dart';
-import 'package:volticar_app/features/auth/viewmodels/auth_viewmodel.dart';
+import 'package:volticar_app/features/auth/viewmodels/reset_password_viewmodel.dart';
 import 'package:volticar_app/shared/widgets/custom_button.dart';
 import 'package:volticar_app/shared/widgets/custom_text_field.dart';
 
@@ -43,8 +43,11 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
       return;
     }
 
-    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-    authViewModel.forgotPassword(_emailController.text.trim()).then((success) {
+    final resetPasswordViewModel =
+        Provider.of<ResetPasswordViewModel>(context, listen: false);
+    resetPasswordViewModel
+        .forgotPassword(_emailController.text.trim())
+        .then((success) {
       if (success) {
         setState(() {
           _currentStep = 1;
@@ -67,8 +70,11 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
       return;
     }
 
-    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-    authViewModel.verifyResetOtp(_otpController.text.trim()).then((success) {
+    final resetPasswordViewModel =
+        Provider.of<ResetPasswordViewModel>(context, listen: false);
+    resetPasswordViewModel
+        .verifyResetOtp(_otpController.text.trim())
+        .then((success) {
       if (success) {
         setState(() {
           _currentStep = 2;
@@ -87,8 +93,9 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
 
   void _resetPassword() {
     if (_formKey.currentState?.validate() ?? false) {
-      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-      authViewModel.resetPassword(_passwordController.text.trim());
+      final resetPasswordViewModel =
+          Provider.of<ResetPasswordViewModel>(context, listen: false);
+      resetPasswordViewModel.resetPassword(_passwordController.text.trim());
     }
   }
 
@@ -112,11 +119,12 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
           textInputAction: TextInputAction.done,
         ),
         const SizedBox(height: 24),
-        Consumer<AuthViewModel>(builder: (context, authViewModel, _) {
+        Consumer<ResetPasswordViewModel>(
+            builder: (context, resetPasswordViewModel, _) {
           return CustomButton(
             text: '發送驗證碼',
             onPressed: _sendOtp,
-            isLoading: authViewModel.isResetPasswordLoading,
+            isLoading: resetPasswordViewModel.isResetPasswordLoading,
             width: double.infinity,
           );
         }),
@@ -140,7 +148,8 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
           textInputAction: TextInputAction.done,
         ),
         const SizedBox(height: 24),
-        Consumer<AuthViewModel>(builder: (context, authViewModel, _) {
+        Consumer<ResetPasswordViewModel>(
+            builder: (context, resetPasswordViewModel, _) {
           return Row(
             children: [
               Expanded(
@@ -157,7 +166,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                 child: CustomButton(
                   text: '驗證',
                   onPressed: _verifyOtp,
-                  isLoading: authViewModel.isResetPasswordLoading,
+                  isLoading: resetPasswordViewModel.isResetPasswordLoading,
                   width: double.infinity,
                 ),
               ),
@@ -228,11 +237,12 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
           onSubmitted: (_) => _resetPassword(),
         ),
         const SizedBox(height: 24),
-        Consumer<AuthViewModel>(builder: (context, authViewModel, _) {
+        Consumer<ResetPasswordViewModel>(
+            builder: (context, resetPasswordViewModel, _) {
           return CustomButton(
             text: '重設密碼',
             onPressed: _resetPassword,
-            isLoading: authViewModel.isResetPasswordLoading,
+            isLoading: resetPasswordViewModel.isResetPasswordLoading,
             width: double.infinity,
           );
         }),
@@ -255,15 +265,16 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthViewModel>(builder: (context, authViewModel, _) {
+    return Consumer<ResetPasswordViewModel>(
+        builder: (context, resetPasswordViewModel, _) {
       // 重設密碼成功時導航到登入頁面
-      if (authViewModel.isResetPasswordSuccess && mounted) {
+      if (resetPasswordViewModel.isResetPasswordSuccess && mounted) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('密碼重設成功，請使用新密碼登入')),
           );
           // 重置狀態後導航
-          authViewModel.resetPasswordState();
+          resetPasswordViewModel.markResetPasswordSuccessAsHandled();
           Navigator.of(context).pushReplacementNamed('/login');
         });
       }
@@ -282,7 +293,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                   icon: const Icon(Icons.arrow_back, color: Colors.black),
                   onPressed: () {
                     // 返回時重置狀態
-                    authViewModel.resetPasswordState();
+                    resetPasswordViewModel.resetPasswordState();
                     Navigator.of(context).pushReplacementNamed('/login');
                   },
                 ),
@@ -352,9 +363,10 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                         const SizedBox(height: 32),
 
                         // 錯誤信息
-                        if (authViewModel.resetPasswordError != null) ...[
+                        if (resetPasswordViewModel.resetPasswordError !=
+                            null) ...[
                           Text(
-                            authViewModel.resetPasswordError!,
+                            resetPasswordViewModel.resetPasswordError!,
                             style: const TextStyle(color: AppColors.errorColor),
                           ),
                           const SizedBox(height: 16),

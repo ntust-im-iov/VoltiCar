@@ -5,195 +5,22 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:volticar_app/features/auth/models/user_model.dart';
-import 'package:volticar_app/features/auth/models/register_request.dart';
 import 'package:volticar_app/core/constants/api_constants.dart';
 import 'package:volticar_app/core/network/api_client.dart';
 
-class AuthService {
-  static final AuthService _instance = AuthService._internal();
+class LoginService {
+  static final LoginService _instance = LoginService._internal();
   final Logger _logger = Logger();
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   final ApiClient _apiClient = ApiClient();
   final firebase_auth.FirebaseAuth _firebaseAuth =
       firebase_auth.FirebaseAuth.instance;
 
-  factory AuthService() {
+  factory LoginService() {
     return _instance;
   }
 
-  AuthService._internal();
-
-  // 發送郵件驗證
-  Future<void> sendEmailVerification(String email) async {
-    try {
-      _logger.i('開始發送郵件驗證');
-      _logger.i('發送郵件驗證到: $email');
-
-      // 嘗試不同的請求格式
-      // 格式1: 直接使用 email 作為鍵值
-      final requestData = {
-        'email': email,
-      };
-
-      _logger.i('發送請求數據: $requestData');
-
-      final response = await _apiClient.post(
-        ApiConstants.registerVerification,
-        data: requestData,
-        options: Options(
-          contentType: 'application/x-www-form-urlencoded',
-          headers: {
-            'Accept': 'application/json',
-          },
-        ),
-      );
-
-      _logger.i('收到郵件驗證響應');
-      _logger.i('響應狀態碼: ${response.statusCode}');
-      _logger.i('響應數據: ${response.data}');
-
-      if (response.statusCode == 200) {
-        _logger.i('郵件驗證已發送');
-      } else {
-        _logger.e('郵件驗證發送失敗: ${response.statusCode}');
-        throw Exception('郵件驗證發送失敗: ${response.statusCode}');
-      }
-    } on DioException catch (e) {
-      _logger.e('郵件驗證發送錯誤: ${e.type}');
-      _logger.e('錯誤響應: ${e.response?.data}');
-      _logger.e('錯誤消息: ${e.message}');
-      _logger.e('請求數據: ${e.requestOptions.data}'); // 記錄發送了什麼數據
-      _logger.e('請求 URL: ${e.requestOptions.uri}');
-      _logger.e('請求方法: ${e.requestOptions.method}');
-      _logger.e('請求標頭: ${e.requestOptions.headers}');
-
-      // 檢查是否是缺少 email 字段的錯誤
-      if (e.response?.statusCode == 422 &&
-          e.response?.data != null &&
-          e.response!.data.toString().contains('field required')) {
-        throw Exception('請提供有效的電子郵件地址');
-      }
-
-      throw Exception(e.response?.data['detail'] ?? '郵件驗證發送失敗');
-    } catch (e) {
-      _logger.e('未預期的錯誤: $e');
-      throw Exception('郵件驗證發送過程中發生錯誤');
-    }
-  }
-
-  // 註冊新用戶
-  Future<User> register(RegisterRequest request) async {
-    try {
-      _logger.i('開始註冊請求');
-      _logger.i('請求數據: ${request.toJson()}');
-
-      /* 先在 Firebase 創建用戶
-      final firebase_auth.UserCredential firebaseCredential =
-          await _firebaseAuth.createUserWithEmailAndPassword(
-        email: request.email,
-        password: request.password,
-      );
-
-      // 發送郵件驗證(Firebase 驗證)
-      await firebaseCredential.user?.sendEmailVerification();
-      _logger.i('已發送驗證郵件到: ${request.email}');
-      */
-
-      final response = await _apiClient.post(
-        ApiConstants.completeRegister,
-        data: request.toJson(),
-        options: Options(
-          contentType: 'application/x-www-form-urlencoded',
-          headers: {
-            'Accept': 'application/json',
-          },
-        ),
-      );
-
-      _logger.i('收到註冊響應');
-      _logger.i('響應狀態碼: ${response.statusCode}');
-      _logger.i('響應數據: ${response.data}');
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        // 創建用戶對象，使用請求數據和響應的 user_id(api回應的 response body)
-        final accessToken = response.data['access_token'] as String? ?? '';
-        final user = User(
-          id: response.data['user_id'] as String? ?? '',
-          username: request.username,
-          email: request.email,
-          password: request.password,
-          name: request.username, // 使用 username 作為默認名稱
-          userUuid: response.data['user_id'] as String?,
-          token: accessToken,
-          // isEmailVerified: true, // 新增郵件驗證狀態(棄用 後端會自動驗證)
-        );
-
-        _logger.i('用戶對象創建成功: ${user.toJson()}');
-
-        // 如果 API 返回 token，保存它
-        if (accessToken.isNotEmpty) {
-          await _secureStorage.write(
-            key: 'access_token',
-            value: accessToken,
-          );
-          _logger.i('訪問令牌已保存');
-        }
-
-        // 保存登入狀態
-        await _saveAuthState(user.userUuid ?? user.id);
-        _logger.i('認證狀態已保存');
-
-        return user;
-      } else {
-        _logger.e('註冊失敗: 狀態碼 ${response.statusCode}');
-        throw Exception('註冊失敗: ${response.statusCode}');
-      }
-    } on DioException catch (e) {
-      _logger.e('註冊錯誤: ${e.type}');
-      _logger.e('錯誤響應: ${e.response?.data}');
-      _logger.e('錯誤消息: ${e.message}');
-      throw Exception(e.response?.data['detail'] ?? '註冊失敗');
-    } catch (e) {
-      _logger.e('未預期的錯誤: $e');
-      throw Exception('註冊過程中發生錯誤');
-    }
-  }
-
-  //檢查郵件是否已驗證(Firebase 驗證)
-  Future<bool> isEmailVerified() async {
-    final currentUser = _firebaseAuth.currentUser;
-    if (currentUser != null) {
-      await currentUser.reload();
-      return currentUser.emailVerified;
-    }
-    return false;
-  }
-
-  //Firebase 錯誤訊息轉換
-  String _getFirebaseErrorMessage(String code) {
-    switch (code) {
-      case 'email-already-in-use':
-        return '此電子郵件已被使用';
-      case 'invalid-email':
-        return '無效的電子郵件格式';
-      case 'operation-not-allowed':
-        return '電子郵件/密碼註冊未啟用';
-      case 'weak-password':
-        return '密碼強度不足';
-      case 'user-disabled':
-        return '此帳號已被停用';
-      case 'user-not-found':
-        return '找不到此電子郵件對應的帳號';
-      case 'wrong-password':
-        return '密碼錯誤';
-      case 'invalid-credential':
-        return '登入憑證無效';
-      case 'too-many-requests':
-        return '電子郵件尚未驗證';
-      default:
-        return '操作失敗：$code';
-    }
-  }
+  LoginService._internal();
 
   Future<User?> login(String email, String password) async {
     try {
@@ -300,126 +127,6 @@ class AuthService {
     }
   }
 
-  Future<bool> forgotPassword(String email) async {
-    try {
-      final response = await _apiClient.post(
-        ApiConstants.forgotPassword,
-        data: {'identifier': email},
-        options: Options(
-          contentType: 'application/x-www-form-urlencoded',
-          headers: {
-            'Accept': 'application/json',
-          },
-        ),
-      );
-
-      if (response.statusCode == 200) {
-        // 保存email到安全存儲，供後續步驟使用
-        await _secureStorage.write(key: 'reset_email', value: email);
-        _logger.i('已保存重設密碼使用的電子郵件: $email');
-        return true;
-      }
-      return false;
-    } catch (e) {
-      _logger.e('忘記密碼錯誤: $e');
-      rethrow;
-    }
-  }
-
-  Future<bool> verifyResetOtp(String optCode) async {
-    try {
-      // 從安全存儲中獲取之前保存的電子郵件
-      final email = await _secureStorage.read(key: 'reset_email');
-      if (email == null || email.isEmpty) {
-        _logger.e('找不到電子郵件，無法驗證重設密碼');
-        throw Exception('找不到電子郵件，請重新開始密碼重設流程');
-      }
-
-      final response = await _apiClient.post(
-        ApiConstants.verifyResetOtp,
-        data: {'identifier': email, 'otp_code': optCode},
-        options: Options(
-          contentType: 'application/x-www-form-urlencoded',
-          headers: {
-            'Accept': 'application/json',
-          },
-        ),
-      );
-
-      if (response.statusCode == 200) {
-        // 儲存確認令牌到安全存儲
-        String confirmationToken = response.data['confirmation_token'] ?? '';
-        if (confirmationToken.isNotEmpty) {
-          _logger.i('收到確認令牌，正在儲存...');
-          await _secureStorage.write(
-            key: 'confirmation_token',
-            value: confirmationToken,
-          );
-          _logger.i('確認令牌已儲存');
-        } else {
-          _logger.w('未收到確認令牌或令牌為空');
-        }
-        return true;
-      }
-      return false;
-    } catch (e) {
-      _logger.e('驗證重置密碼錯誤: $e');
-      rethrow;
-    }
-  }
-
-  Future<bool> resetPassword(String newPassword,
-      {String? confirmationToken}) async {
-    try {
-      // 如果沒有提供令牌，則從安全存儲中獲取
-      String token = confirmationToken ?? '';
-      if (token.isEmpty) {
-        _logger.i('從安全存儲中讀取確認令牌...');
-        token = await _secureStorage.read(key: 'confirmation_token') ?? '';
-        if (token.isEmpty) {
-          _logger.e('找不到確認令牌');
-          throw Exception('重置密碼失敗: 找不到確認令牌');
-        }
-      }
-
-      final response = await _apiClient.post(
-        ApiConstants.resetPassword,
-        data: {
-          'confirmation_token': token,
-          'new_password': newPassword,
-        },
-        options: Options(
-          contentType: 'application/x-www-form-urlencoded',
-          headers: {
-            'Accept': 'application/json',
-          },
-        ),
-      );
-
-      if (response.statusCode == 200) {
-        // 密碼重置成功後，清除所有重設密碼相關的數據
-        await clearResetPasswordData();
-        _logger.i('密碼重置成功，已清除相關數據');
-        return true;
-      }
-      return false;
-    } catch (e) {
-      _logger.e('重置密碼錯誤: $e');
-      rethrow;
-    }
-  }
-
-  // 清除所有與重設密碼相關的存儲數據
-  Future<void> clearResetPasswordData() async {
-    try {
-      await _secureStorage.delete(key: 'confirmation_token');
-      await _secureStorage.delete(key: 'reset_email');
-      _logger.i('已清除所有重設密碼相關數據');
-    } catch (e) {
-      _logger.e('清除重設密碼數據時發生錯誤: $e');
-    }
-  }
-
   Future<void> logout() async {
     try {
       _logger.i('開始本地登出處理...');
@@ -474,6 +181,32 @@ class AuthService {
     } catch (e) {
       _logger.e('獲取用戶ID時發生錯誤: $e');
       return null;
+    }
+  }
+
+  //Firebase 錯誤訊息轉換
+  String _getFirebaseErrorMessage(String code) {
+    switch (code) {
+      case 'email-already-in-use':
+        return '此電子郵件已被使用';
+      case 'invalid-email':
+        return '無效的電子郵件格式';
+      case 'operation-not-allowed':
+        return '電子郵件/密碼註冊未啟用';
+      case 'weak-password':
+        return '密碼強度不足';
+      case 'user-disabled':
+        return '此帳號已被停用';
+      case 'user-not-found':
+        return '找不到此電子郵件對應的帳號';
+      case 'wrong-password':
+        return '密碼錯誤';
+      case 'invalid-credential':
+        return '登入憑證無效';
+      case 'too-many-requests':
+        return '電子郵件尚未驗證';
+      default:
+        return '操作失敗：$code';
     }
   }
 
@@ -622,4 +355,4 @@ class AuthService {
       throw Exception('Google 登入失敗: $e');
     }
   }
-} // End of AuthService class
+}

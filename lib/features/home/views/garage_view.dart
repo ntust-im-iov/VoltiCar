@@ -5,7 +5,7 @@ import 'package:flame/events.dart'; // Flame import
 import 'package:flame/palette.dart'; // Flame import
 import 'package:volticar_app/shared/maplist/carDetails.dart'; //導入車輛訊息MAP列表
 import 'package:volticar_app/shared/widgets/adaptive_component.dart'; //導入自適應點擊元件原型
-import 'package:volticar_app/features/auth/viewmodels/auth_viewmodel.dart'; // 導入身份驗證視圖模型
+import 'package:volticar_app/features/auth/viewmodels/login_viewmodel.dart'; // 導入身份驗證視圖模型
 import 'package:volticar_app/core/constants/app_colors.dart'; // Import AppColors
 import 'package:volticar_app/shared/widgets/map_overlay.dart'; // Import the new map overlay widget
 import 'package:provider/provider.dart'; // 導入 Provider
@@ -65,14 +65,15 @@ class _GarageViewState extends State<GarageView> {
             top: 50, // Adjust top padding as needed
             right: 10, // Adjust right padding as needed
             child: IconButton(
-              icon: const Icon(Icons.logout,
-                  color: Colors.white, // Use AppColors if available or Colors.white
-                    ), // Use AppColors if available or Colors.white
+              icon: const Icon(
+                Icons.logout,
+                color:
+                    Colors.white, // Use AppColors if available or Colors.white
+              ), // Use AppColors if available or Colors.white
               onPressed: _handleLogout,
               tooltip: '登出', // Optional: Add tooltip
             ),
           ),
-          
 
           // New Bottom Car Panel
           Align(
@@ -415,15 +416,14 @@ class _GarageViewState extends State<GarageView> {
 
   //暫時停用-Logout Button method
   Future<void> _handleLogout() async {
-    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-    await authViewModel.logout();
+    final loginViewModel = Provider.of<LoginViewModel>(context, listen: false);
+    await loginViewModel.logout();
     if (mounted) {
       // Navigate back to login and remove all previous routes
       Navigator.of(context)
           .pushNamedAndRemoveUntil('/login', (Route<dynamic> route) => false);
     }
   }
-  
 }
 
 // Removed unused PixelFloorPainter class
