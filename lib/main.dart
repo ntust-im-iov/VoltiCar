@@ -11,6 +11,9 @@ import 'features/auth/views/reset_password_view.dart';
 import 'package:volticar_app/features/home/views/garage_view.dart'; // Import GarageView
 import 'package:volticar_app/features/home/views/charging_view.dart'; // Import ChargingView
 import 'package:volticar_app/features/home/views/my_car_view.dart'; // Import MyCarView
+import 'features/game/viewmodels/game_viewmodel.dart';
+import 'features/game/views/game_view.dart';
+import 'features/game/views/setup_view.dart';
 
 void main() async {
   // 確保Flutter綁定初始化
@@ -53,6 +56,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
+        ChangeNotifierProvider(create: (_) => GameViewModel()),
       ],
       child: MaterialApp(
         title: 'VoltiCar App',
@@ -70,10 +74,12 @@ class MyApp extends StatelessWidget {
           '/login': (context) => const LoginView(),
           '/register': (context) => const RegisterView(),
           '/reset-password': (context) => const ResetPasswordView(),
-          '/home': (context) => const GarageView(), // Point /home to GarageView
-          '/garage': (context) => const GarageView(), // Keep /garage route pointing to GarageView
-          '/charging': (context) => const ChargingView(), // Add charging route
-          '/mycar': (context) => const MyCarView(), // Add mycar route
+          '/home': (context) => const GarageView(),
+          '/garage': (context) => const GarageView(),
+          '/charging': (context) => const ChargingView(),
+          '/mycar': (context) => const MyCarView(),
+          '/setup': (context) => const SetupView(),
+          '/game': (context) => const GameView(),
         },
       ),
     );
