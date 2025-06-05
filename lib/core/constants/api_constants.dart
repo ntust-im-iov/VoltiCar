@@ -13,6 +13,8 @@ class ApiConstants {
 
   // Station endpoints
   static const String stationsOverview = '/stations/overview'; // 充電站概覽
+  static const String stations = '/stations'; // 充電站
+  static const String stationsByCity = '/stations/city'; // 按城市搜尋充電站
 
   // API version
   static const String apiVersion = '/api/v1';

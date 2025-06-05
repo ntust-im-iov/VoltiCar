@@ -18,22 +18,32 @@ class MapProvider extends ChangeNotifier {
   List<Marker> _markers = [];
   bool _isLoading = false;
   LatLng? _currentMapCenter; // 新增：存儲地圖中心點
+  ChargingStation? _selectedStationDetail; // 新增：存儲選中充電站的詳細資訊
+  bool _isFetchingDetail = false; // 新增：標記是否正在獲取詳細資訊
 
   bool get isInitialized => _isInitialized;
   List<Marker> get markers => _markers;
   List<ChargingStation> get stations => _stations; // 可以選擇性地暴露原始站點數據
   bool get isLoading => _isLoading;
   LatLng? get currentMapCenter => _currentMapCenter; // 新增：getter
+  ChargingStation? get selectedStationDetail => _selectedStationDetail; // 新增：getter
+  bool get isFetchingDetail => _isFetchingDetail; // 新增：getter
 
   // Filter states
   bool _filterOnlyAvailable = false;
   String _searchQuery = '';
+  String? _selectedCity;
+  List<String> _availableCities = []; // 將在 initialize 中填充
 
   bool get filterOnlyAvailable => _filterOnlyAvailable;
   String get searchQuery => _searchQuery;
+  String? get selectedCity => _selectedCity;
+  List<String> get availableCities => _availableCities;
 
   Future<void> initialize() async {
     if (_isInitialized) return;
+    // 初始化可用城市列表 (固定列表)
+    _availableCities = _getFixedAvailableCities();
     await fetchAndSetStationMarkers(); // 首次加載數據
     _isInitialized = true;
     debugPrint('MapProvider initialized and initial markers fetched');
@@ -44,9 +54,48 @@ class MapProvider extends ChangeNotifier {
     double? minLon,
     double? maxLat,
     double? maxLon,
+    double? currentZoom, // 新增：接收當前縮放級別
   }) async {
+    // 如果已選擇特定城市，則不應執行基於地理邊界的概覽獲取
+    if (_selectedCity != null && _selectedCity!.isNotEmpty) {
+      _logger.i('fetchAndSetStationMarkers skipped because a city is selected: $_selectedCity');
+      // 可能需要確保在這種情況下 _isLoading 被正確處理，
+      // 但通常選擇城市後會調用 fetchStationsByCity，它會管理 isLoading。
+      // 如果直接調用此方法而城市已選中，則 markers 可能不會更新。
+      // 或者，如果 selectedCity 不為空，此方法應轉為獲取該城市的數據（但這與 fetchStationsByCity 重複）。
+      // 最好的做法是，如果 selectedCity 有值，UI 層面就不應該觸發這個概覽獲取。
+      // 這裡加個 return，並確保 isLoading 在其他地方被重置。
+      // 但如果 setSelectedCity(null) 後調用此方法，則應繼續。
+      // 所以這個檢查應該放在 setSelectedCity(null) 的邏輯之後。
+      // 目前的 setSelectedCity(null) 會直接調用 fetchAndSetStationMarkers()，這是對的。
+      // 這個方法主要是給 onMapPositionChanged 和 initialize 用的。
+      // 如果 selectedCity 有值，onMapPositionChanged 就不應該調用它。
+      // initialize 時 selectedCity 應為 null。
+      // 所以這裡的檢查主要是防止意外調用。
+      // 但更合理的做法是在調用方 (onMapPositionChanged) 進行檢查。
+      // 我將在 onMapPositionChanged 中加入檢查。
+      // 此處暫不修改，讓 onMapPositionChanged 控制。
+    }
+
     _isLoading = true;
     notifyListeners();
+
+    // 根據縮放級別動態計算 limit
+    // 如果 currentZoom 未提供，則嘗試從 mapController 獲取
+    final zoomLevel = currentZoom ?? mapController.camera.zoom;
+    int dynamicLimit = 50; // 預設值
+    if (zoomLevel < 8) {
+      dynamicLimit = 30;
+    } else if (zoomLevel < 10) {
+      dynamicLimit = 50;
+    } else if (zoomLevel < 12) {
+      dynamicLimit = 100;
+    } else if (zoomLevel < 14) {
+      dynamicLimit = 150;
+    } else {
+      dynamicLimit = 200; // 更高的縮放級別，請求更多站點 (API 上限可能是 1000 或 200)
+    }
+    _logger.i('Fetching stations with dynamic limit: $dynamicLimit based on zoom: $zoomLevel');
 
     try {
       _stations = await _stationService.getStationsOverview(
@@ -54,7 +103,7 @@ class MapProvider extends ChangeNotifier {
         minLon: minLon,
         maxLat: maxLat,
         maxLon: maxLon,
-        limit: 50, // 示例：限制首次加載數量，可以根據地圖縮放級別調整
+        limit: dynamicLimit, // 使用動態計算的 limit
       );
 
       _markers = _stations.map((station) {
@@ -64,8 +113,8 @@ class MapProvider extends ChangeNotifier {
           point: LatLng(station.latitude, station.longitude),
           child: GestureDetector( // 使用 GestureDetector 保持點擊區域
             onTap: () {
-              _logger.i('Tapped on station: ${station.stationName}');
-              // TODO: 實現點擊標記後的動作，例如顯示詳細資訊彈窗
+              _logger.i('Tapped on station: ${station.stationName}, ID: ${station.stationID}');
+              selectStation(station.stationID);
             },
             child: Container(
               decoration: BoxDecoration(
@@ -113,19 +162,31 @@ class MapProvider extends ChangeNotifier {
     }
     if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 700), () { // 700ms 的延遲
+      // 如果已選擇特定城市，則地圖移動不應觸發基於邊界的重新獲取
+      if (_selectedCity != null && _selectedCity!.isNotEmpty) {
+        _logger.i('Map position changed but city filter is active ($_selectedCity), skipping overview fetch.');
+        // 如果中心點改變，還是需要通知 UI 更新中心座標顯示
+        if (center != null && _currentMapCenter == center) {
+           notifyListeners();
+        } else if (center == null) {
+           notifyListeners();
+        }
+        return;
+      }
       _logger.i('Debounced map position change. New bounds: ${bounds.southWest} to ${bounds.northEast}');
-      fetchAndSetStationMarkers(
+      final currentZoom = mapController.camera.zoom; // 從 mapController 獲取當前縮放級別
+      fetchAndSetStationMarkers( // 只有在沒有選擇城市時才執行
         minLat: bounds.southWest.latitude,
         minLon: bounds.southWest.longitude,
         maxLat: bounds.northEast.latitude,
         maxLon: bounds.northEast.longitude,
+        currentZoom: currentZoom, // 傳遞當前縮放級別
       );
-      // 在獲取數據後通知，這樣中心座標和站點數量可以一起更新
-      if (center != null && _currentMapCenter == center) { // 確保是同一次的中心點
-         notifyListeners();
-      } else if (center == null) {
-         notifyListeners(); // 如果沒有中心點資訊，也更新
-      }
+      // 在獲取數據後，使用 mapController 的中心點更新 _currentMapCenter
+      // 這可以確保我們使用的是地圖最終穩定後的中心點
+      _currentMapCenter = mapController.camera.center;
+      _logger.i('Map center updated after debounce: $_currentMapCenter');
+      notifyListeners(); // 通知 UI 更新，包括中心座標和可能的標記
     });
   }
 
@@ -184,8 +245,8 @@ class MapProvider extends ChangeNotifier {
         point: LatLng(station.latitude, station.longitude),
         child: GestureDetector(
           onTap: () {
-            _logger.i('Tapped on station: ${station.stationName}');
-            // TODO: 實現點擊標記後的動作
+            _logger.i('Tapped on station: ${station.stationName}, ID: ${station.stationID}');
+            selectStation(station.stationID);
           },
           child: Container(
             decoration: BoxDecoration(
@@ -214,6 +275,39 @@ class MapProvider extends ChangeNotifier {
     _isLoading = false; // 在 applyFilters 的末尾設置 isLoading
     notifyListeners();
     _logger.i('Filters applied. Displaying ${_markers.length} markers.');
+  }
+
+  Future<void> selectStation(String stationId) async {
+    if (_isFetchingDetail) return; // 如果正在獲取，則不重複執行
+
+    _isFetchingDetail = true;
+    _selectedStationDetail = null; // 先清除舊的詳細資訊
+    notifyListeners();
+
+    try {
+      _logger.i('Fetching details for station ID: $stationId');
+      final stationDetail = await _stationService.getStationById(stationId);
+      if (stationDetail != null) {
+        _selectedStationDetail = stationDetail;
+        _logger.i('Successfully fetched details for station: ${stationDetail.stationName}');
+      } else {
+        _logger.w('Could not fetch details for station ID: $stationId or station not found.');
+        // 可以在這裡設置一個錯誤狀態或保持 _selectedStationDetail 為 null
+      }
+    } catch (e) {
+      _logger.e('Error in selectStation for ID $stationId: $e');
+      _selectedStationDetail = null; // 出錯時確保清除
+    } finally {
+      _isFetchingDetail = false;
+      notifyListeners();
+    }
+  }
+
+  void clearSelectedStation() {
+    _selectedStationDetail = null;
+    _isFetchingDetail = false; // 確保也重置這個狀態
+    notifyListeners();
+    _logger.i('Selected station cleared.');
   }
 
   // --- Map Control Methods ---
@@ -325,5 +419,48 @@ class MapProvider extends ChangeNotifier {
     }
     _isLoading = false;
     notifyListeners(); // Notify to update UI (e.g. center coordinates display)
+  }
+
+  // --- City Filter Methods ---
+  List<String> _getFixedAvailableCities() {
+    // 提供一個固定的台灣主要城市列表作為範例
+    // 後續可以考慮從 API 或其他來源動態獲取
+    return [
+      '台北市', '新北市', '桃園市', '臺中市', '臺南市', '高雄市',
+      '基隆市', '新竹市', '嘉義市', '新竹縣', '苗栗縣', '彰化縣',
+      '南投縣', '雲林縣', '嘉義縣', '屏東縣', '宜蘭縣', '花蓮縣', '臺東縣',
+      // '澎湖縣', '金門縣', '連江縣' // 離島視情況加入
+    ];
+  }
+
+  Future<void> setSelectedCity(String? city) async {
+    _selectedCity = city;
+    _logger.i('Selected city set to: $_selectedCity');
+
+    if (_selectedCity != null && _selectedCity!.isNotEmpty) {
+      await fetchStationsByCity(_selectedCity!);
+    } else {
+      // 如果清除城市選擇，則重新加載概覽數據 (不按地理邊界，顯示預設概覽)
+      await fetchAndSetStationMarkers(); 
+    }
+    // fetchStationsByCity 和 fetchAndSetStationMarkers 內部會 notifyListeners
+  }
+
+  Future<void> fetchStationsByCity(String city) async {
+    _isLoading = true;
+    _stations = []; // 清空舊站點，因為我們要獲取特定城市的站點
+    _markers = [];  // 同時清空標記
+    notifyListeners();
+
+    try {
+      _stations = await _stationService.getStationsByCity(city);
+      _logger.i('Fetched ${_stations.length} stations for city: $city');
+    } catch (e) {
+      _logger.e('Error fetching stations for city $city: $e');
+      _stations = []; // 出錯時確保清空
+    }
+    
+    applyFilters(); // 根據新獲取的 _stations (已按城市篩選) 應用其他篩選並更新 markers
+    // applyFilters 內部會設置 _isLoading = false 和 notifyListeners()
   }
 }

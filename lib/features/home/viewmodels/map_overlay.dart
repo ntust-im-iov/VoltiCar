@@ -156,15 +156,58 @@ class MapOverlay extends StatelessWidget {
               title: const Text('篩選充電站'),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
+                  // 城市選擇下拉選單
+                  if (mapProvider.availableCities.isNotEmpty) ...[
+                    const Text('選擇城市:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        hintText: '所有城市',
+                      ),
+                      value: mapProvider.selectedCity,
+                      hint: const Text('所有城市'), // 當 value 為 null 時顯示
+                      items: [
+                        // 添加一個代表 "所有城市" 的選項
+                        const DropdownMenuItem<String>(
+                          value: null, // 使用 null 代表未選擇/所有城市
+                          child: Text('所有城市'),
+                        ),
+                        ...mapProvider.availableCities.map((String city) {
+                          return DropdownMenuItem<String>(
+                            value: city,
+                            child: Text(city),
+                          );
+                        }).toList(),
+                      ],
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          // mapProvider.setSelectedCity 會觸發數據更新和 notifyListeners
+                          // 所以這裡的 setState 主要是為了更新對話框內的 DropdownButtonFormField 的顯示值
+                          // （儘管 Provider 的更新應該會自動重繪）
+                          mapProvider.setSelectedCity(newValue);
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  
                   CheckboxListTile(
-                    title: const Text('僅顯示可用'),
-                    value: mapProvider.filterOnlyAvailable, // 假設 MapProvider 有此狀態
+                    title: const Text('僅顯示可用充電站'), // 稍微修改文字使其更清晰
+                    value: mapProvider.filterOnlyAvailable,
                     onChanged: (bool? value) {
-                      setState(() { // 更新對話框內的狀態
-                        mapProvider.setFilterOnlyAvailable(value ?? false); // 假設 MapProvider 有此方法
+                      setState(() {
+                        mapProvider.setFilterOnlyAvailable(value ?? false);
                       });
                     },
+                    controlAffinity: ListTileControlAffinity.leading, // 將勾選框放在前面
+                    contentPadding: EdgeInsets.zero, // 移除預設的 padding
                   ),
                   // 可以添加更多篩選條件
                 ],
@@ -179,7 +222,9 @@ class MapOverlay extends StatelessWidget {
                 TextButton(
                   child: const Text('套用'),
                   onPressed: () {
-                    mapProvider.applyFilters(); // 假設 MapProvider 有此方法來觸發過濾
+                    // setSelectedCity 和 setFilterOnlyAvailable 已經立即觸發更新
+                    // applyFilters 在那些方法內部或之後被調用
+                    // 所以這裡的 "套用" 按鈕主要就是關閉對話框
                     Navigator.of(dialogContext).pop();
                   },
                 ),
