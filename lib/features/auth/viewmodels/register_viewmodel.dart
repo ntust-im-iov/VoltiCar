@@ -54,7 +54,22 @@ class RegisterViewModel extends ChangeNotifier {
   }
 
   bool isValidPassword(String password) {
-    return password.length >= 8;
+    if (password.length < 8) {
+      return false;
+    }
+    // 檢查是否包含至少一個大寫字母
+    if (!password.contains(RegExp(r'[A-Z]'))) {
+      return false;
+    }
+    // 檢查是否包含至少一個小寫字母
+    if (!password.contains(RegExp(r'[a-z]'))) {
+      return false;
+    }
+    // 檢查是否包含至少一個數字
+    if (!password.contains(RegExp(r'[0-9]'))) {
+      return false;
+    }
+    return true;
   }
 
   // 驗證使用者名稱格式
@@ -81,20 +96,6 @@ class RegisterViewModel extends ChangeNotifier {
     // "abc_" (長度4) -> false (非字母數字結尾)
 
     return usernameRegExp.hasMatch(username);
-  }
-
-  // 自動清除錯誤訊息(3秒後)
-  void autoClearError() {
-    Future.delayed(const Duration(seconds: 3), () {
-      if (_registerError != null ||
-          _emailVerificationError != null ||
-          _usernameAvailabilityMessage != null) {
-        _registerError = null;
-        _emailVerificationError = null;
-        _usernameAvailabilityMessage = null;
-        notifyListeners();
-      }
-    });
   }
 
   // 檢查使用者名稱是否可用 (帶 Debounce)
@@ -264,7 +265,6 @@ class RegisterViewModel extends ChangeNotifier {
     if (isLoading != null) _isEmailVerificationLoading = isLoading;
     if (error != null) {
       _emailVerificationError = error;
-      autoClearError(); // 自動清除錯誤訊息
     }
     if (isSuccess != null) _isEmailVerificationSuccess = isSuccess;
     notifyListeners();
@@ -286,6 +286,20 @@ class RegisterViewModel extends ChangeNotifier {
       notifyListeners();
       _logger.i('RegisterViewModel: Register success state has been reset.');
     }
+  }
+
+  // 自動清除錯誤訊息(3秒後)
+  void autoClearError() {
+    Future.delayed(const Duration(seconds: 3), () {
+      if (_registerError != null ||
+          _emailVerificationError != null ||
+          _usernameAvailabilityMessage != null) {
+        _registerError = null;
+        _emailVerificationError = null;
+        _usernameAvailabilityMessage = null;
+        notifyListeners();
+      }
+    });
   }
 
   @override

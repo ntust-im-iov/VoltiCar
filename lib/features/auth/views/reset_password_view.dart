@@ -43,11 +43,8 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
       return;
     }
 
-    final resetPasswordViewModel =
-        Provider.of<ResetPasswordViewModel>(context, listen: false);
-    resetPasswordViewModel
-        .forgotPassword(_emailController.text.trim())
-        .then((success) {
+    final resetPasswordViewModel = Provider.of<ResetPasswordViewModel>(context, listen: false);
+    resetPasswordViewModel.forgotPassword(_emailController.text.trim()).then((success) {
       if (success) {
         setState(() {
           _currentStep = 1;
@@ -70,11 +67,8 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
       return;
     }
 
-    final resetPasswordViewModel =
-        Provider.of<ResetPasswordViewModel>(context, listen: false);
-    resetPasswordViewModel
-        .verifyResetOtp(_otpController.text.trim())
-        .then((success) {
+    final resetPasswordViewModel = Provider.of<ResetPasswordViewModel>(context, listen: false);
+    resetPasswordViewModel.verifyResetOtp(_otpController.text.trim()).then((success) {
       if (success) {
         setState(() {
           _currentStep = 2;
@@ -93,24 +87,25 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
 
   void _resetPassword() {
     if (_formKey.currentState?.validate() ?? false) {
-      final resetPasswordViewModel =
-          Provider.of<ResetPasswordViewModel>(context, listen: false);
+      final resetPasswordViewModel = Provider.of<ResetPasswordViewModel>(context, listen: false);
       resetPasswordViewModel.resetPassword(_passwordController.text.trim());
     }
   }
 
   Widget _buildEmailStep() {
+    final resetPasswordViewModel = Provider.of<ResetPasswordViewModel>(context, listen: false);
     return Column(
       children: [
         CustomTextField(
           controller: _emailController,
           hintText: '電子郵件',
           keyboardType: TextInputType.emailAddress,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           validator: (value) {
             if (value == null || value.isEmpty) {
               return '請輸入電子郵件';
             }
-            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+            if (!resetPasswordViewModel.isValidEmail(value)) {
               return '請輸入有效的電子郵件地址';
             }
             return null;
@@ -119,8 +114,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
           textInputAction: TextInputAction.done,
         ),
         const SizedBox(height: 24),
-        Consumer<ResetPasswordViewModel>(
-            builder: (context, resetPasswordViewModel, _) {
+        Consumer<ResetPasswordViewModel>(builder: (context, resetPasswordViewModel, _) {
           return CustomButton(
             text: '發送驗證碼',
             onPressed: _sendOtp,
@@ -148,8 +142,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
           textInputAction: TextInputAction.done,
         ),
         const SizedBox(height: 24),
-        Consumer<ResetPasswordViewModel>(
-            builder: (context, resetPasswordViewModel, _) {
+        Consumer<ResetPasswordViewModel>(builder: (context, resetPasswordViewModel, _) {
           return Row(
             children: [
               Expanded(
@@ -195,9 +188,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
           },
           suffixIcon: IconButton(
             icon: Icon(
-              _obscurePassword
-                  ? Icons.visibility_off_outlined
-                  : Icons.visibility_outlined,
+              _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
             ),
             onPressed: () {
               setState(() {
@@ -223,9 +214,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
           },
           suffixIcon: IconButton(
             icon: Icon(
-              _obscureConfirmPassword
-                  ? Icons.visibility_off_outlined
-                  : Icons.visibility_outlined,
+              _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
             ),
             onPressed: () {
               setState(() {
@@ -237,8 +226,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
           onSubmitted: (_) => _resetPassword(),
         ),
         const SizedBox(height: 24),
-        Consumer<ResetPasswordViewModel>(
-            builder: (context, resetPasswordViewModel, _) {
+        Consumer<ResetPasswordViewModel>(builder: (context, resetPasswordViewModel, _) {
           return CustomButton(
             text: '重設密碼',
             onPressed: _resetPassword,
@@ -265,8 +253,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ResetPasswordViewModel>(
-        builder: (context, resetPasswordViewModel, _) {
+    return Consumer<ResetPasswordViewModel>(builder: (context, resetPasswordViewModel, _) {
       // 重設密碼成功時導航到登入頁面
       if (resetPasswordViewModel.isResetPasswordSuccess && mounted) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -367,12 +354,10 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                           const SizedBox(height: 32),
 
                           // 錯誤信息
-                          if (resetPasswordViewModel.resetPasswordError !=
-                              null) ...[
+                          if (resetPasswordViewModel.resetPasswordError != null) ...[
                             Text(
                               resetPasswordViewModel.resetPasswordError!,
-                              style:
-                                  const TextStyle(color: AppColors.errorColor),
+                              style: const TextStyle(color: AppColors.errorColor),
                             ),
                             const SizedBox(height: 16),
                           ],

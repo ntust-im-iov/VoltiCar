@@ -167,6 +167,11 @@ class _RegisterViewState extends State<RegisterView> {
                                   !registerViewModel.isValidUserName(value.trim())) {
                                 return registerViewModel.usernameFormatError; // "使用者名稱格式不符。"
                               }
+                              if (registerViewModel.usernameAvailabilityMessage != null &&
+                                  _usernameController.text.isNotEmpty &&
+                                  !registerViewModel.isUsernameAvailable) {
+                                return registerViewModel.usernameAvailabilityMessage;
+                              }
                               return null;
                             },
                             onChanged: (value) {
@@ -176,7 +181,7 @@ class _RegisterViewState extends State<RegisterView> {
                                 ? const SizedBox(
                                     height: 20,
                                     width: 20,
-                                    child: CircularProgressIndicator(strokeWidth: 2.0))
+                                  )
                                 : (registerViewModel.usernameAvailabilityMessage != null &&
                                         _usernameController.text.isNotEmpty
                                     ? (registerViewModel.isUsernameAvailable
@@ -211,6 +216,9 @@ class _RegisterViewState extends State<RegisterView> {
                                         !registerViewModel.isValidEmail(value)) {
                                       return '請輸入有效的電子信箱格式';
                                     }
+                                    if (registerViewModel.emailVerificationError != null) {
+                                      return registerViewModel.emailVerificationError;
+                                    }
                                     return null;
                                   },
                                   suffixIcon: const Icon(Icons.email_outlined),
@@ -236,12 +244,13 @@ class _RegisterViewState extends State<RegisterView> {
                             controller: _passwordController,
                             hintText: '密碼',
                             obscureText: _obscurePassword,
+                            autovalidateMode: AutovalidateMode.onUserInteraction,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return '請輸入密碼';
                               }
-                              if (value.length < 6) {
-                                return '密碼長度不能少於6個字符';
+                              if (!registerViewModel.isValidPassword(value)) {
+                                return '密碼至少8位數，包含大小寫字母和數字';
                               }
                               return null;
                             },
@@ -266,6 +275,7 @@ class _RegisterViewState extends State<RegisterView> {
                             controller: _confirmPasswordController,
                             hintText: '確認密碼',
                             obscureText: _obscureConfirmPassword,
+                            autovalidateMode: AutovalidateMode.onUserInteraction,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return '請確認密碼';
@@ -292,12 +302,10 @@ class _RegisterViewState extends State<RegisterView> {
                           ),
                           const SizedBox(height: 24),
 
-                          // 錯誤信息 - 註冊錯誤或郵件驗證錯誤
-                          if (registerViewModel.registerError != null ||
-                              registerViewModel.emailVerificationError != null) ...[
+                          // 錯誤信息 - 註冊錯誤
+                          if (registerViewModel.registerError != null) ...[
                             Text(
-                              registerViewModel.registerError ??
-                                  registerViewModel.emailVerificationError!,
+                              registerViewModel.registerError ?? '',
                               style: const TextStyle(color: AppColors.errorColor),
                             ),
                             const SizedBox(height: 16),
