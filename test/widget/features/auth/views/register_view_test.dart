@@ -7,7 +7,7 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 
 // 生成 AuthViewModel 的 Mock 類
-@GenerateMocks([RegisterViewModel])
+@GenerateNiceMocks([MockSpec<RegisterViewModel>()])
 import 'register_view_test.mocks.dart';
 
 void main() {
@@ -23,6 +23,10 @@ void main() {
     when(mockRegisterViewModel.isEmailVerificationLoading).thenReturn(false);
     when(mockRegisterViewModel.isEmailVerificationSuccess).thenReturn(false);
     when(mockRegisterViewModel.emailVerificationError).thenReturn(null);
+    when(mockRegisterViewModel.isCheckingUsername).thenReturn(false);
+    when(mockRegisterViewModel.isUsernameAvailable).thenReturn(true);
+    when(mockRegisterViewModel.usernameAvailabilityMessage).thenReturn('');
+    when(mockRegisterViewModel.usernameFormatError).thenReturn(null);
   });
 
   testWidgets('RegisterView 應該顯示註冊表單', (WidgetTester tester) async {
@@ -137,6 +141,11 @@ void main() {
     await tester.ensureVisible(confirmPasswordField);
     await tester.enterText(confirmPasswordField, 'password123');
 
+    // 為了讓表單驗證通過，我們需要模擬驗證方法的行為，讓它們回傳 true
+    when(mockRegisterViewModel.isValidEmail(any)).thenReturn(true);
+    when(mockRegisterViewModel.isValidPassword(any)).thenReturn(true);
+    when(mockRegisterViewModel.checkUsernameAvailability(any)).thenAnswer((_) async {});
+
     // 設置 register 方法的模擬行為
     when(mockRegisterViewModel.register(
       username: 'newuser',
@@ -199,9 +208,11 @@ void main() {
     await tester.ensureVisible(emailField);
     await tester.enterText(emailField, 'test@example.com');
 
+    // 為了讓驗證按鈕的點擊事件能夠觸發，我們需要模擬驗證方法的行為
+    when(mockRegisterViewModel.isValidEmail(any)).thenReturn(true);
+
     // 設置驗證郵件方法的模擬行為
-    when(mockRegisterViewModel.sendEmailVerification('test@example.com'))
-        .thenAnswer((_) async {
+    when(mockRegisterViewModel.sendEmailVerification('test@example.com')).thenAnswer((_) async {
       // 設置郵件驗證成功
       when(mockRegisterViewModel.isEmailVerificationSuccess).thenReturn(true);
       mockRegisterViewModel.notifyListeners();
@@ -213,8 +224,7 @@ void main() {
     await tester.tap(verifyButton);
 
     // 驗證 sendEmailVerification 方法被調用
-    verify(mockRegisterViewModel.sendEmailVerification('test@example.com'))
-        .called(1);
+    verify(mockRegisterViewModel.sendEmailVerification('test@example.com')).called(1);
 
     // 由於我們無法可靠地測試 SnackBar 顯示，因此我們只驗證以下內容：
     // 1. 方法被調用

@@ -61,4 +61,13 @@ class MockRegisterRepository extends _i1.Mock
         ),
         returnValue: _i3.Future<_i4.User?>.value(),
       ) as _i3.Future<_i4.User?>);
+
+  @override
+  _i3.Future<bool> isUsernameAvailable(String? username) => (super.noSuchMethod(
+        Invocation.method(
+          #isUsernameAvailable,
+          [username],
+        ),
+        returnValue: _i3.Future<bool>.value(false),
+      ) as _i3.Future<bool>);
 }
