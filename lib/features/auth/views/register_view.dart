@@ -15,11 +15,11 @@ class RegisterView extends StatefulWidget {
 
 class _RegisterViewState extends State<RegisterView> {
   final _formKey = GlobalKey<FormState>();
-  final _accountController = TextEditingController();
+  final _emailFieldKey = GlobalKey<FormFieldState<String>>();
+  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _nameController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
@@ -30,11 +30,10 @@ class _RegisterViewState extends State<RegisterView> {
 
   @override
   void dispose() {
-    _accountController.dispose();
+    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _nameController.dispose();
     super.dispose();
   }
 
@@ -46,10 +45,9 @@ class _RegisterViewState extends State<RegisterView> {
     final isValid = _formKey.currentState!.validate();
 
     if (isValid) {
-      final registerViewModel =
-          Provider.of<RegisterViewModel>(context, listen: false);
+      final registerViewModel = Provider.of<RegisterViewModel>(context, listen: false);
       registerViewModel.register(
-        username: _accountController.text.trim(),
+        username: _usernameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
@@ -61,24 +59,22 @@ class _RegisterViewState extends State<RegisterView> {
   }
 
   void _verifyEmail() {
-    if (_emailController.text.isEmpty) {
+    if (_emailFieldKey.currentState == null) {
       return;
     }
+    final isEmailFormatValid = _emailFieldKey.currentState!.validate();
 
-    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-        .hasMatch(_emailController.text)) {
-      return;
+    if (isEmailFormatValid) {
+      final email = _emailController.text.trim();
+      final registerViewModel = Provider.of<RegisterViewModel>(context, listen: false);
+
+      registerViewModel.sendEmailVerification(email);
     }
-
-    final registerViewModel =
-        Provider.of<RegisterViewModel>(context, listen: false);
-    registerViewModel.sendEmailVerification(_emailController.text.trim());
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<RegisterViewModel>(
-        builder: (context, registerViewModel, _) {
+    return Consumer<RegisterViewModel>(builder: (context, registerViewModel, _) {
       // 註冊成功時導航到登入頁面
       if (registerViewModel.isRegisterSuccess && mounted) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -106,222 +102,256 @@ class _RegisterViewState extends State<RegisterView> {
         });
       }
 
-      return Scaffold(
-        backgroundColor: Colors.white,
-        body: SafeArea(
-          top: false, // 不設置頂部安全區域
-          child: Stack(
-            children: [
-              // 返回按鈕
-              Positioned(
-                top: 40,
-                left: 16,
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.black),
-                  onPressed: () =>
-                      Navigator.of(context).pushReplacementNamed('/login'),
-                ),
-              ),
-
-              // 主要內容
-              Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Logo and Title
-                        SizedBox(
-                          height: 250,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              // Logo在上方
-                              Positioned(
-                                top: 50,
-                                bottom: 80,
-                                child: Image.asset(
-                                  'assets/images/volticar_logo.png',
-                                  height: 300,
-                                  fit: BoxFit.contain,
+      // 包裹 GestureDetector 以實現點擊空白處收起鍵盤
+      return GestureDetector(
+        onTap: () {
+          // 取消當前焦點
+          FocusScope.of(context).unfocus();
+        },
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          body: SafeArea(
+            top: false, // 不設置頂部安全區域
+            child: Stack(
+              children: [
+                // 主要內容 (先放置)
+                Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Logo and Title
+                          SizedBox(
+                            height: 250,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                // Logo在上方
+                                Positioned(
+                                  top: 50,
+                                  bottom: 80,
+                                  child: Image.asset(
+                                    'assets/images/volticar_logo.png',
+                                    height: 300,
+                                    fit: BoxFit.contain,
+                                  ),
                                 ),
-                              ),
-                              // Title在底部
-                              Positioned(
-                                bottom: 0,
-                                child: Image.asset(
-                                  'assets/images/volticar_title.png',
-                                  height: 50,
-                                  fit: BoxFit.contain,
+                                // Title在底部
+                                Positioned(
+                                  bottom: 0,
+                                  child: Image.asset(
+                                    'assets/images/volticar_title.png',
+                                    height: 50,
+                                    fit: BoxFit.contain,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 70),
+                          const SizedBox(height: 50),
 
-                        // 使用者名稱輸入框
-                        CustomTextField(
-                          controller: _accountController,
-                          hintText: '使用者名稱',
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return '請輸入使用者名稱';
-                            }
-                            return null;
-                          },
-                          suffixIcon: const Icon(Icons.person_outline),
-                          textInputAction: TextInputAction.next,
-                        ),
-                        const SizedBox(height: 16),
-
-                        // 電子信箱輸入框
-                        Row(
-                          children: [
-                            Expanded(
-                              child: CustomTextField(
-                                controller: _emailController,
-                                hintText: '電子信箱',
-                                keyboardType: TextInputType.emailAddress,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return '請輸入電子信箱';
-                                  }
-                                  if (!RegExp(
-                                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                                      .hasMatch(value)) {
-                                    return '請輸入有效的電子信箱';
-                                  }
-                                  return null;
-                                },
-                                suffixIcon: const Icon(Icons.email_outlined),
-                                textInputAction: TextInputAction.next,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            SizedBox(
-                              width: 90,
-                              child: CustomButton(
-                                text: '驗證',
-                                onPressed: _verifyEmail,
-                                isLoading: registerViewModel
-                                    .isEmailVerificationLoading,
-                                width: 90,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-
-                        // 密碼輸入框
-                        CustomTextField(
-                          controller: _passwordController,
-                          hintText: '密碼',
-                          obscureText: _obscurePassword,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return '請輸入密碼';
-                            }
-                            if (value.length < 6) {
-                              return '密碼長度不能少於6個字符';
-                            }
-                            return null;
-                          },
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_off_outlined
-                                  : Icons.visibility_outlined,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
+                          // 使用者名稱輸入框
+                          CustomTextField(
+                            controller: _usernameController,
+                            hintText: '使用者名稱',
+                            autovalidateMode: AutovalidateMode.onUserInteraction,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return '請輸入使用者名稱';
+                              }
+                              if (registerViewModel.usernameFormatError != null &&
+                                  _usernameController.text.isNotEmpty &&
+                                  !registerViewModel.isValidUserName(value.trim())) {
+                                return registerViewModel.usernameFormatError; // "使用者名稱格式不符。"
+                              }
+                              if (registerViewModel.usernameAvailabilityMessage != null &&
+                                  _usernameController.text.isNotEmpty &&
+                                  !registerViewModel.isUsernameAvailable) {
+                                return registerViewModel.usernameAvailabilityMessage;
+                              }
+                              return null;
                             },
-                          ),
-                          textInputAction: TextInputAction.next,
-                        ),
-                        const SizedBox(height: 16),
-
-                        // 確認密碼輸入框
-                        CustomTextField(
-                          controller: _confirmPasswordController,
-                          hintText: '確認密碼',
-                          obscureText: _obscureConfirmPassword,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return '請確認密碼';
-                            }
-                            if (value != _passwordController.text) {
-                              return '兩次輸入的密碼不一致';
-                            }
-                            return null;
-                          },
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscureConfirmPassword
-                                  ? Icons.visibility_off_outlined
-                                  : Icons.visibility_outlined,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _obscureConfirmPassword =
-                                    !_obscureConfirmPassword;
-                              });
+                            onChanged: (value) {
+                              registerViewModel.checkUsernameAvailability(value.trim());
                             },
-                          ),
-                          textInputAction: TextInputAction.done,
-                          onSubmitted: (_) => _register(),
-                        ),
-                        const SizedBox(height: 24),
-
-                        // 錯誤信息 - 註冊錯誤或郵件驗證錯誤
-                        if (registerViewModel.registerError != null ||
-                            registerViewModel.emailVerificationError !=
-                                null) ...[
-                          Text(
-                            registerViewModel.registerError ??
-                                registerViewModel.emailVerificationError!,
-                            style: const TextStyle(color: AppColors.errorColor),
+                            suffixIcon: registerViewModel.isCheckingUsername
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                  )
+                                : (registerViewModel.usernameAvailabilityMessage != null &&
+                                        _usernameController.text.isNotEmpty
+                                    ? (registerViewModel.isUsernameAvailable
+                                        ? const Icon(Icons.check_circle_outline,
+                                            color: Colors.green)
+                                        : const Icon(Icons.error_outline,
+                                            color: AppColors.errorColor))
+                                    : (registerViewModel.usernameFormatError != null &&
+                                            _usernameController.text.isNotEmpty
+                                        ? const Icon(Icons.warning_amber_rounded,
+                                            color: AppColors.errorColor) // Icon for format error
+                                        : const Icon(Icons.person_outline))),
+                            textInputAction: TextInputAction.next,
                           ),
                           const SizedBox(height: 16),
-                        ],
 
-                        // 註冊按鈕
-                        CustomButton(
-                          text: '註冊',
-                          onPressed: _register,
-                          isLoading: registerViewModel.isRegisterLoading,
-                          width: double.infinity,
-                        ),
-                        const SizedBox(height: 32),
-
-                        // 登入鏈接
-                        RichText(
-                          text: TextSpan(
-                            text: '已經有帳號? ',
-                            style: const TextStyle(color: Colors.black),
+                          // 電子信箱輸入框
+                          Row(
                             children: [
-                              TextSpan(
-                                text: '登入',
-                                style: const TextStyle(
-                                  color: AppColors.linkColor,
-                                  fontWeight: FontWeight.bold,
+                              Expanded(
+                                child: CustomTextField(
+                                  fieldKey: _emailFieldKey,
+                                  controller: _emailController,
+                                  hintText: '電子信箱',
+                                  keyboardType: TextInputType.emailAddress,
+                                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return '請輸入電子信箱';
+                                    }
+                                    if (value.isNotEmpty &&
+                                        !registerViewModel.isValidEmail(value)) {
+                                      return '請輸入有效的電子信箱格式';
+                                    }
+                                    if (registerViewModel.emailVerificationError != null) {
+                                      return registerViewModel.emailVerificationError;
+                                    }
+                                    return null;
+                                  },
+                                  suffixIcon: const Icon(Icons.email_outlined),
+                                  textInputAction: TextInputAction.next,
                                 ),
-                                recognizer: TapGestureRecognizer()
-                                  ..onTap = _navigateToLogin,
+                              ),
+                              const SizedBox(width: 8),
+                              SizedBox(
+                                width: 90,
+                                child: CustomButton(
+                                  text: '驗證',
+                                  onPressed: _verifyEmail,
+                                  isLoading: registerViewModel.isEmailVerificationLoading,
+                                  width: 90,
+                                ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 16),
+
+                          // 密碼輸入框
+                          CustomTextField(
+                            controller: _passwordController,
+                            hintText: '密碼',
+                            obscureText: _obscurePassword,
+                            autovalidateMode: AutovalidateMode.onUserInteraction,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return '請輸入密碼';
+                              }
+                              if (!registerViewModel.isValidPassword(value)) {
+                                return '密碼至少8位數，包含大小寫字母和數字';
+                              }
+                              return null;
+                            },
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                            ),
+                            textInputAction: TextInputAction.next,
+                          ),
+                          const SizedBox(height: 16),
+
+                          // 確認密碼輸入框
+                          CustomTextField(
+                            controller: _confirmPasswordController,
+                            hintText: '確認密碼',
+                            obscureText: _obscureConfirmPassword,
+                            autovalidateMode: AutovalidateMode.onUserInteraction,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return '請確認密碼';
+                              }
+                              if (value != _passwordController.text) {
+                                return '兩次輸入的密碼不一致';
+                              }
+                              return null;
+                            },
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscureConfirmPassword
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscureConfirmPassword = !_obscureConfirmPassword;
+                                });
+                              },
+                            ),
+                            textInputAction: TextInputAction.done,
+                            onSubmitted: (_) => _register(),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // 錯誤信息 - 註冊錯誤
+                          if (registerViewModel.registerError != null) ...[
+                            Text(
+                              registerViewModel.registerError ?? '',
+                              style: const TextStyle(color: AppColors.errorColor),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+
+                          // 註冊按鈕
+                          CustomButton(
+                            text: '註冊',
+                            onPressed: _register,
+                            isLoading: registerViewModel.isRegisterLoading,
+                            width: double.infinity,
+                          ),
+                          const SizedBox(height: 32),
+
+                          // 登入鏈接
+                          RichText(
+                            text: TextSpan(
+                              text: '已經有帳號? ',
+                              style: const TextStyle(color: Colors.black),
+                              children: [
+                                TextSpan(
+                                  text: '登入',
+                                  style: const TextStyle(
+                                    color: AppColors.linkColor,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  recognizer: TapGestureRecognizer()..onTap = _navigateToLogin,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+                // 返回按鈕 (後放置，會疊加在 Center 之上)
+                Positioned(
+                  top: 50, // 你可以根據需要調整這個值，例如 50
+                  left: 16,
+                  child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.black),
+                      onPressed: () => Navigator.of(context).pushNamed('/login')),
+                ),
+              ],
+            ),
           ),
         ),
       );

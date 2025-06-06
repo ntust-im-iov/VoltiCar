@@ -77,6 +77,52 @@ class RegisterService {
     }
   }
 
+  // 檢查用戶名稱是否存在
+  Future<bool> checkUsername(String username) async {
+    try {
+      final response = await _apiClient.get(
+        '${ApiConstants.checkUsername}/$username',
+        options: Options(
+          contentType: 'application/x-www-form-urlencoded',
+          headers: {
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        if (response.data is Map<String, dynamic>) {
+          final exists = response.data['exists'] as bool?;
+          if (exists == true) {
+            // 使用者名稱已存在
+            _logger.i('用戶名稱 "$username" 已被使用');
+            return false; // 不可用
+          } else if (exists == false) {
+            // 使用者名稱不存在
+            _logger.i('用戶名稱 "$username" 可用');
+            return true; // 可用
+          } else {
+            _logger.w('檢查用戶名稱時收到未知的 exists 值: $exists');
+            return false; // 或者拋出錯誤，視情況而定 (假設未知時為不可用)
+          }
+        } else {
+          _logger.w('檢查用戶名稱時，後端回應格式不正確 (非 Map): ${response.data}');
+          return false; // 或者拋出錯誤
+        }
+      } else {
+        _logger.e('檢查用戶名稱請求失敗: 狀態碼 ${response.statusCode}, data: ${response.data}');
+        throw Exception('檢查用戶名稱失敗: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      _logger.e('檢查用戶名稱時發生 Dio 錯誤: ${e.message}');
+      _logger.e('Dio 錯誤回應: ${e.response?.data}');
+      throw Exception(e.response?.data['detail'] ?? '檢查用戶名稱時發生網路錯誤');
+    } catch (e) {
+      _logger.e('檢查用戶名稱時發生未預期的錯誤: $e');
+      throw Exception('檢查用戶名稱時發生未預期的錯誤');
+    }
+  }
+
   // 註冊新用戶
   Future<User> register(RegisterRequest request) async {
     try {

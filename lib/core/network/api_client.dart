@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../constants/api_constants.dart';
+import 'package:volticar_app/core/constants/api_constants.dart';
 import 'package:logger/logger.dart';
 
 class ApiClient {

@@ -43,11 +43,8 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
       return;
     }
 
-    final resetPasswordViewModel =
-        Provider.of<ResetPasswordViewModel>(context, listen: false);
-    resetPasswordViewModel
-        .forgotPassword(_emailController.text.trim())
-        .then((success) {
+    final resetPasswordViewModel = Provider.of<ResetPasswordViewModel>(context, listen: false);
+    resetPasswordViewModel.forgotPassword(_emailController.text.trim()).then((success) {
       if (success) {
         setState(() {
           _currentStep = 1;
@@ -70,11 +67,8 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
       return;
     }
 
-    final resetPasswordViewModel =
-        Provider.of<ResetPasswordViewModel>(context, listen: false);
-    resetPasswordViewModel
-        .verifyResetOtp(_otpController.text.trim())
-        .then((success) {
+    final resetPasswordViewModel = Provider.of<ResetPasswordViewModel>(context, listen: false);
+    resetPasswordViewModel.verifyResetOtp(_otpController.text.trim()).then((success) {
       if (success) {
         setState(() {
           _currentStep = 2;
@@ -93,24 +87,25 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
 
   void _resetPassword() {
     if (_formKey.currentState?.validate() ?? false) {
-      final resetPasswordViewModel =
-          Provider.of<ResetPasswordViewModel>(context, listen: false);
+      final resetPasswordViewModel = Provider.of<ResetPasswordViewModel>(context, listen: false);
       resetPasswordViewModel.resetPassword(_passwordController.text.trim());
     }
   }
 
   Widget _buildEmailStep() {
+    final resetPasswordViewModel = Provider.of<ResetPasswordViewModel>(context, listen: false);
     return Column(
       children: [
         CustomTextField(
           controller: _emailController,
           hintText: '電子郵件',
           keyboardType: TextInputType.emailAddress,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           validator: (value) {
             if (value == null || value.isEmpty) {
               return '請輸入電子郵件';
             }
-            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+            if (!resetPasswordViewModel.isValidEmail(value)) {
               return '請輸入有效的電子郵件地址';
             }
             return null;
@@ -119,8 +114,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
           textInputAction: TextInputAction.done,
         ),
         const SizedBox(height: 24),
-        Consumer<ResetPasswordViewModel>(
-            builder: (context, resetPasswordViewModel, _) {
+        Consumer<ResetPasswordViewModel>(builder: (context, resetPasswordViewModel, _) {
           return CustomButton(
             text: '發送驗證碼',
             onPressed: _sendOtp,
@@ -148,8 +142,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
           textInputAction: TextInputAction.done,
         ),
         const SizedBox(height: 24),
-        Consumer<ResetPasswordViewModel>(
-            builder: (context, resetPasswordViewModel, _) {
+        Consumer<ResetPasswordViewModel>(builder: (context, resetPasswordViewModel, _) {
           return Row(
             children: [
               Expanded(
@@ -195,9 +188,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
           },
           suffixIcon: IconButton(
             icon: Icon(
-              _obscurePassword
-                  ? Icons.visibility_off_outlined
-                  : Icons.visibility_outlined,
+              _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
             ),
             onPressed: () {
               setState(() {
@@ -223,9 +214,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
           },
           suffixIcon: IconButton(
             icon: Icon(
-              _obscureConfirmPassword
-                  ? Icons.visibility_off_outlined
-                  : Icons.visibility_outlined,
+              _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
             ),
             onPressed: () {
               setState(() {
@@ -237,8 +226,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
           onSubmitted: (_) => _resetPassword(),
         ),
         const SizedBox(height: 24),
-        Consumer<ResetPasswordViewModel>(
-            builder: (context, resetPasswordViewModel, _) {
+        Consumer<ResetPasswordViewModel>(builder: (context, resetPasswordViewModel, _) {
           return CustomButton(
             text: '重設密碼',
             onPressed: _resetPassword,
@@ -265,8 +253,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ResetPasswordViewModel>(
-        builder: (context, resetPasswordViewModel, _) {
+    return Consumer<ResetPasswordViewModel>(builder: (context, resetPasswordViewModel, _) {
       // 重設密碼成功時導航到登入頁面
       if (resetPasswordViewModel.isResetPasswordSuccess && mounted) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -279,107 +266,111 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
         });
       }
 
-      return Scaffold(
-        backgroundColor: Colors.white,
-        body: SafeArea(
-          top: false, // 不設置頂部安全區域
-          child: Stack(
-            children: [
-              // 返回按鈕
-              Positioned(
-                top: 40,
-                left: 16,
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.black),
-                  onPressed: () {
-                    // 返回時重置狀態
-                    resetPasswordViewModel.resetPasswordState();
-                    Navigator.of(context).pushReplacementNamed('/login');
-                  },
+      return GestureDetector(
+        onTap: () {
+          FocusScope.of(context).unfocus();
+        },
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          body: SafeArea(
+            top: false, // 不設置頂部安全區域
+            child: Stack(
+              children: [
+                // 返回按鈕
+                Positioned(
+                  top: 40,
+                  left: 16,
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.black),
+                    onPressed: () {
+                      // 返回時重置狀態
+                      resetPasswordViewModel.resetPasswordState();
+                      Navigator.of(context).pushReplacementNamed('/login');
+                    },
+                  ),
                 ),
-              ),
 
-              // 主要內容
-              Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Logo
-                        SizedBox(
-                          height: 180,
-                          child: Stack(
-                            alignment: Alignment.center,
+                // 主要內容
+                Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Logo
+                          SizedBox(
+                            height: 180,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                // Logo在上方
+                                Positioned(
+                                  top: 0,
+                                  bottom: 80,
+                                  child: Image.asset(
+                                    'assets/images/volticar_logo.png',
+                                    height: 300,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                                // Title在底部
+                                Positioned(
+                                  bottom: 0,
+                                  child: Image.asset(
+                                    'assets/images/volticar_title.png',
+                                    height: 50,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // 標題
+                          const Text(
+                            '重設密碼',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primaryColor,
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+
+                          // 步驟進度顯示
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              // Logo在上方
-                              Positioned(
-                                top: 0,
-                                bottom: 80,
-                                child: Image.asset(
-                                  'assets/images/volticar_logo.png',
-                                  height: 300,
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
-                              // Title在底部
-                              Positioned(
-                                bottom: 0,
-                                child: Image.asset(
-                                  'assets/images/volticar_title.png',
-                                  height: 50,
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
+                              _buildStepIndicator(0),
+                              _buildStepLine(0),
+                              _buildStepIndicator(1),
+                              _buildStepLine(1),
+                              _buildStepIndicator(2),
                             ],
                           ),
-                        ),
-                        const SizedBox(height: 20),
+                          const SizedBox(height: 32),
 
-                        // 標題
-                        const Text(
-                          '重設密碼',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primaryColor,
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-
-                        // 步驟進度顯示
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _buildStepIndicator(0),
-                            _buildStepLine(0),
-                            _buildStepIndicator(1),
-                            _buildStepLine(1),
-                            _buildStepIndicator(2),
+                          // 錯誤信息
+                          if (resetPasswordViewModel.resetPasswordError != null) ...[
+                            Text(
+                              resetPasswordViewModel.resetPasswordError!,
+                              style: const TextStyle(color: AppColors.errorColor),
+                            ),
+                            const SizedBox(height: 16),
                           ],
-                        ),
-                        const SizedBox(height: 32),
 
-                        // 錯誤信息
-                        if (resetPasswordViewModel.resetPasswordError !=
-                            null) ...[
-                          Text(
-                            resetPasswordViewModel.resetPasswordError!,
-                            style: const TextStyle(color: AppColors.errorColor),
-                          ),
-                          const SizedBox(height: 16),
+                          // 當前步驟內容
+                          _getStepContent(),
                         ],
-
-                        // 當前步驟內容
-                        _getStepContent(),
-                      ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       );

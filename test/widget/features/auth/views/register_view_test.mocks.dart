@@ -28,38 +28,53 @@ import 'package:volticar_app/features/auth/viewmodels/register_viewmodel.dart'
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockRegisterViewModel extends _i1.Mock implements _i2.RegisterViewModel {
-  MockRegisterViewModel() {
-    _i1.throwOnMissingStub(this);
-  }
-
   @override
   bool get isRegisterLoading => (super.noSuchMethod(
         Invocation.getter(#isRegisterLoading),
         returnValue: false,
+        returnValueForMissingStub: false,
       ) as bool);
 
   @override
   bool get isRegisterSuccess => (super.noSuchMethod(
         Invocation.getter(#isRegisterSuccess),
         returnValue: false,
+        returnValueForMissingStub: false,
       ) as bool);
 
   @override
   bool get isEmailVerificationLoading => (super.noSuchMethod(
         Invocation.getter(#isEmailVerificationLoading),
         returnValue: false,
+        returnValueForMissingStub: false,
       ) as bool);
 
   @override
   bool get isEmailVerificationSuccess => (super.noSuchMethod(
         Invocation.getter(#isEmailVerificationSuccess),
         returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  bool get isCheckingUsername => (super.noSuchMethod(
+        Invocation.getter(#isCheckingUsername),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  bool get isUsernameAvailable => (super.noSuchMethod(
+        Invocation.getter(#isUsernameAvailable),
+        returnValue: false,
+        returnValueForMissingStub: false,
       ) as bool);
 
   @override
   bool get hasListeners => (super.noSuchMethod(
         Invocation.getter(#hasListeners),
         returnValue: false,
+        returnValueForMissingStub: false,
       ) as bool);
 
   @override
@@ -69,6 +84,7 @@ class MockRegisterViewModel extends _i1.Mock implements _i2.RegisterViewModel {
           [email],
         ),
         returnValue: false,
+        returnValueForMissingStub: false,
       ) as bool);
 
   @override
@@ -78,16 +94,29 @@ class MockRegisterViewModel extends _i1.Mock implements _i2.RegisterViewModel {
           [password],
         ),
         returnValue: false,
+        returnValueForMissingStub: false,
       ) as bool);
 
   @override
-  void autoClearError() => super.noSuchMethod(
+  bool isValidUserName(String? username) => (super.noSuchMethod(
         Invocation.method(
-          #autoClearError,
-          [],
+          #isValidUserName,
+          [username],
         ),
-        returnValueForMissingStub: null,
-      );
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  _i3.Future<void> checkUsernameAvailability(String? username) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #checkUsernameAvailability,
+          [username],
+        ),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
 
   @override
   _i3.Future<void> sendEmailVerification(String? email) => (super.noSuchMethod(
@@ -132,6 +161,15 @@ class MockRegisterViewModel extends _i1.Mock implements _i2.RegisterViewModel {
   void markRegisterSuccessAsHandled() => super.noSuchMethod(
         Invocation.method(
           #markRegisterSuccessAsHandled,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void autoClearError() => super.noSuchMethod(
+        Invocation.method(
+          #autoClearError,
           [],
         ),
         returnValueForMissingStub: null,
