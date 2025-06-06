@@ -17,7 +17,7 @@ jobs:
         uses: tsickert/discord-webhook@v5.3.0
         with:
           # 讀取您 GitHub repository 中儲存的 secret
-          webhook: ${{ DISCORD_ISSUE_WEBHOOK }}
+          webhook: ${{ DISCORD_WEBHOOK_URL }}
           
           # 使用 embed 格式可以讓訊息更美觀、更有結構
           embeds: |
