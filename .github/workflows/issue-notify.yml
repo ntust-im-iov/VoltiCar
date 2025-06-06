@@ -1,0 +1,39 @@
+# 檔案路徑: .github/issue-notify.yml
+
+name: 'Issue Assigned Notifier'
+
+# 觸發條件：當 Issue 被「指派」(assigned) 時
+on:
+  issues:
+    types: [assigned]
+
+jobs:
+  notify-on-issue-assign:
+    name: 'Send Discord Notification'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Send Discord Notification'
+        # 使用社群上成熟的 action 來發送 discord 通知
+        uses: tsickert/discord-webhook@v5.3.0
+        with:
+          # 讀取您 GitHub repository 中儲存的 secret
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          
+          # 使用 embed 格式可以讓訊息更美觀、更有結構
+          embeds: |
+            [
+              {
+                "title": "🙋‍♂️ 新任務已指派！",
+                "description": "開發者 **${{ github.actor }}** 已開始處理 Issue **#${{ github.event.issue.number }}**。\n\n**任務標題：${{ github.event.issue.title }}**\n\n[點此查看 Issue](${{ github.event.issue.html_url }})",
+                "url": "${{ github.event.issue.html_url }}",
+                "color": 15258703,
+                "author": {
+                  "name": "${{ github.actor }}",
+                  "url": "https://github.com/${{ github.actor }}",
+                  "icon_url": "https://github.com/${{ github.actor }}.png"
+                },
+                "footer": {
+                  "text": "Repository: ${{ github.repository }}"
+                }
+              }
+            ]
