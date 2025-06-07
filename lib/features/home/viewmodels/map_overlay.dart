@@ -4,26 +4,32 @@ import 'package:latlong2/latlong.dart'; // Required for LatLng
 import 'package:provider/provider.dart';
 import 'map_provider.dart'; // Import MapProvider
 
-class MapOverlay extends StatelessWidget {
+class MapOverlay extends StatefulWidget {
   final VoidCallback onClose;
 
-  const MapOverlay({super.key, required this.onClose});
+  const MapOverlay({Key? key, required this.onClose}) : super(key: key);
 
+  @override
+  _MapOverlayState createState() => _MapOverlayState();
+}
+
+class _MapOverlayState extends State<MapOverlay> {
   @override
   Widget build(BuildContext context) {
     return Consumer<MapProvider>(
       builder: (context, mapProvider, child) {
         return Positioned.fill(
           child: Container(
-            color: Colors.black.withOpacity(0.5), // Semi-transparent background
+            color: Colors.black.withOpacity(0.5),
             child: Center(
               child: Container(
-                width: MediaQuery.of(context).size.width * 0.9, // 90% of screen width
+                width: MediaQuery.of(context).size.width * 0.9,
                 height: MediaQuery.of(context).size.height * 0.8,
                 decoration: BoxDecoration(
                   color: const Color(0xFF1F1638),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF5C4EB4), width: 4.5),
+                  border:
+                      Border.all(color: const Color(0xFF5C4EB4), width: 4.5),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.5),
@@ -37,18 +43,21 @@ class MapOverlay extends StatelessWidget {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(15.0),
                       child: FlutterMap(
-                        mapController: mapProvider.mapController, // 使用 MapProvider 中的 MapController
+                        mapController: mapProvider
+                            .mapController, // 使用 MapProvider 中的 MapController
                         options: MapOptions(
-                          initialCenter: const LatLng(25.0340, 121.5645), // 初始中心點 (例如台北市)
+                          initialCenter:
+                              const LatLng(25.0340, 121.5645), // 初始中心點 (例如台北市)
                           initialZoom: 10.0, // 初始縮放級別，可以調整以便看到更多標記
-                          onPositionChanged: (position, hasGesture) { // 移除了 MapPosition 類型聲明
+                          onPositionChanged: (position, hasGesture) {
+                            // 移除了 MapPosition 類型聲明
                             if (hasGesture) {
                               // 用戶手動改變地圖視角時，獲取新的邊界並請求更新充電站
-                              final bounds = position.visibleBounds; // 使用 visibleBounds
+                              final bounds =
+                                  position.visibleBounds; // 使用 visibleBounds
                               final center = position.center;
-                              if (bounds != null) {
-                                mapProvider.onMapPositionChanged(bounds, center); // 調用新的 debounce 方法並傳遞中心點
-                              }
+                              mapProvider.onMapPositionChanged(
+                                  bounds, center); // 調用新的 debounce 方法並傳遞中心點
                             }
                           },
                         ),
@@ -56,7 +65,8 @@ class MapOverlay extends StatelessWidget {
                           TileLayer(
                             urlTemplate:
                                 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            userAgentPackageName: 'com.example.volticar', // 替換為您的應用包名
+                            userAgentPackageName:
+                                'com.example.volticar', // 替換為您的應用包名
                           ),
                           if (mapProvider.markers.isNotEmpty)
                             MarkerLayer(markers: mapProvider.markers),
@@ -71,11 +81,11 @@ class MapOverlay extends StatelessWidget {
                       child: IconButton(
                         icon: const Icon(Icons.close,
                             color: Color(0xFF5C4EB4), size: 30),
-                        onPressed: onClose,
+                        onPressed: widget.onClose,
                         tooltip: '關閉地圖',
                       ),
                     ),
-                    _buildSearchAndFilterUI(context, mapProvider), // 添加搜索和篩選 UI
+                    _buildSearchAndFilterUI(context, mapProvider),
                     _buildMapInfoFooter(context, mapProvider), // 添加左下角地圖資訊
                     _buildMapControlsUI(context, mapProvider), // 添加右下角地圖控制按鈕
                   ],
@@ -89,7 +99,8 @@ class MapOverlay extends StatelessWidget {
   }
 
   // 構建搜索和篩選 UI 的輔助方法
-  Widget _buildSearchAndFilterUI(BuildContext context, MapProvider mapProvider) {
+  Widget _buildSearchAndFilterUI(
+      BuildContext context, MapProvider mapProvider) {
     return Positioned(
       top: 10,
       left: 10,
@@ -160,12 +171,14 @@ class MapOverlay extends StatelessWidget {
                 children: <Widget>[
                   // 城市選擇下拉選單
                   if (mapProvider.availableCities.isNotEmpty) ...[
-                    const Text('選擇城市:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text('選擇城市:',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
                       isExpanded: true,
                       decoration: InputDecoration(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8.0),
                         ),
@@ -197,7 +210,7 @@ class MapOverlay extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                   ],
-                  
+
                   CheckboxListTile(
                     title: const Text('僅顯示可用充電站'), // 稍微修改文字使其更清晰
                     value: mapProvider.filterOnlyAvailable,
@@ -206,7 +219,8 @@ class MapOverlay extends StatelessWidget {
                         mapProvider.setFilterOnlyAvailable(value ?? false);
                       });
                     },
-                    controlAffinity: ListTileControlAffinity.leading, // 將勾選框放在前面
+                    controlAffinity:
+                        ListTileControlAffinity.leading, // 將勾選框放在前面
                     contentPadding: EdgeInsets.zero, // 移除預設的 padding
                   ),
                   // 可以添加更多篩選條件
@@ -238,8 +252,10 @@ class MapOverlay extends StatelessWidget {
 
   Widget _buildMapInfoFooter(BuildContext context, MapProvider mapProvider) {
     final stationCount = mapProvider.markers.length;
-    final centerLat = mapProvider.currentMapCenter?.latitude.toStringAsFixed(4) ?? 'N/A';
-    final centerLon = mapProvider.currentMapCenter?.longitude.toStringAsFixed(4) ?? 'N/A';
+    final centerLat =
+        mapProvider.currentMapCenter?.latitude.toStringAsFixed(4) ?? 'N/A';
+    final centerLon =
+        mapProvider.currentMapCenter?.longitude.toStringAsFixed(4) ?? 'N/A';
 
     return Positioned(
       bottom: 10,
@@ -250,7 +266,8 @@ class MapOverlay extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFF5C4EB4).withOpacity(0.75), // 紫色半透明背景
           borderRadius: BorderRadius.circular(8),
-          boxShadow: [ // 可以添加一點陰影使其更突出
+          boxShadow: [
+            // 可以添加一點陰影使其更突出
             BoxShadow(
               color: Colors.black.withOpacity(0.3),
               blurRadius: 4,

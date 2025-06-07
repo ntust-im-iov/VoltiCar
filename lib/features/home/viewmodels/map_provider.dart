@@ -55,7 +55,7 @@ class MapProvider extends ChangeNotifier {
     double? minLon,
     double? maxLat,
     double? maxLon,
-    double? currentZoom = 20, // 新增：接收當前縮放級別
+    double? currentZoom, // 新增：接收當前縮放級別
   }) async {
     // 如果已選擇特定城市，則不應執行基於地理邊界的概覽獲取
     if (_selectedCity != null && _selectedCity!.isNotEmpty) {
@@ -84,7 +84,12 @@ class MapProvider extends ChangeNotifier {
 
     // 根據縮放級別動態計算 limit
     // 如果 currentZoom 未提供，則嘗試從 mapController 獲取
-    final zoomLevel = currentZoom ?? mapController.camera.zoom;
+    final zoomLevel;
+    if (currentZoom == null) {
+      zoomLevel = MapOptions().initialZoom;
+    } else {
+      zoomLevel = currentZoom;
+    }
     int dynamicLimit = 50; // 預設值
     if (zoomLevel < 8) {
       dynamicLimit = 30;

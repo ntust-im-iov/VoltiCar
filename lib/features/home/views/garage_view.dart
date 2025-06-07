@@ -1,13 +1,15 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flame/game.dart' hide Route; // Flame import - Hide Route
 import 'package:flame/components.dart'; // Flame import
 import 'package:flame/events.dart'; // Flame import
-import 'package:flame/palette.dart'; // Flame import
+import 'package:volticar_app/core/constants/app_colors.dart';
+import 'package:volticar_app/features/home/models/charging_station_model.dart';
 import 'package:volticar_app/features/home/viewmodels/map_overlay.dart';
 import 'package:volticar_app/shared/maplist/carDetails.dart'; //導入車輛訊息MAP列表
 import 'package:volticar_app/shared/widgets/adaptive_component.dart'; //導入自適應點擊元件原型
 import 'package:volticar_app/features/auth/viewmodels/login_viewmodel.dart'; // 導入身份驗證視圖模型
-import 'package:volticar_app/core/constants/app_colors.dart'; // Import AppColors
 import 'package:provider/provider.dart'; // 導入 Provider
 import 'package:volticar_app/features/home/viewmodels/map_provider.dart';
 
@@ -20,7 +22,9 @@ class GarageView extends StatefulWidget {
 
 class _GarageViewState extends State<GarageView> {
   int selectedCarIndex = 0;
-  bool _isMapVisible = false; // State variable to control map visibility
+  final ValueNotifier<bool> _isMapVisible =
+      ValueNotifier<bool>(false); // State variable to control map visibility
+  bool _isStationDetailSheetVisible = false; // 新增：追蹤詳細資訊表單是否可見
 
   @override
   void initState() {
@@ -41,28 +45,34 @@ class _GarageViewState extends State<GarageView> {
     'Porsche Taycan',
   ];
 
-  void _toggleMapVisibility() {
-    setState(() {
-      _isMapVisible = !_isMapVisible;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
+    final mapProvider = Provider.of<MapProvider>(context);
+
+    // 使用 addPostFrameCallback 確保在 build 完成後執行
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mapProvider.selectedStationDetail != null &&
+          !_isStationDetailSheetVisible) {
+        _isStationDetailSheetVisible = true; // 標記為已顯示
+        _showStationDetailBottomSheet(
+                context, mapProvider.selectedStationDetail!)
+            .then((_) {
+          // 當 BottomSheet 關閉時
+          _isStationDetailSheetVisible = false; // 重置標記
+          // 檢查 mapProvider 是否仍然認為有選中的站點，
+          // 如果使用者是透過手勢關閉 BottomSheet 而不是透過按鈕，
+          // 我們需要通知 mapProvider 清除選中狀態。
+          if (mapProvider.selectedStationDetail != null) {
+            mapProvider.clearSelectedStation();
+          }
+        });
+      }
+    });
+
     return Scaffold(
-      // Remove the entire AppBar
       body: Stack(
         fit: StackFit.expand,
         children: [
-          /*暫時停用
-          // Background image aligned to top (Re-added and made adaptive)
-          Align(
-            alignment: Alignment.topCenter,
-            child: _buildPixelGarageBackground(),
-          ),
-          */
-          // Flame Game Widget (Now on top of the background image)
-          // Pass callbacks for info, map, and gas station buttons
           GameWidget(
               game: VoltiCarGame(
                   onInfoButtonPressed: () {
@@ -79,9 +89,7 @@ class _GarageViewState extends State<GarageView> {
                   },
                   Function: () {})),
 
-          // Status bar - REMOVED
-
-          //暫時停用-Logout Button
+          //Logout Button
           Positioned(
             top: 50, // Adjust top padding as needed
             right: 10, // Adjust right padding as needed
@@ -103,10 +111,16 @@ class _GarageViewState extends State<GarageView> {
           ),
 
           // Conditionally display the map overlay
-          if (_isMapVisible)
-            MapOverlay(
-              onClose: _closeMap, // Pass the toggle callback to close
-            ),
+          ValueListenableBuilder<bool>(
+            valueListenable: _isMapVisible,
+            builder: (context, isMapVisible, child) {
+              return isMapVisible
+                  ? MapOverlay(
+                      onClose: _closeMap, // Pass the toggle callback to close
+                    )
+                  : const SizedBox.shrink();
+            },
+          ),
         ],
       ),
     );
@@ -114,41 +128,13 @@ class _GarageViewState extends State<GarageView> {
 
   // 切換地圖顯示
   void _toggleMap() {
-    setState(() {
-      _isMapVisible = !_isMapVisible;
-    });
+    _isMapVisible.value = !_isMapVisible.value;
   }
 
   // 關閉地圖
   void _closeMap() {
-    setState(() {
-      _isMapVisible = false;
-    });
+    _isMapVisible.value = false;
   }
-
-  // Remove _buildPixelGarageBackground method
-
-  // Remove _buildStatusBar method
-
-  /*暫時停用-電腦
-  Widget _buildInteractiveElements() {
-    // Keep only the computer button and adjust its position
-    // Removed inner Positioned widget
-    return _buildInteractiveElement(
-      icon: Icons.computer,
-      color: const Color(0xFF5DE8EB),
-      label: '電腦',
-      onTap: () {
-        _showCarDetailsDialog(carDetails[selectedCarIndex]);
-      },
-      // Removed closing parenthesis for Positioned
-    );
-  }
-  */
-
-  // Remove _buildInteractiveElement method
-
-  // Removed unused _buildCarSelector method
 
   // 新增底部車輛選擇面板
   Widget _buildBottomCarPanel() {
@@ -441,7 +427,7 @@ class _GarageViewState extends State<GarageView> {
     );
   }
 
-  //暫時停用-Logout Button method
+  //Logout Button method
   Future<void> _handleLogout() async {
     final loginViewModel = Provider.of<LoginViewModel>(context, listen: false);
     await loginViewModel.logout();
@@ -451,9 +437,236 @@ class _GarageViewState extends State<GarageView> {
           .pushNamedAndRemoveUntil('/login', (Route<dynamic> route) => false);
     }
   }
-}
 
-// Removed unused PixelFloorPainter class
+  // 顯示充電站詳細資訊的 BottomSheet
+  Future<void> _showStationDetailBottomSheet(
+      BuildContext context, ChargingStation station) {
+    final mapProvider = Provider.of<MapProvider>(context, listen: false);
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true, // 允許內容滾動且高度可以較大
+      backgroundColor: const Color(0xFF3A2D5B), // 背景色與卡片一致
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return DraggableScrollableSheet(
+          expand: false, // 不完全展開，允許部分高度
+          initialChildSize: 0.6, // 初始高度佔屏幕的60%
+          minChildSize: 0.3, // 最小高度
+          maxChildSize: 0.9, // 最大高度
+          builder: (_, scrollController) {
+            return Container(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  // 頂部拖動指示器
+                  Container(
+                    width: 40,
+                    height: 5,
+                    margin: const EdgeInsets.only(bottom: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[700],
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: scrollController,
+                      child: _buildStationDetailSheetContent(station),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.close),
+                    label: const Text('關閉'),
+                    onPressed: () {
+                      Navigator.pop(context); // 關閉 BottomSheet
+                      mapProvider.clearSelectedStation(); // 清除選中的站點
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.accentColor,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    ).whenComplete(() {
+      // 確保在 BottomSheet 關閉時（無論如何關閉）都清除狀態
+      _isStationDetailSheetVisible = false;
+      if (mapProvider.selectedStationDetail != null) {
+        mapProvider.clearSelectedStation();
+      }
+    });
+  }
+
+  // 充電站詳細資訊 BottomSheet 的內容
+  Widget _buildStationDetailSheetContent(ChargingStation station) {
+    final textStyle = const TextStyle(color: Colors.white, fontSize: 16);
+    final labelStyle =
+        TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min, // 讓 Column 包裹內容
+      children: <Widget>[
+        Text(
+          station.stationName,
+          style: const TextStyle(
+              color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        if (station.fullAddress != null && station.fullAddress!.isNotEmpty) ...[
+          Row(
+            children: [
+              Icon(Icons.location_on_outlined, color: Colors.white70, size: 18),
+              const SizedBox(width: 8),
+              Expanded(child: Text(station.fullAddress!, style: textStyle)),
+            ],
+          ),
+          const SizedBox(height: 8),
+        ],
+
+        _buildDetailRow(
+            label: 'ID', value: station.stationID, icon: Icons.perm_identity),
+        _buildDetailRow(
+            label: '充電樁數量',
+            value: station.chargingPoints.toString(),
+            icon: Icons.power_settings_new),
+        _buildDetailRow(
+            label: '停車費率',
+            value: station.parkingRate,
+            icon: Icons.local_parking),
+        _buildDetailRow(
+            label: '充電費率',
+            value: station.chargingRate,
+            icon: Icons.attach_money),
+        _buildDetailRow(
+            label: '服務時間', value: station.serviceTime, icon: Icons.access_time),
+
+        if (station.telephone != null && station.telephone!.isNotEmpty)
+          _buildDetailRow(
+              label: '電話', value: station.telephone!, icon: Icons.phone),
+
+        if (station.description != null && station.description!.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Text('描述:', style: labelStyle.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(station.description!, style: textStyle),
+        ],
+
+        const SizedBox(height: 12),
+        Text('充電接口:', style: labelStyle.copyWith(fontWeight: FontWeight.bold)),
+        if (station.connectors.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 4.0),
+            child: Text('未提供接口資訊',
+                style: textStyle.copyWith(fontStyle: FontStyle.italic)),
+          )
+        else
+          ...station.connectors.map((connector) {
+            return Padding(
+              padding: const EdgeInsets.only(top: 4.0, left: 8.0),
+              child: Text(
+                '- ${connector.typeDescription} (功率: ${connector.powerDescription}, 數量: ${connector.quantity})',
+                style: textStyle,
+              ),
+            );
+          }).toList(),
+
+        if (station.photoURLs != null && station.photoURLs!.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Text('照片:', style: labelStyle.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 150, // 設定一個固定高度給圖片輪播
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: station.photoURLs!.length,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8.0),
+                    child: Image.network(
+                      station.photoURLs![index],
+                      width: 150,
+                      height: 150,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (BuildContext context, Widget child,
+                          ImageChunkEvent? loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          width: 150,
+                          height: 150,
+                          color: Colors.grey[800],
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                  : null,
+                              color: AppColors.accentColor,
+                            ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        width: 150,
+                        height: 150,
+                        color: Colors.grey[800],
+                        child: Icon(Icons.broken_image,
+                            color: Colors.white54, size: 50),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+        const SizedBox(height: 20), // 底部留白
+      ],
+    );
+  }
+
+  // 充電站詳細資訊 BottomSheet 填充
+  Widget _buildDetailRow(
+      {required String label, required String value, IconData? icon}) {
+    final textStyle = const TextStyle(color: Colors.white, fontSize: 16);
+    final labelStyle =
+        TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, color: Colors.white70, size: 18),
+            const SizedBox(width: 8),
+          ],
+          Expanded(
+            flex: 2,
+            child: Text('$label:', style: labelStyle),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 3,
+            child: Text(value.isNotEmpty ? value : '未提供', style: textStyle),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 // --- Flame Game Code ---
 
@@ -478,14 +691,14 @@ class VoltiCarGame extends FlameGame with HasGameRef {
 
   @override
   Future<void> onLoad() async {
-    await super.onLoad(); // Ensure FlameGame onLoad completes
+    await super.onLoad();
 
     // Ensure game size is available before proceeding
-    await Future.delayed(Duration.zero); // Allow layout to settle
+    await Future.delayed(Duration.zero);
 
     // --- Add Background Sprite ---
-    final backgroundSprite =
-        await loadSprite('garage_bg.png'); // Load the background
+    final image = await images.load('garage_bg.png');
+    final backgroundSprite = Sprite(image);
     add(
       SpriteComponent(
         sprite: backgroundSprite,
@@ -529,9 +742,6 @@ class VoltiCarGame extends FlameGame with HasGameRef {
     add(carComponent); // Add the car to the game
   }
 }
-
-// --- Remove CarComponent ---
-// --- Remove GasStationComponent ---
 
 class ButtonComponent extends PositionComponent with TapCallbacks {
   ButtonComponent({

@@ -1,10 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
-import 'package:volticar_app/core/constants/app_colors.dart';
-import 'package:provider/provider.dart';
-import 'package:volticar_app/features/home/models/charging_station_model.dart'; // 新增匯入
-import '../viewmodels/map_provider.dart';
-import '../viewmodels/map_overlay.dart';
 
 class ChargingView extends StatefulWidget {
   const ChargingView({super.key});
@@ -21,61 +16,15 @@ class _ChargingViewState extends State<ChargingView> {
   bool _isCharging = false; // 充電狀態
   int _chargingSpeed = 0; // 充電速度 (kW)
   int _estimatedTimeRemaining = 0; // 剩餘充電時間 (分鐘)
-  bool _isMapVisible = false; // 地圖顯示狀態
-  bool _isStationDetailSheetVisible = false; // 新增：追蹤詳細資訊表單是否可見
 
   @override
   void initState() {
     super.initState();
     _logger.i('ChargingView initialized');
-
-    // 確保MapProvider已初始化
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final mapProvider = Provider.of<MapProvider>(context, listen: false);
-      if (!mapProvider.isInitialized) {
-        mapProvider.initialize();
-      }
-    });
   }
-
-  // 切換地圖顯示
-  // void _toggleMap() {
-  //   setState(() {
-  //     _isMapVisible = !_isMapVisible;
-  //   });
-  // }
-
-  // 關閉地圖
-  // void _closeMap() {
-  //   setState(() {
-  //     _isMapVisible = false;
-  //   });
-  // }
 
   @override
   Widget build(BuildContext context) {
-    final mapProvider = Provider.of<MapProvider>(context);
-
-    // 使用 addPostFrameCallback 確保在 build 完成後執行
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mapProvider.selectedStationDetail != null &&
-          !_isStationDetailSheetVisible) {
-        _isStationDetailSheetVisible = true; // 標記為已顯示
-        _showStationDetailBottomSheet(
-                context, mapProvider.selectedStationDetail!)
-            .then((_) {
-          // 當 BottomSheet 關閉時
-          _isStationDetailSheetVisible = false; // 重置標記
-          // 檢查 mapProvider 是否仍然認為有選中的站點，
-          // 如果使用者是透過手勢關閉 BottomSheet 而不是透過按鈕，
-          // 我們需要通知 mapProvider 清除選中狀態。
-          if (mapProvider.selectedStationDetail != null) {
-            mapProvider.clearSelectedStation();
-          }
-        });
-      }
-    });
-
     return Scaffold(
       backgroundColor: const Color(0xFF2A1E47),
       appBar: AppBar(
@@ -89,14 +38,7 @@ class _ChargingViewState extends State<ChargingView> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          // 添加地圖按鈕
-          // IconButton(
-          //   icon: const Icon(Icons.map, color: Colors.white),
-          //   onPressed: _toggleMap,
-          //   tooltip: '查看充電站地圖',
-          // ),
-        ],
+        actions: [],
       ),
       body: Stack(
         children: [
@@ -127,52 +69,15 @@ class _ChargingViewState extends State<ChargingView> {
                     _buildChargingDetails(),
 
                     const SizedBox(height: 24),
-
-                    // 查找充電站按鈕
-                    // _buildFindChargingStationButton(),
                   ],
                 ),
               ),
             ),
           ),
-
-          // 地圖覆蓋層
-          // if (_isMapVisible) _buildMapOverlay(),
         ],
       ),
     );
   }
-
-  // 新增查找充電站按鈕
-  // Widget _buildFindChargingStationButton() {
-  //   return ElevatedButton.icon(
-  //     onPressed: _toggleMap,
-  //     style: ElevatedButton.styleFrom(
-  //       backgroundColor: const Color(0xFF5C4EB4),
-  //       foregroundColor: Colors.white,
-  //       padding: const EdgeInsets.symmetric(vertical: 16),
-  //       shape: RoundedRectangleBorder(
-  //         borderRadius: BorderRadius.circular(12),
-  //       ),
-  //       elevation: 3,
-  //     ),
-  //     icon: const Icon(Icons.search_outlined),
-  //     label: const Text(
-  //       '查找附近充電站',
-  //       style: TextStyle(
-  //         fontSize: 16,
-  //         fontWeight: FontWeight.bold,
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  // 構建地圖覆蓋層
-  // Widget _buildMapOverlay() {
-  //   return MapOverlay(
-  //     onClose: _closeMap,
-  //   );
-  // }
 
   Widget _buildChargingStationCard() {
     return Card(
@@ -540,233 +445,5 @@ class _ChargingViewState extends State<ChargingView> {
         }
       });
     }
-  }
-
-  // 顯示充電站詳細資訊的 BottomSheet
-  Future<void> _showStationDetailBottomSheet(
-      BuildContext context, ChargingStation station) {
-    final mapProvider = Provider.of<MapProvider>(context, listen: false);
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true, // 允許內容滾動且高度可以較大
-      backgroundColor: const Color(0xFF3A2D5B), // 背景色與卡片一致
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (BuildContext context) {
-        return DraggableScrollableSheet(
-          expand: false, // 不完全展開，允許部分高度
-          initialChildSize: 0.6, // 初始高度佔屏幕的60%
-          minChildSize: 0.3, // 最小高度
-          maxChildSize: 0.9, // 最大高度
-          builder: (_, scrollController) {
-            return Container(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  // 頂部拖動指示器
-                  Container(
-                    width: 40,
-                    height: 5,
-                    margin: const EdgeInsets.only(bottom: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[700],
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      controller: scrollController,
-                      child: _buildStationDetailSheetContent(station),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.close),
-                    label: const Text('關閉'),
-                    onPressed: () {
-                      Navigator.pop(context); // 關閉 BottomSheet
-                      mapProvider.clearSelectedStation(); // 清除選中的站點
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accentColor,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    ).whenComplete(() {
-      // 確保在 BottomSheet 關閉時（無論如何關閉）都清除狀態
-      _isStationDetailSheetVisible = false;
-      if (mapProvider.selectedStationDetail != null) {
-        mapProvider.clearSelectedStation();
-      }
-    });
-  }
-
-  // 充電站詳細資訊 BottomSheet 的內容
-  Widget _buildStationDetailSheetContent(ChargingStation station) {
-    final textStyle = const TextStyle(color: Colors.white, fontSize: 16);
-    final labelStyle =
-        TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min, // 讓 Column 包裹內容
-      children: <Widget>[
-        Text(
-          station.stationName,
-          style: const TextStyle(
-              color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        if (station.fullAddress != null && station.fullAddress!.isNotEmpty) ...[
-          Row(
-            children: [
-              Icon(Icons.location_on_outlined, color: Colors.white70, size: 18),
-              const SizedBox(width: 8),
-              Expanded(child: Text(station.fullAddress!, style: textStyle)),
-            ],
-          ),
-          const SizedBox(height: 8),
-        ],
-
-        _buildDetailRow(
-            label: 'ID', value: station.stationID, icon: Icons.perm_identity),
-        _buildDetailRow(
-            label: '充電樁數量',
-            value: station.chargingPoints.toString(),
-            icon: Icons.power_settings_new),
-        _buildDetailRow(
-            label: '停車費率',
-            value: station.parkingRate,
-            icon: Icons.local_parking),
-        _buildDetailRow(
-            label: '充電費率',
-            value: station.chargingRate,
-            icon: Icons.attach_money),
-        _buildDetailRow(
-            label: '服務時間', value: station.serviceTime, icon: Icons.access_time),
-
-        if (station.telephone != null && station.telephone!.isNotEmpty)
-          _buildDetailRow(
-              label: '電話', value: station.telephone!, icon: Icons.phone),
-
-        if (station.description != null && station.description!.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Text('描述:', style: labelStyle.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text(station.description!, style: textStyle),
-        ],
-
-        const SizedBox(height: 12),
-        Text('充電接口:', style: labelStyle.copyWith(fontWeight: FontWeight.bold)),
-        if (station.connectors.isEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 4.0),
-            child: Text('未提供接口資訊',
-                style: textStyle.copyWith(fontStyle: FontStyle.italic)),
-          )
-        else
-          ...station.connectors.map((connector) {
-            return Padding(
-              padding: const EdgeInsets.only(top: 4.0, left: 8.0),
-              child: Text(
-                '- ${connector.typeDescription} (功率: ${connector.powerDescription}, 數量: ${connector.quantity})',
-                style: textStyle,
-              ),
-            );
-          }).toList(),
-
-        if (station.photoURLs != null && station.photoURLs!.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          Text('照片:', style: labelStyle.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 150, // 設定一個固定高度給圖片輪播
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: station.photoURLs!.length,
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8.0),
-                    child: Image.network(
-                      station.photoURLs![index],
-                      width: 150,
-                      height: 150,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (BuildContext context, Widget child,
-                          ImageChunkEvent? loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          width: 150,
-                          height: 150,
-                          color: Colors.grey[800],
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                  : null,
-                              color: AppColors.accentColor,
-                            ),
-                          ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        width: 150,
-                        height: 150,
-                        color: Colors.grey[800],
-                        child: Icon(Icons.broken_image,
-                            color: Colors.white54, size: 50),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-        const SizedBox(height: 20), // 底部留白
-      ],
-    );
-  }
-
-  Widget _buildDetailRow(
-      {required String label, required String value, IconData? icon}) {
-    final textStyle = const TextStyle(color: Colors.white, fontSize: 16);
-    final labelStyle =
-        TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, color: Colors.white70, size: 18),
-            const SizedBox(width: 8),
-          ],
-          Expanded(
-            flex: 2,
-            child: Text('$label:', style: labelStyle),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 3,
-            child: Text(value.isNotEmpty ? value : '未提供', style: textStyle),
-          ),
-        ],
-      ),
-    );
   }
 }
