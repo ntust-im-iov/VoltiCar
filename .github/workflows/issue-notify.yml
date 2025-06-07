@@ -1,4 +1,4 @@
-# 檔案路徑: .github/issue-notify.yml
+# 檔案路徑: .github/workflows/issue-notify.yml
 
 name: 'Issue Assigned Notifier'
 
