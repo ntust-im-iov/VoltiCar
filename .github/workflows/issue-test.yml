@@ -1,0 +1,15 @@
+# 檔案路徑: .github/workflows/issue-test.yml
+
+name: 'Simple Workflow Test'
+
+# 觸發條件和您原本的一樣
+on:
+  issues:
+    types: [assigned]
+
+jobs:
+  test-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Print a message'
+        run: echo "Workflow triggered successfully for issue #${{ github.event.issue.number }}!"
