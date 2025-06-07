@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../constants/api_constants.dart';
+import 'package:volticar_app/core/constants/api_constants.dart';
 import 'package:logger/logger.dart';
 
 class ApiClient {
@@ -8,20 +8,18 @@ class ApiClient {
   late final Dio _dio;
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   final Logger _logger = Logger(
-    printer: PrettyPrinter(
-      methodCount: 2,
-      errorMethodCount: 8,
-      lineLength: 120,
-      colors: true,
-      printEmojis: true,
-      dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart
-    )
-  );
-  
+      printer: PrettyPrinter(
+          methodCount: 2,
+          errorMethodCount: 8,
+          lineLength: 120,
+          colors: true,
+          printEmojis: true,
+          dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart));
+
   factory ApiClient() {
     return _instance;
   }
-  
+
   ApiClient._internal() {
     _dio = Dio(BaseOptions(
       baseUrl: ApiConstants.baseUrl,
@@ -32,13 +30,13 @@ class ApiClient {
         ApiConstants.acceptHeader: ApiConstants.contentType,
       },
     ));
-    
+
     _logger.i('ApiClient 初始化');
     _logger.i('Base URL: ${ApiConstants.baseUrl}');
-    
+
     _setupInterceptors();
   }
-  
+
   void _setupInterceptors() {
     _dio.interceptors.add(
       InterceptorsWrapper(
@@ -48,11 +46,12 @@ class ApiClient {
           _logger.i('Method: ${options.method}');
           _logger.i('Headers: ${options.headers}');
           _logger.i('Data: ${options.data}');
-          
+
           // 添加認證 token
           final token = await _getToken();
           if (token != null) {
-            options.headers[ApiConstants.authHeader] = '${ApiConstants.bearerPrefix}$token';
+            options.headers[ApiConstants.authHeader] =
+                '${ApiConstants.bearerPrefix}$token';
             _logger.i('已添加認證 Token');
           }
 
@@ -69,28 +68,29 @@ class ApiClient {
           _logger.e('Type: ${e.type}');
           _logger.e('Message: ${e.message}');
           _logger.e('Response: ${e.response?.data}');
-          
+
           // 處理401未授權錯誤
           if (e.response?.statusCode == 401) {
             _logger.e('收到401未授權響應，嘗試刷新令牌...');
-            
+
             // 嘗試刷新令牌
             final bool refreshSuccess = await refreshToken();
-            
+
             if (refreshSuccess) {
               _logger.i('令牌刷新成功，重試原始請求');
-              
+
               // 獲取新令牌
               final newToken = await _getToken();
-              
+
               if (newToken != null) {
                 // 使用新令牌重新發送原始請求
                 final opts = Options(
                   method: e.requestOptions.method,
                   headers: e.requestOptions.headers,
                 );
-                opts.headers?[ApiConstants.authHeader] = '${ApiConstants.bearerPrefix}$newToken';
-                
+                opts.headers?[ApiConstants.authHeader] =
+                    '${ApiConstants.bearerPrefix}$newToken';
+
                 try {
                   final response = await _dio.request(
                     e.requestOptions.path,
@@ -98,7 +98,7 @@ class ApiClient {
                     queryParameters: e.requestOptions.queryParameters,
                     options: opts,
                   );
-                  
+
                   // 向下傳遞成功的響應
                   handler.resolve(response);
                   return;
@@ -107,18 +107,18 @@ class ApiClient {
                 }
               }
             }
-            
+
             // 如果刷新失敗或重試失敗，執行登出處理
             _logger.e('刷新令牌或重試請求失敗，執行登出處理');
             _handleUnauthorized();
           }
-          
+
           handler.next(e);
         },
       ),
     );
   }
-  
+
   Future<String?> _getToken() async {
     try {
       return await _secureStorage.read(key: 'access_token');
@@ -127,7 +127,7 @@ class ApiClient {
       return null;
     }
   }
-  
+
   Future<void> _handleUnauthorized() async {
     try {
       await _secureStorage.delete(key: 'access_token');
@@ -136,17 +136,17 @@ class ApiClient {
       _logger.e('Error handling unauthorized: $e');
     }
   }
-  
+
   Future<bool> refreshToken() async {
     try {
       _logger.i('嘗試刷新令牌...');
       final refreshToken = await _secureStorage.read(key: 'refresh_token');
-      
+
       if (refreshToken == null) {
         _logger.e('沒有可用的刷新令牌');
         return false;
       }
-      
+
       final response = await _dio.post(
         '/users/token/refresh',
         data: {
@@ -159,24 +159,24 @@ class ApiClient {
           },
         ),
       );
-      
+
       if (response.statusCode == 200 && response.data['access_token'] != null) {
         await _secureStorage.write(
           key: 'access_token',
           value: response.data['access_token'],
         );
-        
+
         if (response.data['refresh_token'] != null) {
           await _secureStorage.write(
             key: 'refresh_token',
             value: response.data['refresh_token'],
           );
         }
-        
+
         _logger.i('令牌刷新成功');
         return true;
       }
-      
+
       _logger.e('令牌刷新失敗');
       return false;
     } catch (e) {
@@ -184,9 +184,10 @@ class ApiClient {
       return false;
     }
   }
-  
+
   // HTTP GET 請求
-  Future<Response> get(String path, {
+  Future<Response> get(
+    String path, {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
@@ -201,9 +202,10 @@ class ApiClient {
       rethrow;
     }
   }
-  
+
   // HTTP POST 請求
-  Future<Response> post(String path, {
+  Future<Response> post(
+    String path, {
     dynamic data,
     Map<String, dynamic>? queryParameters,
     Options? options,
@@ -220,9 +222,10 @@ class ApiClient {
       rethrow;
     }
   }
-  
+
   // HTTP PUT 請求
-  Future<Response> put(String path, {
+  Future<Response> put(
+    String path, {
     dynamic data,
     Map<String, dynamic>? queryParameters,
     Options? options,
@@ -239,9 +242,10 @@ class ApiClient {
       rethrow;
     }
   }
-  
+
   // HTTP DELETE 請求
-  Future<Response> delete(String path, {
+  Future<Response> delete(
+    String path, {
     dynamic data,
     Map<String, dynamic>? queryParameters,
     Options? options,
@@ -258,4 +262,4 @@ class ApiClient {
       rethrow;
     }
   }
-} 
+}

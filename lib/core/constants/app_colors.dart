@@ -4,6 +4,7 @@ class AppColors {
   // 主要顏色
   static const Color primaryColor = Color(0xFF2E3364);  // 藍色
   static const Color secondaryColor = Color(0xFF2C2C2C); // 深灰色
+  static const Color accentColor = Color(0xFF5C4EB4); // 新增：強調色 (來自按鈕)
   
   // 文字顏色
   static const Color textPrimary = Color(0xFF1E1E1E);
@@ -21,4 +22,4 @@ class AppColors {
   
   // 邊框顏色
   static const Color borderColor = Color(0xFFD9D9D9);
-} 
+}

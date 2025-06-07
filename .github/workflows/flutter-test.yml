@@ -2,7 +2,7 @@ name: Flutter Test (Self-hosted)
 
 on:
   push:
-    branches: [main, develop]
+    branches: ['feature/*', 'develop', 'main']
   pull_request:
     branches: [main, develop]
 
@@ -67,5 +67,3 @@ jobs:
               }]
             }" \
             $DISCORD_WEBHOOK
-
-

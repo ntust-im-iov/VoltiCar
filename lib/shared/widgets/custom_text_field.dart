@@ -11,6 +11,9 @@ class CustomTextField extends StatelessWidget {
   final String? Function(String?)? validator;
   final Function(String)? onSubmitted;
   final bool readOnly;
+  final Key? fieldKey;
+  final Function(String)? onChanged;
+  final AutovalidateMode? autovalidateMode;
 
   const CustomTextField({
     super.key,
@@ -23,11 +26,15 @@ class CustomTextField extends StatelessWidget {
     this.validator,
     this.onSubmitted,
     this.readOnly = false,
+    this.fieldKey,
+    this.onChanged,
+    this.autovalidateMode,
   });
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
+      key: fieldKey,
       controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
@@ -35,6 +42,8 @@ class CustomTextField extends StatelessWidget {
       readOnly: readOnly,
       validator: validator,
       onFieldSubmitted: onSubmitted,
+      onChanged: onChanged,
+      autovalidateMode: autovalidateMode,
       decoration: InputDecoration(
         hintText: hintText,
         hintStyle: const TextStyle(
@@ -84,4 +93,4 @@ class CustomTextField extends StatelessWidget {
       ),
     );
   }
-} 
+}
