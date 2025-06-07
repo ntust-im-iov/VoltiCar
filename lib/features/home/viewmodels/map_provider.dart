@@ -26,7 +26,8 @@ class MapProvider extends ChangeNotifier {
   List<ChargingStation> get stations => _stations; // 可以選擇性地暴露原始站點數據
   bool get isLoading => _isLoading;
   LatLng? get currentMapCenter => _currentMapCenter; // 新增：getter
-  ChargingStation? get selectedStationDetail => _selectedStationDetail; // 新增：getter
+  ChargingStation? get selectedStationDetail =>
+      _selectedStationDetail; // 新增：getter
   bool get isFetchingDetail => _isFetchingDetail; // 新增：getter
 
   // Filter states
@@ -54,11 +55,12 @@ class MapProvider extends ChangeNotifier {
     double? minLon,
     double? maxLat,
     double? maxLon,
-    double? currentZoom, // 新增：接收當前縮放級別
+    double? currentZoom = 20, // 新增：接收當前縮放級別
   }) async {
     // 如果已選擇特定城市，則不應執行基於地理邊界的概覽獲取
     if (_selectedCity != null && _selectedCity!.isNotEmpty) {
-      _logger.i('fetchAndSetStationMarkers skipped because a city is selected: $_selectedCity');
+      _logger.i(
+          'fetchAndSetStationMarkers skipped because a city is selected: $_selectedCity');
       // 可能需要確保在這種情況下 _isLoading 被正確處理，
       // 但通常選擇城市後會調用 fetchStationsByCity，它會管理 isLoading。
       // 如果直接調用此方法而城市已選中，則 markers 可能不會更新。
@@ -95,7 +97,8 @@ class MapProvider extends ChangeNotifier {
     } else {
       dynamicLimit = 200; // 更高的縮放級別，請求更多站點 (API 上限可能是 1000 或 200)
     }
-    _logger.i('Fetching stations with dynamic limit: $dynamicLimit based on zoom: $zoomLevel');
+    _logger.i(
+        'Fetching stations with dynamic limit: $dynamicLimit based on zoom: $zoomLevel');
 
     try {
       _stations = await _stationService.getStationsOverview(
@@ -111,9 +114,11 @@ class MapProvider extends ChangeNotifier {
           width: 40.0, // 調整標記大小
           height: 40.0, // 調整標記大小
           point: LatLng(station.latitude, station.longitude),
-          child: GestureDetector( // 使用 GestureDetector 保持點擊區域
+          child: GestureDetector(
+            // 使用 GestureDetector 保持點擊區域
             onTap: () {
-              _logger.i('Tapped on station: ${station.stationName}, ID: ${station.stationID}');
+              _logger.i(
+                  'Tapped on station: ${station.stationName}, ID: ${station.stationID}');
               selectStation(station.stationID);
             },
             child: Container(
@@ -121,7 +126,8 @@ class MapProvider extends ChangeNotifier {
                 color: Colors.green, // 外圈綠色背景
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2.0), // 白色邊框
-                boxShadow: [ // 可選：添加一點陰影使其更突出
+                boxShadow: [
+                  // 可選：添加一點陰影使其更突出
                   BoxShadow(
                     color: Colors.black.withOpacity(0.3),
                     spreadRadius: 1,
@@ -144,9 +150,9 @@ class MapProvider extends ChangeNotifier {
       _logger.e('Error fetching station markers: $e');
       _stations = []; // 出錯時清空原始站點數據
     }
-    
+
     // 在獲取新數據後，立即應用當前的篩選和搜索條件
-    applyFilters(); 
+    applyFilters();
     // applyFilters 內部會設置 _isLoading = false 和 notifyListeners()，所以這裡不再需要
 
     // _isLoading = false; // 由 applyFilters 處理
@@ -155,27 +161,32 @@ class MapProvider extends ChangeNotifier {
 
   Timer? _debounceTimer;
 
-  void onMapPositionChanged(LatLngBounds bounds, LatLng? center) { // 修改：接收 center
+  void onMapPositionChanged(LatLngBounds bounds, LatLng? center) {
+    // 修改：接收 center
     if (center != null) {
       _currentMapCenter = center;
       // notifyListeners(); // 如果希望UI立即更新中心座標，則取消註解，但可能導致頻繁刷新
     }
     if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 700), () { // 700ms 的延遲
+    _debounceTimer = Timer(const Duration(milliseconds: 1000), () {
+      // 1000ms 的延遲
       // 如果已選擇特定城市，則地圖移動不應觸發基於邊界的重新獲取
       if (_selectedCity != null && _selectedCity!.isNotEmpty) {
-        _logger.i('Map position changed but city filter is active ($_selectedCity), skipping overview fetch.');
+        _logger.i(
+            'Map position changed but city filter is active ($_selectedCity), skipping overview fetch.');
         // 如果中心點改變，還是需要通知 UI 更新中心座標顯示
         if (center != null && _currentMapCenter == center) {
-           notifyListeners();
+          notifyListeners();
         } else if (center == null) {
-           notifyListeners();
+          notifyListeners();
         }
         return;
       }
-      _logger.i('Debounced map position change. New bounds: ${bounds.southWest} to ${bounds.northEast}');
+      _logger.i(
+          'Debounced map position change. New bounds: ${bounds.southWest} to ${bounds.northEast}');
       final currentZoom = mapController.camera.zoom; // 從 mapController 獲取當前縮放級別
-      fetchAndSetStationMarkers( // 只有在沒有選擇城市時才執行
+      fetchAndSetStationMarkers(
+        // 只有在沒有選擇城市時才執行
         minLat: bounds.southWest.latitude,
         minLon: bounds.southWest.longitude,
         maxLat: bounds.northEast.latitude,
@@ -199,10 +210,10 @@ class MapProvider extends ChangeNotifier {
   void setFilterOnlyAvailable(bool value) {
     _filterOnlyAvailable = value;
     // 通常在調用 applyFilters 時才 notifyListeners，或者如果希望立即響應則在這裡調用
-    // notifyListeners(); 
+    // notifyListeners();
     _logger.i('Filter only available set to: $value');
     // 立即應用篩選或等待 applyFilters 被調用
-    applyFilters(); 
+    applyFilters();
   }
 
   void updateSearchQuery(String query) {
@@ -223,7 +234,7 @@ class MapProvider extends ChangeNotifier {
       // filteredStations = filteredStations.where((station) => station.isAvailable).toList();
       // TODO: 實際的 'isAvailable' 邏輯需要根據 ChargingStation 模型和 API 數據來確定
       // 暫時我們先假設所有站點都符合，或者您可以根據現有欄位（如 ChargingPoints > 0）做一個簡單判斷
-       _logger.i('Applying filter: Only Available (Not yet fully implemented)');
+      _logger.i('Applying filter: Only Available (Not yet fully implemented)');
     }
 
     // 2. 應用搜索查詢 (根據站點名稱或地址)
@@ -231,9 +242,11 @@ class MapProvider extends ChangeNotifier {
       String query = _searchQuery.toLowerCase();
       filteredStations = filteredStations.where((station) {
         return station.stationName.toLowerCase().contains(query) ||
-               (station.fullAddress?.toLowerCase().contains(query) ?? false); // 假設有 fullAddress
+            (station.fullAddress?.toLowerCase().contains(query) ??
+                false); // 假設有 fullAddress
       }).toList();
-      _logger.i('Applying search query: $_searchQuery. Found ${filteredStations.length} stations.');
+      _logger.i(
+          'Applying search query: $_searchQuery. Found ${filteredStations.length} stations.');
     }
 
     // 根據過濾後的站點重新生成 markers
@@ -245,7 +258,8 @@ class MapProvider extends ChangeNotifier {
         point: LatLng(station.latitude, station.longitude),
         child: GestureDetector(
           onTap: () {
-            _logger.i('Tapped on station: ${station.stationName}, ID: ${station.stationID}');
+            _logger.i(
+                'Tapped on station: ${station.stationName}, ID: ${station.stationID}');
             selectStation(station.stationID);
           },
           child: Container(
@@ -271,7 +285,7 @@ class MapProvider extends ChangeNotifier {
         ),
       );
     }).toList();
-    
+
     _isLoading = false; // 在 applyFilters 的末尾設置 isLoading
     notifyListeners();
     _logger.i('Filters applied. Displaying ${_markers.length} markers.');
@@ -289,9 +303,11 @@ class MapProvider extends ChangeNotifier {
       final stationDetail = await _stationService.getStationById(stationId);
       if (stationDetail != null) {
         _selectedStationDetail = stationDetail;
-        _logger.i('Successfully fetched details for station: ${stationDetail.stationName}');
+        _logger.i(
+            'Successfully fetched details for station: ${stationDetail.stationName}');
       } else {
-        _logger.w('Could not fetch details for station ID: $stationId or station not found.');
+        _logger.w(
+            'Could not fetch details for station ID: $stationId or station not found.');
         // 可以在這裡設置一個錯誤狀態或保持 _selectedStationDetail 為 null
       }
     } catch (e) {
@@ -344,7 +360,8 @@ class MapProvider extends ChangeNotifier {
       _logger.i('Initial permission status: $permission'); // 詳細日誌
 
       if (permission == LocationPermission.denied) {
-        _logger.i('Permission was denied, attempting to request permission...'); // 詳細日誌
+        _logger.i(
+            'Permission was denied, attempting to request permission...'); // 詳細日誌
         permission = await Geolocator.requestPermission();
         _logger.i('Permission status after request: $permission'); // 詳細日誌
 
@@ -377,17 +394,18 @@ class MapProvider extends ChangeNotifier {
         notifyListeners();
         return;
       }
-      
+
       final userLocation = LatLng(position.latitude, position.longitude);
       _logger.i('User location: $userLocation. Attempting to move map...');
       try {
-        mapController.move(userLocation, mapController.camera.zoom); // 或者一個預設的縮放級別，例如 15.0
+        mapController.move(
+            userLocation, mapController.camera.zoom); // 或者一個預設的縮放級別，例如 15.0
         _currentMapCenter = userLocation; // 更新地圖中心點
         _logger.i('Map moved to current user location: $userLocation');
       } catch (e) {
         _logger.e('Error moving map: $e');
       }
-      
+
       // 可選：如果地圖移動未觸發 onPositionChanged (例如，如果位置未顯著改變)，
       // 或者如果希望立即基於新中心點加載數據，可以在此處手動觸發。
       // 但通常 onMapPositionChanged 中的 debounce 機制會處理。
@@ -398,7 +416,7 @@ class MapProvider extends ChangeNotifier {
       // 實際上，在 fetchAndSetStationMarkers 和 applyFilters 的末尾都有 notifyListeners，
       // onMapPositionChanged 的 debounce 後也會 notifyListeners。
       // 所以這裡的 _isLoading = false; notifyListeners(); 應該是足夠的。
-      
+
       // 可選地，如果希望在定位後立即加載該位置的站點，可以這樣做：
       // final newBounds = mapController.camera.visibleBounds; // 需要確保 mapController 已準備好
       // if (newBounds != null) {
@@ -409,11 +427,10 @@ class MapProvider extends ChangeNotifier {
       //     maxLon: newBounds.northEast.longitude,
       //   );
       // }
-      
+
       // Optionally, fetch stations for this new location if not covered by onPositionChanged
       // For now, onPositionChanged should handle it if the move is significant enough
       // to trigger the debounce. We also update _currentMapCenter and notify.
-      
     } catch (e) {
       _logger.e('Error moving to current user location: $e');
     }
@@ -441,7 +458,7 @@ class MapProvider extends ChangeNotifier {
       await fetchStationsByCity(_selectedCity!);
     } else {
       // 如果清除城市選擇，則重新加載概覽數據 (不按地理邊界，顯示預設概覽)
-      await fetchAndSetStationMarkers(); 
+      await fetchAndSetStationMarkers();
     }
     // fetchStationsByCity 和 fetchAndSetStationMarkers 內部會 notifyListeners
   }
@@ -449,7 +466,7 @@ class MapProvider extends ChangeNotifier {
   Future<void> fetchStationsByCity(String city) async {
     _isLoading = true;
     _stations = []; // 清空舊站點，因為我們要獲取特定城市的站點
-    _markers = [];  // 同時清空標記
+    _markers = []; // 同時清空標記
     notifyListeners();
 
     try {
@@ -459,7 +476,7 @@ class MapProvider extends ChangeNotifier {
       _logger.e('Error fetching stations for city $city: $e');
       _stations = []; // 出錯時確保清空
     }
-    
+
     applyFilters(); // 根據新獲取的 _stations (已按城市篩選) 應用其他篩選並更新 markers
     // applyFilters 內部會設置 _isLoading = false 和 notifyListeners()
   }

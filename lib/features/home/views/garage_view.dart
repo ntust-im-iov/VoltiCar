@@ -3,12 +3,13 @@ import 'package:flame/game.dart' hide Route; // Flame import - Hide Route
 import 'package:flame/components.dart'; // Flame import
 import 'package:flame/events.dart'; // Flame import
 import 'package:flame/palette.dart'; // Flame import
+import 'package:volticar_app/features/home/viewmodels/map_overlay.dart';
 import 'package:volticar_app/shared/maplist/carDetails.dart'; //導入車輛訊息MAP列表
 import 'package:volticar_app/shared/widgets/adaptive_component.dart'; //導入自適應點擊元件原型
 import 'package:volticar_app/features/auth/viewmodels/login_viewmodel.dart'; // 導入身份驗證視圖模型
 import 'package:volticar_app/core/constants/app_colors.dart'; // Import AppColors
-import 'package:volticar_app/shared/widgets/map_overlay.dart'; // Import the new map overlay widget
 import 'package:provider/provider.dart'; // 導入 Provider
+import 'package:volticar_app/features/home/viewmodels/map_provider.dart';
 
 class GarageView extends StatefulWidget {
   const GarageView({super.key});
@@ -21,12 +22,30 @@ class _GarageViewState extends State<GarageView> {
   int selectedCarIndex = 0;
   bool _isMapVisible = false; // State variable to control map visibility
 
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final mapProvider = Provider.of<MapProvider>(context, listen: false);
+      if (!mapProvider.isInitialized) {
+        mapProvider.initialize();
+      }
+    });
+  }
+
   final List<String> cars = [
     'Tesla Model 3',
     'Nissan Leaf',
     'BMW i3',
     'Porsche Taycan',
   ];
+
+  void _toggleMapVisibility() {
+    setState(() {
+      _isMapVisible = !_isMapVisible;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,8 +69,7 @@ class _GarageViewState extends State<GarageView> {
                     // Ensure we have the correct car details based on the current index
                     _showCarDetailsDialog(carDetails[selectedCarIndex]);
                   },
-                  onMapButtonPressed:
-                      _toggleMapVisibility, // Pass map toggle callback
+                  onMapButtonPressed: _toggleMap, // Pass map toggle callback
                   onGasStationPressed: () {
                     // Pass navigation logic to the game
                     Navigator.pushNamed(context, '/charging');
@@ -87,18 +105,24 @@ class _GarageViewState extends State<GarageView> {
           // Conditionally display the map overlay
           if (_isMapVisible)
             MapOverlay(
-              onClose:
-                  _toggleMapVisibility, // Pass the toggle callback to close
+              onClose: _closeMap, // Pass the toggle callback to close
             ),
         ],
       ),
     );
   }
 
-  // Method to toggle map visibility
-  void _toggleMapVisibility() {
+  // 切換地圖顯示
+  void _toggleMap() {
     setState(() {
       _isMapVisible = !_isMapVisible;
+    });
+  }
+
+  // 關閉地圖
+  void _closeMap() {
+    setState(() {
+      _isMapVisible = false;
     });
   }
 
@@ -133,7 +157,7 @@ class _GarageViewState extends State<GarageView> {
     const pixelArrowRight = Icons.arrow_right;
 
     return Container(
-      height: 100, // 面板高度，可以調整
+      height: 100, // 面板高度، 可以調整
       margin: const EdgeInsets.only(
         bottom: 20, // 調整底部邊距，由於移除了底部導覽列，減少底部空間
         left: 20,
@@ -229,8 +253,8 @@ class _GarageViewState extends State<GarageView> {
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: const Color(0xFF1F1638),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFF5C4EB4), width: 2),
+            borderRadius: BorderRadius.circular(16), // 圓角
+            border: Border.all(color: const Color(0xFF5C4EB4), width: 2), // 邊框
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.5),
