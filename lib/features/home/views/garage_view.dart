@@ -10,6 +10,7 @@ import 'package:volticar_app/shared/widgets/adaptive_component.dart'; //導入�
 import 'package:volticar_app/features/auth/viewmodels/login_viewmodel.dart'; // 導入身份驗證視圖模型
 import 'package:provider/provider.dart'; // 導入 Provider
 import 'package:volticar_app/features/home/viewmodels/map_provider.dart';
+import 'package:url_launcher/url_launcher.dart'; // 導入url_launcher
 
 class GarageView extends StatefulWidget {
   const GarageView({super.key});
@@ -882,6 +883,10 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
             ],
           ),
         ],
+
+        // 導航按鈕
+        const SizedBox(height: 30),
+        _buildNavigationButton(station),
         const SizedBox(height: 20), // 底部留白
       ],
     );
@@ -954,6 +959,151 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
         ],
       ),
     );
+  }
+
+  // 導航按鈕組件
+  Widget _buildNavigationButton(ChargingStation station) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF06D6A0), Color(0xFF5DE8EB)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF06D6A0).withOpacity(0.4),
+            blurRadius: 15,
+            spreadRadius: 0,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ElevatedButton.icon(
+        onPressed: () => _navigateToStation(station),
+        icon: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Icon(
+            Icons.navigation,
+            color: Colors.white,
+            size: 22,
+          ),
+        ),
+        label: const Text(
+          '導航到此充電站',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.white,
+          shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 18,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          elevation: 0,
+        ),
+      ),
+    );
+  }
+
+  // 導航功能
+  Future<void> _navigateToStation(ChargingStation station) async {
+    try {
+      // 顯示載入中的訊息
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                                 Text('正在開啟Google Maps導航至 ${station.stationName}...'),
+              ],
+            ),
+            backgroundColor: const Color(0xFF06D6A0),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+
+      // 構建不同地圖應用的URL
+      final double lat = station.latitude;
+      final double lng = station.longitude;
+      final String stationName = Uri.encodeComponent(station.stationName);
+      
+      // Google Maps App URL (首選)
+      final String googleMapsAppUrl = 'google.navigation:q=$lat,$lng&mode=d';
+      
+      // Apple Maps URL (備選，僅當Google Maps App不可用時)
+      final String appleMapsUrl = 'https://maps.apple.com/?daddr=$lat,$lng&dirflg=d&q=$stationName';
+
+      bool navigationOpened = false;
+
+      // 直接調用原生地圖應用，不使用網頁版
+      // 1. 首先嘗試Google Maps App
+      if (!navigationOpened && await canLaunchUrl(Uri.parse(googleMapsAppUrl))) {
+        await launchUrl(
+          Uri.parse(googleMapsAppUrl),
+          mode: LaunchMode.externalApplication,
+        );
+        navigationOpened = true;
+      }
+      
+      // 2. 如果Google Maps App不可用，嘗試Apple Maps
+      if (!navigationOpened && await canLaunchUrl(Uri.parse(appleMapsUrl))) {
+        await launchUrl(
+          Uri.parse(appleMapsUrl),
+          mode: LaunchMode.externalApplication,
+        );
+        navigationOpened = true;
+      }
+
+      // 如果都無法打開，顯示錯誤訊息
+      if (!navigationOpened) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('無法打開地圖應用，請確認已安裝Google Maps或其他地圖應用'),
+              backgroundColor: Color(0xFFFF5E5B),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // 處理錯誤
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('導航功能發生錯誤：${e.toString()}'),
+            backgroundColor: const Color(0xFFFF5E5B),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   // 充電站詳細資訊 BottomSheet 填充 - 美化版本
