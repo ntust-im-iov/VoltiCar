@@ -39,12 +39,24 @@ PODS:
   - Flutter (1.0.0)
   - flutter_secure_storage (6.0.0):
     - Flutter
+  - geolocator_apple (1.2.0):
+    - Flutter
+    - FlutterMacOS
+  - Google-Maps-iOS-Utils (6.1.0):
+    - GoogleMaps (~> 9.0)
+  - google_maps_flutter_ios (0.0.1):
+    - Flutter
+    - Google-Maps-iOS-Utils (>= 5.0)
+    - GoogleMaps (< 10.0, >= 8.4)
   - google_sign_in_ios (0.0.1):
     - AppAuth (>= 1.7.4)
     - Flutter
     - FlutterMacOS
     - GoogleSignIn (~> 7.1)
     - GTMSessionFetcher (>= 3.4.0)
+  - GoogleMaps (9.4.0):
+    - GoogleMaps/Maps (= 9.4.0)
+  - GoogleMaps/Maps (9.4.0)
   - GoogleSignIn (7.1.0):
     - AppAuth (< 2.0, >= 1.7.3)
     - GTMAppAuth (< 5.0, >= 4.1.1)
@@ -85,15 +97,24 @@ PODS:
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
+  - sqflite_darwin (0.0.4):
+    - Flutter
+    - FlutterMacOS
+  - url_launcher_ios (0.0.1):
+    - Flutter
 
 DEPENDENCIES:
   - firebase_auth (from `.symlinks/plugins/firebase_auth/ios`)
   - firebase_core (from `.symlinks/plugins/firebase_core/ios`)
   - Flutter (from `Flutter`)
   - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
+  - geolocator_apple (from `.symlinks/plugins/geolocator_apple/darwin`)
+  - google_maps_flutter_ios (from `.symlinks/plugins/google_maps_flutter_ios/ios`)
   - google_sign_in_ios (from `.symlinks/plugins/google_sign_in_ios/darwin`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
+  - sqflite_darwin (from `.symlinks/plugins/sqflite_darwin/darwin`)
+  - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
 
 SPEC REPOS:
   trunk:
@@ -105,6 +126,8 @@ SPEC REPOS:
     - FirebaseCore
     - FirebaseCoreExtension
     - FirebaseCoreInternal
+    - Google-Maps-iOS-Utils
+    - GoogleMaps
     - GoogleSignIn
     - GoogleUtilities
     - GTMAppAuth
@@ -120,12 +143,20 @@ EXTERNAL SOURCES:
     :path: Flutter
   flutter_secure_storage:
     :path: ".symlinks/plugins/flutter_secure_storage/ios"
+  geolocator_apple:
+    :path: ".symlinks/plugins/geolocator_apple/darwin"
+  google_maps_flutter_ios:
+    :path: ".symlinks/plugins/google_maps_flutter_ios/ios"
   google_sign_in_ios:
     :path: ".symlinks/plugins/google_sign_in_ios/darwin"
   path_provider_foundation:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
   shared_preferences_foundation:
     :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
+  sqflite_darwin:
+    :path: ".symlinks/plugins/sqflite_darwin/darwin"
+  url_launcher_ios:
+    :path: ".symlinks/plugins/url_launcher_ios/ios"
 
 SPEC CHECKSUMS:
   AppAuth: d4f13a8fe0baf391b2108511793e4b479691fb73
@@ -140,7 +171,11 @@ SPEC CHECKSUMS:
   FirebaseCoreInternal: ef4505d2afb1d0ebbc33162cb3795382904b5679
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   flutter_secure_storage: 1ed9476fba7e7a782b22888f956cce43e2c62f13
+  geolocator_apple: ab36aa0e8b7d7a2d7639b3b4e48308394e8cef5e
+  Google-Maps-iOS-Utils: 0a484b05ed21d88c9f9ebbacb007956edd508a96
+  google_maps_flutter_ios: 9450535136d7e3002ccfade8d80fa030a684312a
   google_sign_in_ios: 19297361f2c51d7d8ac0201b866ef1fa5d1f94a8
+  GoogleMaps: 0608099d4870cac8754bdba9b6953db543432438
   GoogleSignIn: d4281ab6cf21542b1cfaff85c191f230b399d2db
   GoogleUtilities: 26a3abef001b6533cf678d3eb38fd3f614b7872d
   GTMAppAuth: f69bd07d68cd3b766125f7e072c45d7340dea0de
@@ -148,7 +183,9 @@ SPEC CHECKSUMS:
   path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
   shared_preferences_foundation: 9e1978ff2562383bd5676f64ec4e9aa8fa06a6f7
+  sqflite_darwin: 20b2a3a3b70e43edae938624ce550a3cbf66a3d0
+  url_launcher_ios: 694010445543906933d732453a59da0a173ae33d
 
-PODFILE CHECKSUM: 16a8e6f2c2b5bef37913f34df86be0e2525a8f55
+PODFILE CHECKSUM: f39506ad4d9c585a3c2a54f6000d29a573d9973b
 
 COCOAPODS: 1.16.2
