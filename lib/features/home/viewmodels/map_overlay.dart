@@ -15,6 +15,39 @@ class MapOverlay extends StatefulWidget {
 
 class _MapOverlayState extends State<MapOverlay> {
   @override
+  void initState() {
+    super.initState();
+    // 在下一個 frame 後執行，確保地圖已經初始化
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadInitialStations();
+    });
+  }
+
+  // 載入初始充電站數據
+  void _loadInitialStations() {
+    final mapProvider = Provider.of<MapProvider>(context, listen: false);
+    
+    // 如果還沒有載入任何數據，則載入初始區域的充電站
+    if (mapProvider.markers.isEmpty) {
+      // 計算初始地圖的邊界範圍（基於 initialCenter 和 initialZoom）
+      const initialCenter = LatLng(25.0340, 121.5645); // 台北市
+      const initialZoom = 10.0;
+      
+      // 根據縮放級別估算可視範圍（粗略計算）
+      final latDelta = 1.0 / (initialZoom * 0.1); // 簡化的計算方式
+      final lngDelta = 1.0 / (initialZoom * 0.1);
+      
+      mapProvider.fetchAndSetStationMarkers(
+        minLat: initialCenter.latitude - latDelta,
+        maxLat: initialCenter.latitude + latDelta,
+        minLon: initialCenter.longitude - lngDelta,
+        maxLon: initialCenter.longitude + lngDelta,
+        currentZoom: initialZoom,
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Consumer<MapProvider>(
       builder: (context, mapProvider, child) {
@@ -50,15 +83,20 @@ class _MapOverlayState extends State<MapOverlay> {
                               const LatLng(25.0340, 121.5645), // 初始中心點 (例如台北市)
                           initialZoom: 10.0, // 初始縮放級別，可以調整以便看到更多標記
                           onPositionChanged: (position, hasGesture) {
-                            // 移除了 MapPosition 類型聲明
-                            if (hasGesture) {
-                              // 用戶手動改變地圖視角時，獲取新的邊界並請求更新充電站
-                              final bounds =
-                                  position.visibleBounds; // 使用 visibleBounds
-                              final center = position.center;
-                              mapProvider.onMapPositionChanged(
-                                  bounds, center); // 調用新的 debounce 方法並傳遞中心點
-                            }
+                            // 移除原本的 hasGesture 限制，讓初始載入也能觸發
+                            final bounds = position.visibleBounds;
+                            final center = position.center;
+                            mapProvider.onMapPositionChanged(bounds, center);
+                          },
+                          onMapReady: () {
+                            // 地圖準備完成後，再次確保載入充電站數據
+                            Future.delayed(const Duration(milliseconds: 500), () {
+                              if (mounted && mapProvider.markers.isEmpty) {
+                                final bounds = mapProvider.mapController.camera.visibleBounds;
+                                final center = mapProvider.mapController.camera.center;
+                                mapProvider.onMapPositionChanged(bounds, center);
+                              }
+                            });
                           },
                         ),
                         children: [

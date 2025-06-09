@@ -440,6 +440,16 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
   bool _isStationDetailSheetVisible = false;
 
   @override
+  void initState() {
+    super.initState();
+    // 重置地圖狀態，確保每次打開地圖overlay時都能正確載入充電站
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final mapProvider = Provider.of<MapProvider>(context, listen: false);
+      mapProvider.resetMapState();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Consumer<MapProvider>(
       builder: (context, mapProvider, child) {

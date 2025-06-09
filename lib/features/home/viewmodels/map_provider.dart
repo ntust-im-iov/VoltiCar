@@ -45,7 +45,23 @@ class MapProvider extends ChangeNotifier {
 
   Future<void> initialize() async {
     if (_isInitialized) return;
-    await fetchAndSetStationMarkers(); // 首次加載數據
+    
+    // 載入初始區域的充電站數據（台北市周圍）
+    const initialCenter = LatLng(25.0340, 121.5645);
+    const initialZoom = 10.0;
+    
+    // 根據縮放級別估算可視範圍
+    final latDelta = 1.0 / (initialZoom * 0.1);
+    final lngDelta = 1.0 / (initialZoom * 0.1);
+    
+    await fetchAndSetStationMarkers(
+      minLat: initialCenter.latitude - latDelta,
+      maxLat: initialCenter.latitude + latDelta,
+      minLon: initialCenter.longitude - lngDelta,
+      maxLon: initialCenter.longitude + lngDelta,
+      currentZoom: initialZoom,
+    ); // 首次加載數據
+    
     _updateAvailableConnectorTypes(); // 更新可用的充電槍類型
     _isInitialized = true;
     debugPrint('MapProvider initialized and initial markers fetched');
@@ -155,6 +171,7 @@ class MapProvider extends ChangeNotifier {
   }
 
   Timer? _debounceTimer;
+  bool _isFirstLoad = true; // 新增：標記是否為首次載入
 
   void onMapPositionChanged(LatLngBounds bounds, LatLng? center) {
     // 修改：接收 center
@@ -162,20 +179,36 @@ class MapProvider extends ChangeNotifier {
       _currentMapCenter = center;
     }
     
+    // 如果是首次載入，立即執行，不使用 debounce
+    if (_isFirstLoad) {
+      _isFirstLoad = false;
+      final currentZoom = mapController.camera.zoom;
+      fetchAndSetStationMarkers(
+        minLat: bounds.southWest.latitude,
+        minLon: bounds.southWest.longitude,
+        maxLat: bounds.northEast.latitude,
+        maxLon: bounds.northEast.longitude,
+        currentZoom: currentZoom,
+      );
+      _currentMapCenter = mapController.camera.center;
+      notifyListeners();
+      return;
+    }
+    
     if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 1000), () {
       // 恢復原來的1000ms延遲
       
-          final currentZoom = mapController.camera.zoom;
-    fetchAndSetStationMarkers(
-      minLat: bounds.southWest.latitude,
-      minLon: bounds.southWest.longitude,
-      maxLat: bounds.northEast.latitude,
-      maxLon: bounds.northEast.longitude,
-      currentZoom: currentZoom,
-    );
-    _currentMapCenter = mapController.camera.center;
-    notifyListeners();
+      final currentZoom = mapController.camera.zoom;
+      fetchAndSetStationMarkers(
+        minLat: bounds.southWest.latitude,
+        minLon: bounds.southWest.longitude,
+        maxLat: bounds.northEast.latitude,
+        maxLon: bounds.northEast.longitude,
+        currentZoom: currentZoom,
+      );
+      _currentMapCenter = mapController.camera.center;
+      notifyListeners();
     });
   }
 
@@ -476,5 +509,11 @@ class MapProvider extends ChangeNotifier {
       _availableConnectorTypes = detectedTypes.toList()..sort();
       notifyListeners();
     }
+  }
+
+  // 新增：重置地圖狀態，用於每次打開地圖overlay時
+  void resetMapState() {
+    _isFirstLoad = true;
+    debugPrint('MapProvider state reset for new map overlay');
   }
 }
