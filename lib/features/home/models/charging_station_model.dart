@@ -1,4 +1,6 @@
 import 'connector_model.dart';
+// 為避免衝突，給latlong2包重命名
+import 'package:latlong2/latlong.dart' as latlng2;
 
 class ChargingStation {
   final String stationID;
@@ -33,6 +35,25 @@ class ChargingStation {
     this.telephone,
     this.city,
   });
+
+  // 便利的getter方法，用於與UI代碼兼容
+  String get name => stationName;
+  String get stationId => stationID;
+  String get address => fullAddress ?? '未提供地址';
+  latlng2.LatLng get location => latlng2.LatLng(latitude, longitude);
+  bool get isAvailable => true; // 默認為可用，可以根據實際需求調整
+  List<String> get photoUrls => photoURLs ?? [];
+
+  // 通用的fromJson方法，嘗試判斷數據格式並調用適當的解析方法
+  factory ChargingStation.fromJson(Map<String, dynamic> json) {
+    // 如果包含詳細資訊字段，使用詳細解析
+    if (json.containsKey('Description') || json.containsKey('PhotoURLs')) {
+      return ChargingStation.fromDetailJson(json);
+    } else {
+      // 否則使用概覽解析
+      return ChargingStation.fromOverviewJson(json);
+    }
+  }
 
   factory ChargingStation.fromOverviewJson(Map<String, dynamic> json) {
     var connectorsJson = json['Connectors'] as List<dynamic>? ?? [];
