@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flame/game.dart' hide Route; // Flame import - Hide Route
 import 'package:flame/components.dart'; // Flame import
@@ -23,7 +22,7 @@ class _GarageViewState extends State<GarageView> {
   int selectedCarIndex = 0;
   final ValueNotifier<bool> _isMapVisible =
       ValueNotifier<bool>(false); // State variable to control map visibility
-  bool _isStationDetailSheetVisible = false; // 新增：追蹤詳細資訊表單是否可見
+  // bool _isStationDetailSheetVisible = false; // 已移至_MapOverlayWidget
 
   @override
   void initState() {
@@ -46,28 +45,6 @@ class _GarageViewState extends State<GarageView> {
 
   @override
   Widget build(BuildContext context) {
-    final mapProvider = Provider.of<MapProvider>(context);
-
-    // 使用 addPostFrameCallback 確保在 build 完成後執行
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mapProvider.selectedStationDetail != null &&
-          !_isStationDetailSheetVisible) {
-        _isStationDetailSheetVisible = true; // 標記為已顯示
-        _showStationDetailBottomSheet(
-                context, mapProvider.selectedStationDetail!)
-            .then((_) {
-          // 當 BottomSheet 關閉時
-          _isStationDetailSheetVisible = false; // 重置標記
-          // 檢查 mapProvider 是否仍然認為有選中的站點，
-          // 如果使用者是透過手勢關閉 BottomSheet 而不是透過按鈕，
-          // 我們需要通知 mapProvider 清除選中狀態。
-          if (mapProvider.selectedStationDetail != null) {
-            mapProvider.clearSelectedStation();
-          }
-        });
-      }
-    });
-
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
@@ -109,13 +86,16 @@ class _GarageViewState extends State<GarageView> {
             child: _buildBottomCarPanel(), // Add the new panel
           ),
 
-          // Conditionally display the map overlay
+          // Conditionally display the map overlay - 使用獨立的Widget避免重建
           ValueListenableBuilder<bool>(
             valueListenable: _isMapVisible,
             builder: (context, isMapVisible, child) {
               return isMapVisible
-                  ? MapOverlay(
-                      onClose: _closeMap, // Pass the toggle callback to close
+                  ? _MapOverlayWidget(
+                      onClose: _closeMap,
+                      onStationDetailSheetChanged: (isVisible) {
+                        // 可以在這裡處理狀態變化，目前不需要
+                      },
                     )
                   : const SizedBox.shrink();
             },
@@ -437,58 +417,131 @@ class _GarageViewState extends State<GarageView> {
     }
   }
 
-  // 顯示充電站詳細資訊的 BottomSheet
+  // 原本的_showStationDetailBottomSheet方法和_buildDetailRow方法已移至_MapOverlayWidget
+}
+
+// 獨立的地圖overlay widget，避免garage頁面重建
+class _MapOverlayWidget extends StatefulWidget {
+  final VoidCallback onClose;
+  final Function(bool) onStationDetailSheetChanged;
+
+  const _MapOverlayWidget({
+    Key? key,
+    required this.onClose,
+    required this.onStationDetailSheetChanged,
+  }) : super(key: key);
+
+  @override
+  State<_MapOverlayWidget> createState() => _MapOverlayWidgetState();
+}
+
+class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
+  bool _isStationDetailSheetVisible = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<MapProvider>(
+      builder: (context, mapProvider, child) {
+        // 使用 addPostFrameCallback 確保在 build 完成後執行
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mapProvider.selectedStationDetail != null &&
+              !_isStationDetailSheetVisible) {
+            _isStationDetailSheetVisible = true; // 標記為已顯示
+            widget.onStationDetailSheetChanged(true);
+            _showStationDetailBottomSheet(
+                    context, mapProvider.selectedStationDetail!)
+                .then((_) {
+              // 當 BottomSheet 關閉時
+              _isStationDetailSheetVisible = false; // 重置標記
+              widget.onStationDetailSheetChanged(false);
+              // 檢查 mapProvider 是否仍然認為有選中的站點，
+              // 如果使用者是透過手勢關閉 BottomSheet 而不是透過按鈕，
+              // 我們需要通知 mapProvider 清除選中狀態。
+              if (mapProvider.selectedStationDetail != null) {
+                mapProvider.clearSelectedStation();
+              }
+            });
+          }
+        });
+
+        return MapOverlay(
+          onClose: widget.onClose,
+        );
+      },
+    );
+  }
+
+  // 移植從原本GarageView的方法
   Future<void> _showStationDetailBottomSheet(
-      BuildContext context, ChargingStation station) {
-    final mapProvider = Provider.of<MapProvider>(context, listen: false);
+      BuildContext context, ChargingStation station) async {
     return showModalBottomSheet<void>(
       context: context,
-      isScrollControlled: true, // 允許內容滾動且高度可以較大
-      backgroundColor: const Color(0xFF3A2D5B), // 背景色與卡片一致
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
         return DraggableScrollableSheet(
-          expand: false, // 不完全展開，允許部分高度
-          initialChildSize: 0.6, // 初始高度佔屏幕的60%
-          minChildSize: 0.3, // 最小高度
-          maxChildSize: 0.9, // 最大高度
-          builder: (_, scrollController) {
+          initialChildSize: 0.5, // 初始高度為螢幕的 50%
+          minChildSize: 0.3, // 最小高度為螢幕的 30%
+          maxChildSize: 0.9, // 最大高度為螢幕的 90%
+          builder: (context, scrollController) {
             return Container(
-              padding: const EdgeInsets.all(16.0),
+              decoration: const BoxDecoration(
+                color: Color(0xFF1F1638), // 與 garage_view 主題一致的背景色
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+                border: Border(
+                  top: BorderSide(color: Color(0xFF5C4EB4), width: 3),
+                  left: BorderSide(color: Color(0xFF5C4EB4), width: 3),
+                  right: BorderSide(color: Color(0xFF5C4EB4), width: 3),
+                ),
+              ),
               child: Column(
                 children: [
-                  // 頂部拖動指示器
+                  // 拖拽指示器
                   Container(
-                    width: 40,
-                    height: 5,
-                    margin: const EdgeInsets.only(bottom: 10),
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    width: 50,
+                    height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.grey[700],
-                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.white.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
+                  // 標題欄
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            station.stationName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(color: Color(0xFF5C4EB4), height: 1),
+                  // 內容區域 - 可滾動
                   Expanded(
-                    child: SingleChildScrollView(
-                      controller: scrollController,
-                      child: _buildStationDetailSheetContent(station),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.close),
-                    label: const Text('關閉'),
-                    onPressed: () {
-                      Navigator.pop(context); // 關閉 BottomSheet
-                      mapProvider.clearSelectedStation(); // 清除選中的站點
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accentColor,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: SingleChildScrollView(
+                        controller: scrollController,
+                        child: _buildStationDetailContent(station),
                       ),
                     ),
                   ),
@@ -498,70 +551,43 @@ class _GarageViewState extends State<GarageView> {
           },
         );
       },
-    ).whenComplete(() {
-      // 確保在 BottomSheet 關閉時（無論如何關閉）都清除狀態
-      _isStationDetailSheetVisible = false;
-      if (mapProvider.selectedStationDetail != null) {
-        mapProvider.clearSelectedStation();
-      }
-    });
+    );
   }
 
-  // 充電站詳細資訊 BottomSheet 的內容
-  Widget _buildStationDetailSheetContent(ChargingStation station) {
+  // 構建充電站詳細資訊內容
+  Widget _buildStationDetailContent(ChargingStation station) {
     final textStyle = const TextStyle(color: Colors.white, fontSize: 16);
     final labelStyle =
         TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min, // 讓 Column 包裹內容
-      children: <Widget>[
-        Text(
-          station.stationName,
-          style: const TextStyle(
-              color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
-        ),
+      children: [
+                 // 基本資訊區塊
+         _buildDetailRow(
+             label: '地址', value: station.fullAddress ?? '未提供', icon: Icons.location_on),
+        _buildDetailRow(
+            label: '電話',
+            value: station.telephone ?? '未提供',
+            icon: Icons.phone),
+        _buildDetailRow(
+            label: '營業時間',
+            value: station.serviceTime ?? '未提供',
+            icon: Icons.access_time),
+
+        const SizedBox(height: 16),
+        const Divider(color: Color(0xFF5C4EB4)),
+        const SizedBox(height: 12),
+
+        // 收費資訊
+        Text('收費資訊:',
+            style: labelStyle.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        if (station.fullAddress != null && station.fullAddress!.isNotEmpty) ...[
-          Row(
-            children: [
-              Icon(Icons.location_on_outlined, color: Colors.white70, size: 18),
-              const SizedBox(width: 8),
-              Expanded(child: Text(station.fullAddress!, style: textStyle)),
-            ],
-          ),
-          const SizedBox(height: 8),
-        ],
+        _buildDetailRow(label: '充電費率', value: station.chargingRate ?? '未提供'),
+        _buildDetailRow(label: '停車費率', value: station.parkingRate ?? '未提供'),
 
-        _buildDetailRow(
-            label: 'ID', value: station.stationID, icon: Icons.perm_identity),
-        _buildDetailRow(
-            label: '充電樁數量',
-            value: station.chargingPoints.toString(),
-            icon: Icons.power_settings_new),
-        _buildDetailRow(
-            label: '停車費率',
-            value: station.parkingRate,
-            icon: Icons.local_parking),
-        _buildDetailRow(
-            label: '充電費率',
-            value: station.chargingRate,
-            icon: Icons.attach_money),
-        _buildDetailRow(
-            label: '服務時間', value: station.serviceTime, icon: Icons.access_time),
-
-        if (station.telephone != null && station.telephone!.isNotEmpty)
-          _buildDetailRow(
-              label: '電話', value: station.telephone!, icon: Icons.phone),
-
-        if (station.description != null && station.description!.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Text('描述:', style: labelStyle.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text(station.description!, style: textStyle),
-        ],
-
+        const SizedBox(height: 16),
+        const Divider(color: Color(0xFF5C4EB4)),
         const SizedBox(height: 12),
         Text('充電接口:', style: labelStyle.copyWith(fontWeight: FontWeight.bold)),
         if (station.connectors.isEmpty)

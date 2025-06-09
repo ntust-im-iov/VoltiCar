@@ -24,7 +24,7 @@ class MapProvider extends ChangeNotifier {
   bool get isInitialized => _isInitialized;
   List<Marker> get markers => _markers;
   List<ChargingStation> get stations => _stations; // 可以選擇性地暴露原始站點數據
-  bool get isLoading => _isLoading;
+  bool get isLoading => _isLoading; // 恢復原始載入邏輯
   LatLng? get currentMapCenter => _currentMapCenter; // 新增：getter
   ChargingStation? get selectedStationDetail =>
       _selectedStationDetail; // 新增：getter
@@ -170,23 +170,22 @@ class MapProvider extends ChangeNotifier {
     // 修改：接收 center
     if (center != null) {
       _currentMapCenter = center;
-      // notifyListeners(); // 如果希望UI立即更新中心座標，則取消註解，但可能導致頻繁刷新
     }
+    
     if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 1000), () {
-      // 1000ms 的延遲
+      // 恢復原來的1000ms延遲
+      
       // 如果已選擇特定城市，則地圖移動不應觸發基於邊界的重新獲取
       if (_selectedCity != null && _selectedCity!.isNotEmpty) {
         _logger.i(
             'Map position changed but city filter is active ($_selectedCity), skipping overview fetch.');
-        // 如果中心點改變，還是需要通知 UI 更新中心座標顯示
-        if (center != null && _currentMapCenter == center) {
-          notifyListeners();
-        } else if (center == null) {
+        if (center != null) {
           notifyListeners();
         }
         return;
       }
+      
       _logger.i(
           'Debounced map position change. New bounds: ${bounds.southWest} to ${bounds.northEast}');
       final currentZoom = mapController.camera.zoom; // 從 mapController 獲取當前縮放級別
@@ -202,7 +201,7 @@ class MapProvider extends ChangeNotifier {
       // 這可以確保我們使用的是地圖最終穩定後的中心點
       _currentMapCenter = mapController.camera.center;
       _logger.i('Map center updated after debounce: $_currentMapCenter');
-      notifyListeners(); // 通知 UI 更新，包括中心座標和可能的標記
+      notifyListeners(); // 恢復通知，確保UI更新
     });
   }
 
@@ -229,6 +228,7 @@ class MapProvider extends ChangeNotifier {
   }
 
   void applyFilters() {
+    // 恢復載入狀態處理
     _isLoading = true;
     notifyListeners();
 
@@ -291,7 +291,7 @@ class MapProvider extends ChangeNotifier {
       );
     }).toList();
 
-    _isLoading = false; // 在 applyFilters 的末尾設置 isLoading
+    _isLoading = false; // 恢復載入狀態設置
     notifyListeners();
     _logger.i('Filters applied. Displaying ${_markers.length} markers.');
   }

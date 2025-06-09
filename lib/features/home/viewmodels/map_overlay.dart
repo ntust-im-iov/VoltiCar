@@ -73,8 +73,17 @@ class _MapOverlayState extends State<MapOverlay> {
                         ],
                       ),
                     ),
+                    // 優化的載入指示器，避免閃爍
                     if (mapProvider.isLoading)
-                      const Center(child: CircularProgressIndicator()),
+                      Container(
+                        color: Colors.black.withOpacity(0.1),
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            backgroundColor: Colors.white24,
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF5C4EB4)),
+                          ),
+                        ),
+                      ),
                     Positioned(
                       top: 10,
                       right: 10,
