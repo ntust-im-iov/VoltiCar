@@ -160,12 +160,8 @@ class _MapOverlayState extends State<MapOverlay> {
     );
   }
 
-  // 顯示篩選器對話框 (示例)
+  // 顯示篩選器對話框
   void _showFilterDialog(BuildContext context, MapProvider mapProvider) {
-    // TODO: 實現更完整的篩選器 UI 和邏輯
-    // 為了讓 CheckboxListTile 能夠在對話框內更新其狀態，
-    // AlertDialog 的 content 通常需要是一個 StatefulWidget，或者使用 StatefulBuilder。
-    // 這裡我們先用一個簡單的結構，實際應用中可能需要調整。
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -173,81 +169,296 @@ class _MapOverlayState extends State<MapOverlay> {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
-              title: const Text('篩選充電站'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  // 城市選擇下拉選單
-                  if (mapProvider.availableCities.isNotEmpty) ...[
-                    const Text('選擇城市:',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      isExpanded: true,
-                      decoration: InputDecoration(
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                        hintText: '所有城市',
+              backgroundColor: const Color(0xFF1F1638),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: const BorderSide(color: Color(0xFF5C4EB4), width: 2),
+              ),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF5C4EB4), Color(0xFF8976FF)],
                       ),
-                      value: mapProvider.selectedCity,
-                      hint: const Text('所有城市'), // 當 value 為 null 時顯示
-                      items: [
-                        // 添加一個代表 "所有城市" 的選項
-                        const DropdownMenuItem<String>(
-                          value: null, // 使用 null 代表未選擇/所有城市
-                          child: Text('所有城市'),
-                        ),
-                        ...mapProvider.availableCities.map((String city) {
-                          return DropdownMenuItem<String>(
-                            value: city,
-                            child: Text(city),
-                          );
-                        }).toList(),
-                      ],
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          // mapProvider.setSelectedCity 會觸發數據更新和 notifyListeners
-                          // 所以這裡的 setState 主要是為了更新對話框內的 DropdownButtonFormField 的顯示值
-                          // （儘管 Provider 的更新應該會自動重繪）
-                          mapProvider.setSelectedCity(newValue);
-                        });
-                      },
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  CheckboxListTile(
-                    title: const Text('僅顯示可用充電站'), // 稍微修改文字使其更清晰
-                    value: mapProvider.filterOnlyAvailable,
-                    onChanged: (bool? value) {
-                      setState(() {
-                        mapProvider.setFilterOnlyAvailable(value ?? false);
-                      });
-                    },
-                    controlAffinity:
-                        ListTileControlAffinity.leading, // 將勾選框放在前面
-                    contentPadding: EdgeInsets.zero, // 移除預設的 padding
+                    child: const Icon(
+                      Icons.tune,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
-                  // 可以添加更多篩選條件
+                  const SizedBox(width: 12),
+                  const Text(
+                    '篩選充電站',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
+              ),
+              content: Container(
+                width: double.maxFinite,
+                constraints: const BoxConstraints(maxHeight: 400),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      // 充電槍規格篩選區塊
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0F0A1F).withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFF5C4EB4).withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF06D6A0).withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Icon(
+                                    Icons.electrical_services,
+                                    color: Color(0xFF06D6A0),
+                                    size: 16,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  '充電槍規格',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              '選擇您需要的充電槍類型',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.7),
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            // 充電槍類型選項
+                            ...mapProvider.availableConnectorTypes.map((connectorType) {
+                              final isSelected = mapProvider.selectedConnectorTypes.contains(connectorType);
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 8),
+                                decoration: BoxDecoration(
+                                  color: isSelected 
+                                      ? const Color(0xFF5C4EB4).withOpacity(0.2)
+                                      : const Color(0xFF1F1638).withOpacity(0.5),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: isSelected 
+                                        ? const Color(0xFF5C4EB4)
+                                        : Colors.white.withOpacity(0.1),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: CheckboxListTile(
+                                  title: Text(
+                                    connectorType,
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : Colors.white.withOpacity(0.8),
+                                      fontSize: 14,
+                                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                    ),
+                                  ),
+                                  value: isSelected,
+                                  onChanged: (bool? value) {
+                                    setState(() {
+                                      if (value == true) {
+                                        mapProvider.addConnectorTypeFilter(connectorType);
+                                      } else {
+                                        mapProvider.removeConnectorTypeFilter(connectorType);
+                                      }
+                                    });
+                                  },
+                                  activeColor: const Color(0xFF5C4EB4),
+                                  checkColor: Colors.white,
+                                  controlAffinity: ListTileControlAffinity.leading,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                  dense: true,
+                                ),
+                              );
+                            }).toList(),
+                            if (mapProvider.availableConnectorTypes.isEmpty)
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Colors.orange.withOpacity(0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.info_outline,
+                                      color: Colors.orange.withOpacity(0.8),
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        '暫無可用的充電槍類型',
+                                        style: TextStyle(
+                                          color: Colors.orange.withOpacity(0.9),
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // 其他篩選選項
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0F0A1F).withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFF5C4EB4).withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFF5E5B).withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Icon(
+                                    Icons.settings,
+                                    color: Color(0xFFFF5E5B),
+                                    size: 16,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  '其他條件',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: mapProvider.filterOnlyAvailable 
+                                    ? const Color(0xFF06D6A0).withOpacity(0.2)
+                                    : const Color(0xFF1F1638).withOpacity(0.5),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: mapProvider.filterOnlyAvailable 
+                                      ? const Color(0xFF06D6A0)
+                                      : Colors.white.withOpacity(0.1),
+                                  width: 1,
+                                ),
+                              ),
+                              child: CheckboxListTile(
+                                title: const Text(
+                                  '僅顯示可用充電站',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  '隱藏維修中或故障的充電站',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.6),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                value: mapProvider.filterOnlyAvailable,
+                                onChanged: (bool? value) {
+                                  setState(() {
+                                    mapProvider.setFilterOnlyAvailable(value ?? false);
+                                  });
+                                },
+                                activeColor: const Color(0xFF06D6A0),
+                                checkColor: Colors.white,
+                                controlAffinity: ListTileControlAffinity.leading,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
               actions: <Widget>[
                 TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white.withOpacity(0.7),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  ),
+                  child: const Text('重置'),
+                  onPressed: () {
+                    setState(() {
+                      mapProvider.clearAllFilters();
+                    });
+                  },
+                ),
+                TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white.withOpacity(0.7),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  ),
                   child: const Text('取消'),
                   onPressed: () {
                     Navigator.of(dialogContext).pop();
                   },
                 ),
-                TextButton(
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF5C4EB4),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                   child: const Text('套用'),
                   onPressed: () {
-                    // setSelectedCity 和 setFilterOnlyAvailable 已經立即觸發更新
-                    // applyFilters 在那些方法內部或之後被調用
-                    // 所以這裡的 "套用" 按鈕主要就是關閉對話框
                     Navigator.of(dialogContext).pop();
                   },
                 ),

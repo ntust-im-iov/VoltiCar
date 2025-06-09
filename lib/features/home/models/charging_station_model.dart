@@ -57,7 +57,7 @@ class ChargingStation {
 
   factory ChargingStation.fromOverviewJson(Map<String, dynamic> json) {
     var connectorsJson = json['Connectors'] as List<dynamic>? ?? [];
-    connectorsJson
+    List<Connector> connectorsList = connectorsJson
         .map((cJson) => Connector.fromJson(cJson as Map<String, dynamic>))
         .toList();
 
@@ -122,11 +122,11 @@ class ChargingStation {
         city: overviewCity, // 使用上面第一次定義並賦值的 overviewCity
         fullAddress: overviewFullAddress,
         // 根據 API 更新，以下欄位在 overview API 中不再提供，使用確定的預設值
-        chargingPoints: 0,
-        connectors: [], // connectorsList 在此 scope 未被賦值，應直接用空列表
-        parkingRate: '未知',
-        chargingRate: '未知',
-        serviceTime: '未知',
+        chargingPoints: json['ChargingPoints'] as int? ?? 0,
+        connectors: connectorsList, // 使用正確解析的connector列表
+        parkingRate: json['ParkingRate'] as String? ?? '未知',
+        chargingRate: json['ChargingRate'] as String? ?? '未知',
+        serviceTime: json['ServiceTime'] as String? ?? '未知',
         // description, photoURLs, telephone 這些本來就是 optional，在 overview 中應為 null
         description: null,
         photoURLs: null,
