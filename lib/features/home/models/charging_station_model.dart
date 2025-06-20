@@ -1,4 +1,6 @@
 import 'connector_model.dart';
+// 為避免衝突，給latlong2包重命名
+import 'package:latlong2/latlong.dart' as latlng2;
 
 class ChargingStation {
   final String stationID;
@@ -34,6 +36,25 @@ class ChargingStation {
     this.city,
   });
 
+  // 便利的getter方法，用於與UI代碼兼容
+  String get name => stationName;
+  String get stationId => stationID;
+  String get address => fullAddress ?? '未提供地址';
+  latlng2.LatLng get location => latlng2.LatLng(latitude, longitude);
+  bool get isAvailable => true; // 默認為可用，可以根據實際需求調整
+  List<String> get photoUrls => photoURLs ?? [];
+
+  // 通用的fromJson方法，嘗試判斷數據格式並調用適當的解析方法
+  factory ChargingStation.fromJson(Map<String, dynamic> json) {
+    // 如果包含詳細資訊字段，使用詳細解析
+    if (json.containsKey('Description') || json.containsKey('PhotoURLs')) {
+      return ChargingStation.fromDetailJson(json);
+    } else {
+      // 否則使用概覽解析
+      return ChargingStation.fromOverviewJson(json);
+    }
+  }
+
   factory ChargingStation.fromOverviewJson(Map<String, dynamic> json) {
     var connectorsJson = json['Connectors'] as List<dynamic>? ?? [];
     List<Connector> connectorsList = connectorsJson
@@ -45,7 +66,9 @@ class ChargingStation {
       name = json['StationName'] as String;
     } else if (json['StationName'] is Map) {
       // 假設 StationName 在 overview API 中也可能是 {"Zh_tw": "Name"} 的形式
-      name = (json['StationName'] as Map<String, dynamic>)['Zh_tw'] as String? ?? '未知站點';
+      name =
+          (json['StationName'] as Map<String, dynamic>)['Zh_tw'] as String? ??
+              '未知站點';
     } else {
       name = '未知站點';
     }
@@ -55,11 +78,14 @@ class ChargingStation {
     // 這裡需要根據實際 overview API 的回傳格式來調整
     // 以下為一個假設性的提取，如果 overview API 的 StationName 旁邊有 Address 或 Location -> Address -> City
     String? overviewCity;
-    if (json['Location'] is Map && (json['Location'] as Map)['Address'] is Map) {
-        final addressMap = (json['Location'] as Map)['Address'] as Map<String, dynamic>;
-        overviewCity = addressMap['City'] as String?;
-    } else if (json['City'] is String) { // 或者直接有 City 欄位
-        overviewCity = json['City'] as String;
+    if (json['Location'] is Map &&
+        (json['Location'] as Map)['Address'] is Map) {
+      final addressMap =
+          (json['Location'] as Map)['Address'] as Map<String, dynamic>;
+      overviewCity = addressMap['City'] as String?;
+    } else if (json['City'] is String) {
+      // 或者直接有 City 欄位
+      overviewCity = json['City'] as String;
     }
     // 如果 overview API 的 StationName 是一個 Map，且裡面有城市資訊，也需要處理
     // 例如: json['StationName']['City']，但這不常見
@@ -68,41 +94,43 @@ class ChargingStation {
     // String? overviewCity; // 移除此處的重複定義，使用上面已定義的 overviewCity
     String? overviewFullAddress;
 
-    if (json['Location'] is Map && (json['Location'] as Map)['Address'] is Map) {
-        final addressMap = (json['Location'] as Map)['Address'] as Map<String, dynamic>;
-        overviewCity = addressMap['City'] as String?;
-        final town = addressMap['Town'] as String? ?? '';
-        final road = addressMap['Road'] as String? ?? '';
-        final no = addressMap['No'] as String? ?? '';
-        if (overviewCity != null && overviewCity.isNotEmpty) {
-            overviewFullAddress = '$overviewCity$town$road$no'.trim();
-            if (overviewFullAddress.isEmpty) overviewFullAddress = null;
-        }
-    } else if (json['Address'] is String && (json['Address'] as String).isNotEmpty) { // 如果直接提供 Address 字串
-        overviewFullAddress = json['Address'] as String;
-        // 嘗試從 Address 字串中提取 City (這比較困難且不可靠，暫時不處理，除非有明確格式)
-        // overviewCity = ... ;
+    if (json['Location'] is Map &&
+        (json['Location'] as Map)['Address'] is Map) {
+      final addressMap =
+          (json['Location'] as Map)['Address'] as Map<String, dynamic>;
+      overviewCity = addressMap['City'] as String?;
+      final town = addressMap['Town'] as String? ?? '';
+      final road = addressMap['Road'] as String? ?? '';
+      final no = addressMap['No'] as String? ?? '';
+      if (overviewCity != null && overviewCity.isNotEmpty) {
+        overviewFullAddress = '$overviewCity$town$road$no'.trim();
+        if (overviewFullAddress.isEmpty) overviewFullAddress = null;
+      }
+    } else if (json['Address'] is String &&
+        (json['Address'] as String).isNotEmpty) {
+      // 如果直接提供 Address 字串
+      overviewFullAddress = json['Address'] as String;
+      // 嘗試從 Address 字串中提取 City (這比較困難且不可靠，暫時不處理，除非有明確格式)
+      // overviewCity = ... ;
     }
 
-
     return ChargingStation(
-      stationID: json['StationID'] as String,
-      stationName: name, // Name 仍然從 StationName 解析
-      latitude: (json['PositionLat'] as num).toDouble(),
-      longitude: (json['PositionLon'] as num).toDouble(),
-      city: overviewCity, // 使用上面第一次定義並賦值的 overviewCity
-      fullAddress: overviewFullAddress,
-      // 根據 API 更新，以下欄位在 overview API 中不再提供，使用確定的預設值
-      chargingPoints: 0,
-      connectors: [], // connectorsList 在此 scope 未被賦值，應直接用空列表
-      parkingRate: '未知',
-      chargingRate: '未知',
-      serviceTime: '未知',
-      // description, photoURLs, telephone 這些本來就是 optional，在 overview 中應為 null
-      description: null,
-      photoURLs: null,
-      telephone: null
-    );
+        stationID: json['StationID'] as String,
+        stationName: name, // Name 仍然從 StationName 解析
+        latitude: (json['PositionLat'] as num).toDouble(),
+        longitude: (json['PositionLon'] as num).toDouble(),
+        city: overviewCity, // 使用上面第一次定義並賦值的 overviewCity
+        fullAddress: overviewFullAddress,
+        // 根據 API 更新，以下欄位在 overview API 中不再提供，使用確定的預設值
+        chargingPoints: json['ChargingPoints'] as int? ?? 0,
+        connectors: connectorsList, // 使用正確解析的connector列表
+        parkingRate: json['ParkingRate'] as String? ?? '未知',
+        chargingRate: json['ChargingRate'] as String? ?? '未知',
+        serviceTime: json['ServiceTime'] as String? ?? '未知',
+        // description, photoURLs, telephone 這些本來就是 optional，在 overview 中應為 null
+        description: null,
+        photoURLs: null,
+        telephone: null);
   }
 
   // 可以選擇性地添加一個從詳細 JSON 轉換的工廠構造函數或更新方法
@@ -116,35 +144,43 @@ class ChargingStation {
     if (json['StationName'] is String) {
       name = json['StationName'] as String;
     } else if (json['StationName'] is Map) {
-      name = (json['StationName'] as Map<String, dynamic>)['Zh_tw'] as String? ?? '未知站點';
+      name =
+          (json['StationName'] as Map<String, dynamic>)['Zh_tw'] as String? ??
+              '未知站點';
     }
 
     String extractedCity = '未知城市';
     String fullAddressStr = '未知地址';
-    if (json['Location'] is Map && (json['Location'] as Map)['Address'] is Map) {
-      final addressMap = (json['Location'] as Map)['Address'] as Map<String, dynamic>;
+    if (json['Location'] is Map &&
+        (json['Location'] as Map)['Address'] is Map) {
+      final addressMap =
+          (json['Location'] as Map)['Address'] as Map<String, dynamic>;
       extractedCity = addressMap['City'] as String? ?? '未知城市';
       final town = addressMap['Town'] as String? ?? ''; // 注意是 Town 不是 District
       final road = addressMap['Road'] as String? ?? '';
       final no = addressMap['No'] as String? ?? '';
       // 使用 extractedCity 而不是 city
-      fullAddressStr = '$extractedCity$town$road$no'.trim().isNotEmpty ? '$extractedCity$town$road$no'.trim() : '未知地址';
-    } else if (json['Address'] is String) { // 向下相容舊的 Address 欄位 (如果有的話)
-        fullAddressStr = json['Address'] as String;
+      fullAddressStr = '$extractedCity$town$road$no'.trim().isNotEmpty
+          ? '$extractedCity$town$road$no'.trim()
+          : '未知地址';
+    } else if (json['Address'] is String) {
+      // 向下相容舊的 Address 欄位 (如果有的話)
+      fullAddressStr = json['Address'] as String;
     }
 
-
     List<String>? photos;
-    if (json['PhotoURLs'] is List) { // API 回傳的是 PhotoURLs (複數)
+    if (json['PhotoURLs'] is List) {
+      // API 回傳的是 PhotoURLs (複數)
       photos = (json['PhotoURLs'] as List<dynamic>)
           .map((item) => item.toString())
           .where((item) => item.isNotEmpty)
           .toList();
       if (photos.isEmpty) photos = null;
-    } else if (json['PhotoURLs'] is String && (json['PhotoURLs'] as String).isNotEmpty) { // 也處理單一 URL 的情況
-        photos = [json['PhotoURLs'] as String];
+    } else if (json['PhotoURLs'] is String &&
+        (json['PhotoURLs'] as String).isNotEmpty) {
+      // 也處理單一 URL 的情況
+      photos = [json['PhotoURLs'] as String];
     }
-
 
     return ChargingStation(
       stationID: json['StationID'] as String,

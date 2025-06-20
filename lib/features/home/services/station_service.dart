@@ -40,7 +40,7 @@ class StationService {
       );
 
       _logger.d('Stations overview response status: ${response.statusCode}');
-      // _logger.d('Stations overview response data: ${response.data}');
+      _logger.d('Stations overview response data sample (first 2 items): ${response.data is List && (response.data as List).isNotEmpty ? (response.data as List).take(2).toList() : response.data}');
 
       if (response.statusCode == 200 && response.data is List) {
         List<dynamic> responseData = response.data as List<dynamic>;
@@ -48,6 +48,17 @@ class StationService {
           _logger.i('No stations found for the given criteria.');
           return [];
         }
+        
+        // 檢查第一個項目的結構
+        if (responseData.isNotEmpty) {
+          _logger.i('First station raw data keys: ${(responseData[0] as Map<String, dynamic>).keys.toList()}');
+          if ((responseData[0] as Map<String, dynamic>).containsKey('Connectors')) {
+            _logger.i('Connectors data in first station: ${(responseData[0] as Map<String, dynamic>)['Connectors']}');
+          } else {
+            _logger.w('No Connectors key found in first station data');
+          }
+        }
+        
         return responseData
             .map((json) => ChargingStation.fromOverviewJson(json as Map<String, dynamic>))
             .toList();
