@@ -4,9 +4,7 @@ import 'package:flame/flame.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'dart:ui';
 import '../viewmodels/game_viewmodel.dart';
-import 'package:flutter/gestures.dart';
 
 class GameView extends StatefulWidget {
   const GameView({Key? key}) : super(key: key);
@@ -16,8 +14,6 @@ class GameView extends StatefulWidget {
 }
 
 class _GameViewState extends State<GameView> {
-  double _targetSpeed = 0;
-
   @override
   void initState() {
     super.initState();

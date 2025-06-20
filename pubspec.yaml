@@ -52,6 +52,7 @@ dependencies:
   url_launcher: ^6.2.5
   google_maps_flutter: ^2.7.0
   animations: ^2.0.11
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   flutter_test:

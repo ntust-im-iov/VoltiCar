@@ -10,14 +10,14 @@ on:
 jobs:
   notify-on-issue-assign:
     name: 'Send Discord Notification'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: 'Send Discord Notification'
         # 使用社群上成熟的 action 來發送 discord 通知
         uses: tsickert/discord-webhook@v5.3.0
         with:
           # 讀取您 GitHub repository 中儲存的 secret
-          webhook: ${{ DISCORD_WEBHOOK_URL }}
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
           
           # 使用 embed 格式可以讓訊息更美觀、更有結構
           embeds: |
