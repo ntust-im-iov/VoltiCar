@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flame/game.dart' hide Route; // Flame import - Hide Route
 import 'package:flame/components.dart'; // Flame import
 import 'package:flame/events.dart'; // Flame import
-import 'package:volticar_app/core/constants/app_colors.dart';
 import 'package:volticar_app/features/home/models/charging_station_model.dart';
 import 'package:volticar_app/features/home/viewmodels/map_overlay.dart';
-import 'package:volticar_app/shared/maplist/carDetails.dart'; //導入車輛訊息MAP列表
+import 'package:volticar_app/shared/maplist/car_details.dart'; //導入車輛訊息MAP列表
 import 'package:volticar_app/shared/widgets/adaptive_component.dart'; //導入自適應點擊元件原型
 import 'package:volticar_app/features/auth/viewmodels/login_viewmodel.dart'; // 導入身份驗證視圖模型
 import 'package:provider/provider.dart'; // 導入 Provider
@@ -130,7 +129,7 @@ class _GarageViewState extends State<GarageView> {
         right: 20,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFF1F1638).withOpacity(0.85), // 深紫色半透明背景
+        color: const Color(0xFF1F1638).withValues(alpha: 0.85), // 深紫色半透明背景
         borderRadius: BorderRadius.circular(16), // 圓角
         border: Border.all(color: const Color(0xFF5C4EB4), width: 2), // 邊框
       ),
@@ -223,7 +222,7 @@ class _GarageViewState extends State<GarageView> {
             border: Border.all(color: const Color(0xFF5C4EB4), width: 2), // 邊框
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.5),
+                color: Colors.black.withValues(alpha: 0.5),
                 blurRadius: 20,
                 spreadRadius: 5,
               ),
@@ -343,7 +342,7 @@ class _GarageViewState extends State<GarageView> {
                         ),
                       ),
                       elevation: 8,
-                      shadowColor: const Color(0xFF5C4EB4).withOpacity(0.5),
+                      shadowColor: const Color(0xFF5C4EB4).withValues(alpha: 0.5),
                     ),
                     child: const Text(
                       '查看詳細資料',
@@ -376,10 +375,10 @@ class _GarageViewState extends State<GarageView> {
       decoration: BoxDecoration(
         color: const Color(0xFF0F0A1F),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.8), width: 2),
+        border: Border.all(color: color.withValues(alpha: 0.8), width: 2),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.2),
+            color: color.withValues(alpha: 0.2),
             blurRadius: 5,
             spreadRadius: 0,
           ),
@@ -518,7 +517,7 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
                 // 添加陰影效果
                 boxShadow: [
                   BoxShadow(
-                    color: Color(0xFF5C4EB4).withOpacity(0.3),
+                    color: Color(0xFF5C4EB4).withValues(alpha: 0.3),
                     blurRadius: 20,
                     spreadRadius: 0,
                     offset: const Offset(0, -5),
@@ -539,7 +538,7 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
                       borderRadius: BorderRadius.circular(3),
                       boxShadow: [
                         BoxShadow(
-                          color: Color(0xFF5C4EB4).withOpacity(0.5),
+                          color: Color(0xFF5C4EB4).withValues(alpha: 0.5),
                           blurRadius: 8,
                           spreadRadius: 0,
                         ),
@@ -552,7 +551,7 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
                     decoration: BoxDecoration(
                       border: Border(
                         bottom: BorderSide(
-                          color: Color(0xFF5C4EB4).withOpacity(0.3),
+                          color: Color(0xFF5C4EB4).withValues(alpha: 0.3),
                           width: 1,
                         ),
                       ),
@@ -569,7 +568,7 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: Color(0xFF06D6A0).withOpacity(0.4),
+                                color: Color(0xFF06D6A0).withValues(alpha: 0.4),
                                 blurRadius: 8,
                                 spreadRadius: 0,
                               ),
@@ -599,7 +598,7 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
                               Text(
                                 '充電站詳細資訊',
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.7),
+                                  color: Colors.white.withValues(alpha: 0.7),
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -609,7 +608,7 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
                         ),
                         Container(
                           decoration: BoxDecoration(
-                            color: Color(0xFF5C4EB4).withOpacity(0.2),
+                            color: Color(0xFF5C4EB4).withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: IconButton(
@@ -687,13 +686,13 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
           children: [
             _buildDetailRow(
               label: '充電費率',
-              value: station.chargingRate ?? '未提供',
+              value: station.chargingRate.isNotEmpty ? station.chargingRate : '未提供',
               icon: Icons.electric_bolt,
               iconColor: const Color(0xFFFFD166),
             ),
             _buildDetailRow(
               label: '停車費率',
-              value: station.parkingRate ?? '未提供',
+              value: station.parkingRate.isNotEmpty ? station.parkingRate : '未提供',
               icon: Icons.local_parking,
               iconColor: const Color(0xFF5DE8EB),
             ),
@@ -714,10 +713,10 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Color(0xFF0F0A1F).withOpacity(0.5),
+                  color: Color(0xFF0F0A1F).withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                     width: 1,
                   ),
                 ),
@@ -725,14 +724,14 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
                   children: [
                     Icon(
                       Icons.info_outline,
-                      color: Colors.white.withOpacity(0.6),
+                      color: Colors.white.withValues(alpha: 0.6),
                       size: 20,
                     ),
                     const SizedBox(width: 12),
                     Text(
                       '未提供接口資訊',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 16,
                         fontStyle: FontStyle.italic,
                       ),
@@ -748,15 +747,15 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
                   margin: EdgeInsets.only(bottom: index < station.connectors.length - 1 ? 12 : 0),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Color(0xFF0F0A1F).withOpacity(0.5),
+                    color: Color(0xFF0F0A1F).withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: Color(0xFF06D6A0).withOpacity(0.3),
+                      color: Color(0xFF06D6A0).withValues(alpha: 0.3),
                       width: 1,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Color(0xFF06D6A0).withOpacity(0.1),
+                        color: Color(0xFF06D6A0).withValues(alpha: 0.1),
                         blurRadius: 8,
                         spreadRadius: 0,
                       ),
@@ -767,7 +766,7 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Color(0xFF06D6A0).withOpacity(0.2),
+                          color: Color(0xFF06D6A0).withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
@@ -793,7 +792,7 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
                             Text(
                               '功率: ${connector.powerDescription} • 數量: ${connector.quantity}',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.7),
+                                color: Colors.white.withValues(alpha: 0.7),
                                 fontSize: 14,
                               ),
                             ),
@@ -835,7 +834,7 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
                           decoration: BoxDecoration(
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
+                                color: Colors.black.withValues(alpha: 0.3),
                                 blurRadius: 8,
                                 spreadRadius: 0,
                                 offset: const Offset(0, 4),
@@ -911,15 +910,15 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Color(0xFF0F0A1F).withOpacity(0.7),
+        color: Color(0xFF0F0A1F).withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withValues(alpha: 0.1),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 12,
             spreadRadius: 0,
             offset: const Offset(0, 4),
@@ -985,7 +984,7 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF06D6A0).withOpacity(0.4),
+            color: const Color(0xFF06D6A0).withValues(alpha: 0.4),
             blurRadius: 15,
             spreadRadius: 0,
             offset: const Offset(0, 8),
@@ -997,7 +996,7 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
         icon: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
+            color: Colors.white.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(10),
           ),
           child: const Icon(
@@ -1127,10 +1126,10 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Color(0xFF1F1638).withOpacity(0.5),
+        color: Color(0xFF1F1638).withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withValues(alpha: 0.1),
           width: 1,
         ),
       ),
@@ -1141,7 +1140,7 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: (iconColor ?? Colors.white70).withOpacity(0.2),
+                color: (iconColor ?? Colors.white70).withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
@@ -1159,7 +1158,7 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
                 Text(
                   label,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     letterSpacing: 0.3,
@@ -1192,13 +1191,14 @@ class VoltiCarGame extends FlameGame with HasGameRef {
   final VoidCallback? onMapButtonPressed; // Callback for map button
   final VoidCallback? onGasStationPressed; // Callback for gas station
   final VoidCallback? onCarPressed;
+  final VoidCallback Function;
 
   VoltiCarGame({
     this.onInfoButtonPressed,
     this.onMapButtonPressed,
     this.onGasStationPressed,
     this.onCarPressed,
-    required Null Function(), // Add gas station callback
+    required this.Function, // Add gas station callback
   });
 
   // Override backgroundColor to make it transparent

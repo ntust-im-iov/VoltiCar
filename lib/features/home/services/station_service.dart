@@ -107,6 +107,75 @@ class StationService {
     }
   }
 
+  // 新增缺失的方法
+  Future<List<ChargingStation>> getAllRegionsStations() async {
+    try {
+      _logger.i('Fetching all regions stations');
+      final response = await _apiClient.get(
+        ApiConstants.stationsOverview,
+        queryParameters: {'limit': 1000},
+      );
+
+      if (response.statusCode == 200 && response.data is List) {
+        List<dynamic> responseData = response.data as List<dynamic>;
+        return responseData
+            .map((json) => ChargingStation.fromOverviewJson(json as Map<String, dynamic>))
+            .toList();
+      }
+      return [];
+    } catch (e, stackTrace) {
+      _logger.e('Error fetching all regions stations', error: e, stackTrace: stackTrace);
+      return [];
+    }
+  }
+
+  Future<List<ChargingStation>> searchStations(String query) async {
+    try {
+      _logger.i('Searching stations with query: $query');
+      final response = await _apiClient.get(
+        ApiConstants.stationsOverview,
+        queryParameters: {'search': query, 'limit': 200},
+      );
+
+      if (response.statusCode == 200 && response.data is List) {
+        List<dynamic> responseData = response.data as List<dynamic>;
+        return responseData
+            .map((json) => ChargingStation.fromOverviewJson(json as Map<String, dynamic>))
+            .toList();
+      }
+      return [];
+    } catch (e, stackTrace) {
+      _logger.e('Error searching stations', error: e, stackTrace: stackTrace);
+      return [];
+    }
+  }
+
+  Future<List<ChargingStation>> getNearbyStations(double latitude, double longitude, double radius) async {
+    try {
+      _logger.i('Fetching nearby stations at ($latitude, $longitude) within ${radius}km');
+      final response = await _apiClient.get(
+        ApiConstants.stationsOverview,
+        queryParameters: {
+          'lat': latitude,
+          'lon': longitude,
+          'radius': radius,
+          'limit': 200,
+        },
+      );
+
+      if (response.statusCode == 200 && response.data is List) {
+        List<dynamic> responseData = response.data as List<dynamic>;
+        return responseData
+            .map((json) => ChargingStation.fromOverviewJson(json as Map<String, dynamic>))
+            .toList();
+      }
+      return [];
+    } catch (e, stackTrace) {
+      _logger.e('Error fetching nearby stations', error: e, stackTrace: stackTrace);
+      return [];
+    }
+  }
+
   // TODO: 實現 getStationsByCity 方法
   Future<List<ChargingStation>> getStationsByCity(String city, {int skip = 0, int limit = 100}) async {
     final Map<String, dynamic> queryParams = {

@@ -33,7 +33,7 @@ class MapProvider extends ChangeNotifier {
   // Filter states
   bool _filterOnlyAvailable = false;
   String _searchQuery = '';
-  List<String> _selectedConnectorTypes = []; // 新增：選中的充電槍類型
+  final List<String> _selectedConnectorTypes = []; // 新增：選中的充電槍類型
   List<String> _availableConnectorTypes = [
     'CCS1', 'CCS2', 'CHAdeMO', 'Tesla TPC', 'J1772(Type1)', 'Mennekes(Type2)'
   ]; // 新增：可用的充電槍類型，初始化時提供常見類型
@@ -42,6 +42,11 @@ class MapProvider extends ChangeNotifier {
   String get searchQuery => _searchQuery;
   List<String> get selectedConnectorTypes => _selectedConnectorTypes;
   List<String> get availableConnectorTypes => _availableConnectorTypes;
+  
+  // 新增缺失的 getter
+  List<ChargingStation> get filteredStations => _stations;
+  String? get lastError => null;
+  LatLng? get currentLocation => _currentMapCenter;
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -80,7 +85,7 @@ class MapProvider extends ChangeNotifier {
 
     // 根據縮放級別動態計算 limit
     // 如果 currentZoom 未提供，則嘗試從 mapController 獲取
-    final zoomLevel;
+    final double zoomLevel;
     if (currentZoom == null) {
       zoomLevel = MapOptions().initialZoom;
     } else {
@@ -140,7 +145,7 @@ class MapProvider extends ChangeNotifier {
                 boxShadow: [
                   // 可選：添加一點陰影使其更突出
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
+                    color: Colors.black.withValues(alpha: 0.3),
                     spreadRadius: 1,
                     blurRadius: 3,
                     offset: const Offset(0, 1),
@@ -297,7 +302,7 @@ class MapProvider extends ChangeNotifier {
               border: Border.all(color: Colors.white, width: 2.0),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                   spreadRadius: 1,
                   blurRadius: 3,
                   offset: const Offset(0, 1),
@@ -515,5 +520,75 @@ class MapProvider extends ChangeNotifier {
   void resetMapState() {
     _isFirstLoad = true;
     debugPrint('MapProvider state reset for new map overlay');
+  }
+  
+  // 新增缺失的方法
+  Future<void> fetchCurrentLocation() async {
+    try {
+      _currentMapCenter = const LatLng(25.0340, 121.5645);
+      notifyListeners();
+    } catch (e) {
+      _logger.e('獲取當前位置失敗: $e');
+    }
+  }
+  
+  Future<void> searchChargingStations(String query) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+      
+      if (query.isEmpty) {
+        _stations = await _stationService.getAllRegionsStations();
+      } else {
+        _stations = await _stationService.searchStations(query);
+      }
+      
+      _updateMarkersFromStations();
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _logger.e('搜索充電站失敗: $e');
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+  
+  Future<void> searchNearbyChargingStations(String query, double radius) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+      
+      if (_currentMapCenter != null) {
+        _stations = await _stationService.getNearbyStations(
+          _currentMapCenter!.latitude,
+          _currentMapCenter!.longitude,
+          radius
+        );
+      }
+      
+      _updateMarkersFromStations();
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _logger.e('搜索附近充電站失敗: $e');
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // 新增缺失的 _updateMarkersFromStations 方法
+  void _updateMarkersFromStations() {
+    _markers = _stations.map((station) {
+      return Marker(
+        point: LatLng(station.location.latitude, station.location.longitude),
+        width: 40,
+        height: 40,
+        child: Icon(
+          Icons.ev_station,
+          color: station.isAvailable ? Colors.green : Colors.red,
+          size: 30,
+        ),
+      );
+    }).toList();
   }
 }

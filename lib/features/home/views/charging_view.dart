@@ -138,8 +138,8 @@ class _ChargingViewState extends State<ChargingView> {
                   ),
                   decoration: BoxDecoration(
                     color: _isCharging
-                        ? const Color(0xFF4CAF50).withOpacity(0.2)
-                        : const Color(0xFFFF6B6B).withOpacity(0.2),
+                        ? const Color(0xFF4CAF50).withValues(alpha: 0.2)
+                        : const Color(0xFFFF6B6B).withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(4),
                     border: Border.all(
                       color: _isCharging

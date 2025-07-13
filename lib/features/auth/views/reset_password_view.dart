@@ -51,13 +51,17 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
         });
 
         // 顯示發送成功提示
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('驗證碼已發送至您的電子郵件')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('驗證碼已發送至您的電子郵件')),
+          );
+        }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('發送驗證碼失敗，請稍後再試')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('發送驗證碼失敗，請稍後再試')),
+          );
+        }
       }
     });
   }
@@ -74,13 +78,17 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
           _currentStep = 2;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('驗證碼驗證成功，請設置新密碼')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('驗證碼驗證成功，請設置新密碼')),
+          );
+        }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('驗證碼無效，請重新輸入')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('驗證碼無效，請重新輸入')),
+          );
+        }
       }
     });
   }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AdaptiveButton extends StatelessWidget {
   const AdaptiveButton({
-    Key? key,
+    super.key,
     required this.widthGain,
     required this.heightGain,
     required this.imagePath,
@@ -12,7 +12,7 @@ class AdaptiveButton extends StatelessWidget {
     required this.borderColor,
     required this.onTap,
     this.showImage = true,
-  }) : super(key: key);
+  });
 
   final double widthGain;
   final double heightGain;

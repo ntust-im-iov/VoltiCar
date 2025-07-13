@@ -5,7 +5,7 @@ import '../../../shared/widgets/adaptive_button.dart'; // 引入 AdaptiveButton
 
 class SetupView extends StatefulWidget {
   // 设置页面，用于设置游戏参数
-  const SetupView({Key? key}) : super(key: key);
+  const SetupView({super.key});
 
   @override
   State<SetupView> createState() => _SetupViewState(); // 创建 SetupView 的状态
@@ -88,8 +88,8 @@ class _SetupViewState extends State<SetupView> {
                   AdaptiveButton(
                     widthGain: 0.2,
                     heightGain: 0.15,
-                    backgroundColor: Colors.black.withOpacity(0.5),
-                    borderColor: Colors.blue.withOpacity(0.3),
+                    backgroundColor: Colors.black.withValues(alpha: 0.5),
+                    borderColor: Colors.blue.withValues(alpha: 0.3),
                     imagePath: "assets/images/volticar_logo.png",
                     text: '委託任務',
                     textColor: Colors.white,
@@ -100,8 +100,8 @@ class _SetupViewState extends State<SetupView> {
                   AdaptiveButton(
                     widthGain: 0.2,
                     heightGain: 0.15,
-                    backgroundColor: Colors.black.withOpacity(0.5),
-                    borderColor: Colors.blue.withOpacity(0.3),
+                    backgroundColor: Colors.black.withValues(alpha: 0.5),
+                    borderColor: Colors.blue.withValues(alpha: 0.3),
                     imagePath: "assets/images/volticar_logo.png",
                     text: '路線選擇',
                     textColor: Colors.white,
@@ -112,8 +112,8 @@ class _SetupViewState extends State<SetupView> {
                   AdaptiveButton(
                     widthGain: 0.2,
                     heightGain: 0.15,
-                    backgroundColor: Colors.black.withOpacity(0.5),
-                    borderColor: Colors.blue.withOpacity(0.3),
+                    backgroundColor: Colors.black.withValues(alpha: 0.5),
+                    borderColor: Colors.blue.withValues(alpha: 0.3),
                     imagePath: "assets/images/volticar_logo.png",
                     text: '貨物檢查',
                     textColor: Colors.white,

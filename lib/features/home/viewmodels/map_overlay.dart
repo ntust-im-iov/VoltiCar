@@ -7,13 +7,13 @@ import 'map_provider.dart'; // Import MapProvider
 class MapOverlay extends StatefulWidget {
   final VoidCallback onClose;
 
-  const MapOverlay({Key? key, required this.onClose}) : super(key: key);
+  const MapOverlay({super.key, required this.onClose});
 
   @override
-  _MapOverlayState createState() => _MapOverlayState();
+  MapOverlayState createState() => MapOverlayState();
 }
 
-class _MapOverlayState extends State<MapOverlay> {
+class MapOverlayState extends State<MapOverlay> {
   @override
   void initState() {
     super.initState();
@@ -53,7 +53,7 @@ class _MapOverlayState extends State<MapOverlay> {
       builder: (context, mapProvider, child) {
         return Positioned.fill(
           child: Container(
-            color: Colors.black.withOpacity(0.5),
+            color: Colors.black.withValues(alpha: 0.5),
             child: Center(
               child: Container(
                 width: MediaQuery.of(context).size.width * 0.9,
@@ -65,7 +65,7 @@ class _MapOverlayState extends State<MapOverlay> {
                       Border.all(color: const Color(0xFF5C4EB4), width: 4.5),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withValues(alpha: 0.5),
                       blurRadius: 20,
                       spreadRadius: 5,
                     ),
@@ -114,7 +114,7 @@ class _MapOverlayState extends State<MapOverlay> {
                     // 優化的載入指示器，避免閃爍
                     if (mapProvider.isLoading)
                       Container(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         child: const Center(
                           child: CircularProgressIndicator(
                             backgroundColor: Colors.white24,
@@ -155,11 +155,11 @@ class _MapOverlayState extends State<MapOverlay> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.9),
+          color: Colors.white.withValues(alpha: 0.9),
           borderRadius: BorderRadius.circular(8.0),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withValues(alpha: 0.2),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -251,10 +251,10 @@ class _MapOverlayState extends State<MapOverlay> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF0F0A1F).withOpacity(0.5),
+                          color: const Color(0xFF0F0A1F).withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: const Color(0xFF5C4EB4).withOpacity(0.3),
+                            color: const Color(0xFF5C4EB4).withValues(alpha: 0.3),
                             width: 1,
                           ),
                         ),
@@ -266,7 +266,7 @@ class _MapOverlayState extends State<MapOverlay> {
                                 Container(
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF06D6A0).withOpacity(0.2),
+                                    color: const Color(0xFF06D6A0).withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: const Icon(
@@ -290,7 +290,7 @@ class _MapOverlayState extends State<MapOverlay> {
                             Text(
                               '選擇您需要的充電槍類型',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.7),
+                                color: Colors.white.withValues(alpha: 0.7),
                                 fontSize: 14,
                               ),
                             ),
@@ -302,13 +302,13 @@ class _MapOverlayState extends State<MapOverlay> {
                                 margin: const EdgeInsets.only(bottom: 8),
                                 decoration: BoxDecoration(
                                   color: isSelected 
-                                      ? const Color(0xFF5C4EB4).withOpacity(0.2)
-                                      : const Color(0xFF1F1638).withOpacity(0.5),
+                                      ? const Color(0xFF5C4EB4).withValues(alpha: 0.2)
+                                      : const Color(0xFF1F1638).withValues(alpha: 0.5),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
                                     color: isSelected 
                                         ? const Color(0xFF5C4EB4)
-                                        : Colors.white.withOpacity(0.1),
+                                        : Colors.white.withValues(alpha: 0.1),
                                     width: 1,
                                   ),
                                 ),
@@ -316,7 +316,7 @@ class _MapOverlayState extends State<MapOverlay> {
                                   title: Text(
                                     connectorType,
                                     style: TextStyle(
-                                      color: isSelected ? Colors.white : Colors.white.withOpacity(0.8),
+                                      color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.8),
                                       fontSize: 14,
                                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                                     ),
@@ -343,10 +343,10 @@ class _MapOverlayState extends State<MapOverlay> {
                               Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: Colors.orange.withOpacity(0.1),
+                                  color: Colors.orange.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color: Colors.orange.withOpacity(0.3),
+                                    color: Colors.orange.withValues(alpha: 0.3),
                                     width: 1,
                                   ),
                                 ),
@@ -354,7 +354,7 @@ class _MapOverlayState extends State<MapOverlay> {
                                   children: [
                                     Icon(
                                       Icons.info_outline,
-                                      color: Colors.orange.withOpacity(0.8),
+                                      color: Colors.orange.withValues(alpha: 0.8),
                                       size: 20,
                                     ),
                                     const SizedBox(width: 8),
@@ -362,7 +362,7 @@ class _MapOverlayState extends State<MapOverlay> {
                                       child: Text(
                                         '暫無可用的充電槍類型',
                                         style: TextStyle(
-                                          color: Colors.orange.withOpacity(0.9),
+                                          color: Colors.orange.withValues(alpha: 0.9),
                                           fontSize: 14,
                                         ),
                                       ),
@@ -380,10 +380,10 @@ class _MapOverlayState extends State<MapOverlay> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF0F0A1F).withOpacity(0.5),
+                          color: const Color(0xFF0F0A1F).withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: const Color(0xFF5C4EB4).withOpacity(0.3),
+                            color: const Color(0xFF5C4EB4).withValues(alpha: 0.3),
                             width: 1,
                           ),
                         ),
@@ -395,7 +395,7 @@ class _MapOverlayState extends State<MapOverlay> {
                                 Container(
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFFF5E5B).withOpacity(0.2),
+                                    color: const Color(0xFFFF5E5B).withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: const Icon(
@@ -419,13 +419,13 @@ class _MapOverlayState extends State<MapOverlay> {
                             Container(
                               decoration: BoxDecoration(
                                 color: mapProvider.filterOnlyAvailable 
-                                    ? const Color(0xFF06D6A0).withOpacity(0.2)
-                                    : const Color(0xFF1F1638).withOpacity(0.5),
+                                    ? const Color(0xFF06D6A0).withValues(alpha: 0.2)
+                                    : const Color(0xFF1F1638).withValues(alpha: 0.5),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
                                   color: mapProvider.filterOnlyAvailable 
                                       ? const Color(0xFF06D6A0)
-                                      : Colors.white.withOpacity(0.1),
+                                      : Colors.white.withValues(alpha: 0.1),
                                   width: 1,
                                 ),
                               ),
@@ -440,7 +440,7 @@ class _MapOverlayState extends State<MapOverlay> {
                                 subtitle: Text(
                                   '隱藏維修中或故障的充電站',
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.6),
+                                    color: Colors.white.withValues(alpha: 0.6),
                                     fontSize: 12,
                                   ),
                                 ),
@@ -466,7 +466,7 @@ class _MapOverlayState extends State<MapOverlay> {
               actions: <Widget>[
                 TextButton(
                   style: TextButton.styleFrom(
-                    foregroundColor: Colors.white.withOpacity(0.7),
+                    foregroundColor: Colors.white.withValues(alpha: 0.7),
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   ),
                   child: const Text('重置'),
@@ -478,7 +478,7 @@ class _MapOverlayState extends State<MapOverlay> {
                 ),
                 TextButton(
                   style: TextButton.styleFrom(
-                    foregroundColor: Colors.white.withOpacity(0.7),
+                    foregroundColor: Colors.white.withValues(alpha: 0.7),
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   ),
                   child: const Text('取消'),
@@ -522,12 +522,12 @@ class _MapOverlayState extends State<MapOverlay> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF5C4EB4).withOpacity(0.75), // 紫色半透明背景
+          color: const Color(0xFF5C4EB4).withValues(alpha: 0.75), // 紫色半透明背景
           borderRadius: BorderRadius.circular(8),
           boxShadow: [
             // 可以添加一點陰影使其更突出
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: 0.3),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -563,7 +563,7 @@ class _MapOverlayState extends State<MapOverlay> {
             heroTag: 'zoomInBtn', // 確保 heroTag 唯一
             mini: true,
             onPressed: mapProvider.zoomIn,
-            backgroundColor: const Color(0xFF5C4EB4).withOpacity(0.8),
+            backgroundColor: const Color(0xFF5C4EB4).withValues(alpha: 0.8),
             child: const Icon(Icons.add, color: Colors.white),
             tooltip: '放大',
           ),
@@ -572,7 +572,7 @@ class _MapOverlayState extends State<MapOverlay> {
             heroTag: 'zoomOutBtn', // 確保 heroTag 唯一
             mini: true,
             onPressed: mapProvider.zoomOut,
-            backgroundColor: const Color(0xFF5C4EB4).withOpacity(0.8),
+            backgroundColor: const Color(0xFF5C4EB4).withValues(alpha: 0.8),
             child: const Icon(Icons.remove, color: Colors.white),
             tooltip: '縮小',
           ),
@@ -581,7 +581,7 @@ class _MapOverlayState extends State<MapOverlay> {
             heroTag: 'gpsBtn', // 確保 heroTag 唯一
             mini: true,
             onPressed: mapProvider.moveToCurrentUserLocation,
-            backgroundColor: const Color(0xFF5C4EB4).withOpacity(0.8),
+            backgroundColor: const Color(0xFF5C4EB4).withValues(alpha: 0.8),
             child: const Icon(Icons.my_location, color: Colors.white),
             tooltip: '定位到當前位置',
           ),
