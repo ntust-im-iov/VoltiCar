@@ -41,33 +41,23 @@ class ApiClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          _logger.i('=== 發送請求 ===');
-          _logger.i('URL: ${options.uri}');
-          _logger.i('Method: ${options.method}');
-          _logger.i('Headers: ${options.headers}');
-          _logger.i('Data: ${options.data}');
+          // 移除詳細的請求日誌
 
           // 添加認證 token
           final token = await _getToken();
           if (token != null) {
             options.headers[ApiConstants.authHeader] =
                 '${ApiConstants.bearerPrefix}$token';
-            _logger.i('已添加認證 Token');
           }
 
           handler.next(options);
         },
         onResponse: (response, handler) {
-          _logger.i('=== 收到響應 ===');
-          _logger.i('Status Code: ${response.statusCode}');
-          _logger.i('Data: ${response.data}');
+          // 移除詳細的響應日誌
           handler.next(response);
         },
         onError: (DioException e, handler) async {
-          _logger.e('=== 請求錯誤 ===');
-          _logger.e('Type: ${e.type}');
-          _logger.e('Message: ${e.message}');
-          _logger.e('Response: ${e.response?.data}');
+          _logger.e('API請求失敗: ${e.message}');
 
           // 處理401未授權錯誤
           if (e.response?.statusCode == 401) {

@@ -75,14 +75,13 @@ class StationService {
   // TODO: 實現 getStationById 方法
   Future<ChargingStation?> getStationById(String stationId) async {
     try {
-      _logger.i('Fetching station details for ID: $stationId');
+      // 移除詳細的獲取日誌
       // 根據使用者提供的資訊，詳細資訊的端點應為 /stations/id/{stationId}
       final response = await _apiClient.get(
         '${ApiConstants.stations}/id/$stationId', // 修正路徑
       );
 
-      _logger.d('Station details response status: ${response.statusCode}');
-      // _logger.d('Station details response data: ${response.data}');
+      // 移除響應狀態日誌
 
       if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
         // 假設 API 在找不到時回傳 200 但 data 為空 Map 或特定錯誤結構
@@ -104,6 +103,77 @@ class StationService {
     } catch (e, stackTrace) {
       _logger.e('Error fetching station details for ID $stationId', error: e, stackTrace: stackTrace);
       return null; // 或拋出異常
+    }
+  }
+
+  /// 新的方法：使用 getStationById 獲取完整的充電站信息
+  Future<List<ChargingStation>> getStationsWithDetails({
+    double? minLat,
+    double? minLon,
+    double? maxLat,
+    double? maxLon,
+    int skip = 0,
+    int limit = 50, // 降低預設值，因為要獲取詳細信息
+  }) async {
+    try {
+      // 第一步：獲取充電站ID列表（使用 overview API）
+      final overviewStations = await getStationsOverview(
+        minLat: minLat,
+        minLon: minLon,
+        maxLat: maxLat,
+        maxLon: maxLon,
+        skip: skip,
+        limit: limit,
+      );
+      
+      if (overviewStations.isEmpty) {
+        return [];
+      }
+      
+      // 第二步：批量獲取每個充電站的詳細信息
+      List<ChargingStation> detailedStations = [];
+      int successCount = 0;
+      int failCount = 0;
+      
+      for (var station in overviewStations) {
+        try {
+          final detailedStation = await getStationById(station.stationID);
+          if (detailedStation != null) {
+            detailedStations.add(detailedStation);
+            successCount++;
+          } else {
+            detailedStations.add(station);
+            failCount++;
+          }
+        } catch (e) {
+          detailedStations.add(station);
+          failCount++;
+        }
+        
+        // 減少延遲頻率，提升性能
+        if (successCount % 20 == 0 && successCount > 0) {
+          await Future.delayed(const Duration(milliseconds: 50));
+        }
+      }
+      
+      // 簡化日誌輸出
+      int stationsWithConnectors = detailedStations.where((station) => station.connectors.isNotEmpty).length;
+      _logger.i('獲取完成: ${detailedStations.length}站 (詳細:$successCount, 基本:$failCount, 有connector:$stationsWithConnectors)');
+      
+      return detailedStations;
+      
+    } catch (e, stackTrace) {
+      _logger.e('Error in getStationsWithDetails', error: e, stackTrace: stackTrace);
+      // 如果批量獲取失敗，回退到 overview 方法
+      _logger.w('回退到 overview 方法');
+      return await getStationsOverview(
+        minLat: minLat,
+        minLon: minLon,
+        maxLat: maxLat,
+        maxLon: maxLon,
+        skip: skip,
+        limit: limit,
+      );
     }
   }
 
