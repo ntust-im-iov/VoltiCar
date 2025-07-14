@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart'; // Required for LatLng
 import 'package:provider/provider.dart';
-import 'map_provider.dart'; // Import MapProvider
+import 'package:volticar_app/features/home/viewmodels/map_provider.dart';
 
 class MapOverlay extends StatefulWidget {
   final VoidCallback onClose;
@@ -26,17 +26,17 @@ class MapOverlayState extends State<MapOverlay> {
   // 載入初始充電站數據
   void _loadInitialStations() {
     final mapProvider = Provider.of<MapProvider>(context, listen: false);
-    
+
     // 如果還沒有載入任何數據，則載入初始區域的充電站
     if (mapProvider.markers.isEmpty) {
       // 計算初始地圖的邊界範圍（基於 initialCenter 和 initialZoom）
       const initialCenter = LatLng(25.0340, 121.5645); // 台北市
       const initialZoom = 10.0;
-      
+
       // 根據縮放級別估算可視範圍（粗略計算）
       final latDelta = 1.0 / (initialZoom * 0.1); // 簡化的計算方式
       final lngDelta = 1.0 / (initialZoom * 0.1);
-      
+
       mapProvider.fetchAndSetStationMarkers(
         minLat: initialCenter.latitude - latDelta,
         maxLat: initialCenter.latitude + latDelta,
@@ -90,11 +90,15 @@ class MapOverlayState extends State<MapOverlay> {
                           },
                           onMapReady: () {
                             // 地圖準備完成後，再次確保載入充電站數據
-                            Future.delayed(const Duration(milliseconds: 500), () {
+                            Future.delayed(const Duration(milliseconds: 500),
+                                () {
                               if (mounted && mapProvider.markers.isEmpty) {
-                                final bounds = mapProvider.mapController.camera.visibleBounds;
-                                final center = mapProvider.mapController.camera.center;
-                                mapProvider.onMapPositionChanged(bounds, center);
+                                final bounds = mapProvider
+                                    .mapController.camera.visibleBounds;
+                                final center =
+                                    mapProvider.mapController.camera.center;
+                                mapProvider.onMapPositionChanged(
+                                    bounds, center);
                               }
                             });
                           },
@@ -118,7 +122,8 @@ class MapOverlayState extends State<MapOverlay> {
                         child: const Center(
                           child: CircularProgressIndicator(
                             backgroundColor: Colors.white24,
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF5C4EB4)),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xFF5C4EB4)),
                           ),
                         ),
                       ),
@@ -173,9 +178,11 @@ class MapOverlayState extends State<MapOverlay> {
               child: TextField(
                 style: const TextStyle(color: Colors.black), // 確保文字顏色可見
                 keyboardType: TextInputType.text, // 明確指定鍵盤類型
-                decoration: const InputDecoration(
-                  hintText: '搜尋充電站名稱或地址...',
-                  hintStyle: TextStyle(color: Colors.grey),
+                decoration: InputDecoration(
+                  hintText: mapProvider.isParkingMap
+                      ? '搜尋停車場名稱或地址...'
+                      : '搜尋充電站名稱或地址...',
+                  hintStyle: const TextStyle(color: Colors.grey),
                   border: InputBorder.none,
                   isDense: true,
                 ),
@@ -190,7 +197,7 @@ class MapOverlayState extends State<MapOverlay> {
                 // TODO: 實現打開篩選器對話框或頁面的邏輯
                 _showFilterDialog(context, mapProvider);
               },
-              tooltip: '篩選充電站',
+              tooltip: mapProvider.isParkingMap ? '篩選停車場' : '篩選充電站',
             ),
           ],
         ),
@@ -254,7 +261,8 @@ class MapOverlayState extends State<MapOverlay> {
                           color: const Color(0xFF0F0A1F).withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: const Color(0xFF5C4EB4).withValues(alpha: 0.3),
+                            color:
+                                const Color(0xFF5C4EB4).withValues(alpha: 0.3),
                             width: 1,
                           ),
                         ),
@@ -266,7 +274,8 @@ class MapOverlayState extends State<MapOverlay> {
                                 Container(
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF06D6A0).withValues(alpha: 0.2),
+                                    color: const Color(0xFF06D6A0)
+                                        .withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: const Icon(
@@ -296,17 +305,22 @@ class MapOverlayState extends State<MapOverlay> {
                             ),
                             const SizedBox(height: 16),
                             // 充電槍類型選項
-                            ...mapProvider.availableConnectorTypes.map((connectorType) {
-                              final isSelected = mapProvider.selectedConnectorTypes.contains(connectorType);
+                            ...mapProvider.availableConnectorTypes
+                                .map((connectorType) {
+                              final isSelected = mapProvider
+                                  .selectedConnectorTypes
+                                  .contains(connectorType);
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 8),
                                 decoration: BoxDecoration(
-                                  color: isSelected 
-                                      ? const Color(0xFF5C4EB4).withValues(alpha: 0.2)
-                                      : const Color(0xFF1F1638).withValues(alpha: 0.5),
+                                  color: isSelected
+                                      ? const Color(0xFF5C4EB4)
+                                          .withValues(alpha: 0.2)
+                                      : const Color(0xFF1F1638)
+                                          .withValues(alpha: 0.5),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color: isSelected 
+                                    color: isSelected
                                         ? const Color(0xFF5C4EB4)
                                         : Colors.white.withValues(alpha: 0.1),
                                     width: 1,
@@ -316,29 +330,37 @@ class MapOverlayState extends State<MapOverlay> {
                                   title: Text(
                                     connectorType,
                                     style: TextStyle(
-                                      color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.8),
+                                      color: isSelected
+                                          ? Colors.white
+                                          : Colors.white.withValues(alpha: 0.8),
                                       fontSize: 14,
-                                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.w400,
                                     ),
                                   ),
                                   value: isSelected,
                                   onChanged: (bool? value) {
                                     setState(() {
                                       if (value == true) {
-                                        mapProvider.addConnectorTypeFilter(connectorType);
+                                        mapProvider.addConnectorTypeFilter(
+                                            connectorType);
                                       } else {
-                                        mapProvider.removeConnectorTypeFilter(connectorType);
+                                        mapProvider.removeConnectorTypeFilter(
+                                            connectorType);
                                       }
                                     });
                                   },
                                   activeColor: const Color(0xFF5C4EB4),
                                   checkColor: Colors.white,
-                                  controlAffinity: ListTileControlAffinity.leading,
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                  controlAffinity:
+                                      ListTileControlAffinity.leading,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 4),
                                   dense: true,
                                 ),
                               );
-                            }).toList(),
+                            }),
                             if (mapProvider.availableConnectorTypes.isEmpty)
                               Container(
                                 padding: const EdgeInsets.all(16),
@@ -354,7 +376,8 @@ class MapOverlayState extends State<MapOverlay> {
                                   children: [
                                     Icon(
                                       Icons.info_outline,
-                                      color: Colors.orange.withValues(alpha: 0.8),
+                                      color:
+                                          Colors.orange.withValues(alpha: 0.8),
                                       size: 20,
                                     ),
                                     const SizedBox(width: 8),
@@ -362,7 +385,8 @@ class MapOverlayState extends State<MapOverlay> {
                                       child: Text(
                                         '暫無可用的充電槍類型',
                                         style: TextStyle(
-                                          color: Colors.orange.withValues(alpha: 0.9),
+                                          color: Colors.orange
+                                              .withValues(alpha: 0.9),
                                           fontSize: 14,
                                         ),
                                       ),
@@ -373,9 +397,9 @@ class MapOverlayState extends State<MapOverlay> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 16),
-                      
+
                       // 其他篩選選項
                       Container(
                         padding: const EdgeInsets.all(16),
@@ -383,7 +407,8 @@ class MapOverlayState extends State<MapOverlay> {
                           color: const Color(0xFF0F0A1F).withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: const Color(0xFF5C4EB4).withValues(alpha: 0.3),
+                            color:
+                                const Color(0xFF5C4EB4).withValues(alpha: 0.3),
                             width: 1,
                           ),
                         ),
@@ -395,7 +420,8 @@ class MapOverlayState extends State<MapOverlay> {
                                 Container(
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFFF5E5B).withValues(alpha: 0.2),
+                                    color: const Color(0xFFFF5E5B)
+                                        .withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: const Icon(
@@ -418,12 +444,14 @@ class MapOverlayState extends State<MapOverlay> {
                             const SizedBox(height: 12),
                             Container(
                               decoration: BoxDecoration(
-                                color: mapProvider.filterOnlyAvailable 
-                                    ? const Color(0xFF06D6A0).withValues(alpha: 0.2)
-                                    : const Color(0xFF1F1638).withValues(alpha: 0.5),
+                                color: mapProvider.filterOnlyAvailable
+                                    ? const Color(0xFF06D6A0)
+                                        .withValues(alpha: 0.2)
+                                    : const Color(0xFF1F1638)
+                                        .withValues(alpha: 0.5),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: mapProvider.filterOnlyAvailable 
+                                  color: mapProvider.filterOnlyAvailable
                                       ? const Color(0xFF06D6A0)
                                       : Colors.white.withValues(alpha: 0.1),
                                   width: 1,
@@ -447,13 +475,16 @@ class MapOverlayState extends State<MapOverlay> {
                                 value: mapProvider.filterOnlyAvailable,
                                 onChanged: (bool? value) {
                                   setState(() {
-                                    mapProvider.setFilterOnlyAvailable(value ?? false);
+                                    mapProvider
+                                        .setFilterOnlyAvailable(value ?? false);
                                   });
                                 },
                                 activeColor: const Color(0xFF06D6A0),
                                 checkColor: Colors.white,
-                                controlAffinity: ListTileControlAffinity.leading,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                controlAffinity:
+                                    ListTileControlAffinity.leading,
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
                               ),
                             ),
                           ],
@@ -467,7 +498,8 @@ class MapOverlayState extends State<MapOverlay> {
                 TextButton(
                   style: TextButton.styleFrom(
                     foregroundColor: Colors.white.withValues(alpha: 0.7),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
                   ),
                   child: const Text('重置'),
                   onPressed: () {
@@ -479,7 +511,8 @@ class MapOverlayState extends State<MapOverlay> {
                 TextButton(
                   style: TextButton.styleFrom(
                     foregroundColor: Colors.white.withValues(alpha: 0.7),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
                   ),
                   child: const Text('取消'),
                   onPressed: () {
@@ -490,7 +523,8 @@ class MapOverlayState extends State<MapOverlay> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF5C4EB4),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -509,23 +543,36 @@ class MapOverlayState extends State<MapOverlay> {
   }
 
   Widget _buildMapInfoFooter(BuildContext context, MapProvider mapProvider) {
-    final stationCount = mapProvider.markers.length;
+    // 根據地圖類型獲取當前視野範圍內的數量
+    final int visibleCount = mapProvider.isParkingMap
+        ? mapProvider.visibleParkingCount // 當前視野範圍內的停車場數量
+        : mapProvider.visibleStationCount; // 當前視野範圍內的充電站數量
+
+    // 獲取總載入數量（用於顯示比例）
+    // final int totalCount = mapProvider.isParkingMap
+    //     ? mapProvider.parkingLots.length
+    //     : mapProvider.stations.length;
+
     final centerLat =
         mapProvider.currentMapCenter?.latitude.toStringAsFixed(4) ?? 'N/A';
     final centerLon =
         mapProvider.currentMapCenter?.longitude.toStringAsFixed(4) ?? 'N/A';
 
+    // 根據地圖類型決定顯示文字和顏色
+    final String markerType = mapProvider.isParkingMap ? '停車場' : '充電站';
+    final Color backgroundColor = mapProvider.isParkingMap
+        ? const Color(0xFF2196F3).withValues(alpha: 0.75) // 停車場：藍色
+        : const Color(0xFF4CAF50).withValues(alpha: 0.75); // 充電站：綠色
+
     return Positioned(
       bottom: 10,
       left: 10,
-      // 移除了 right: 10，讓寬度由內容決定或設置一個 max/min width
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF5C4EB4).withValues(alpha: 0.75), // 紫色半透明背景
+          color: backgroundColor,
           borderRadius: BorderRadius.circular(8),
           boxShadow: [
-            // 可以添加一點陰影使其更突出
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.3),
               blurRadius: 4,
@@ -538,7 +585,7 @@ class MapOverlayState extends State<MapOverlay> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '充電站: $stationCount',
+              '$markerType: $visibleCount',
               style: const TextStyle(color: Colors.white, fontSize: 13),
             ),
             const SizedBox(height: 2),
@@ -559,13 +606,34 @@ class MapOverlayState extends State<MapOverlay> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
+          // P字型停車場切換按鈕
+          FloatingActionButton(
+            heroTag: 'mapTypeToggleBtn', // 確保 heroTag 唯一
+            mini: true,
+            onPressed: () {
+              mapProvider.toggleMapType();
+            },
+            backgroundColor: mapProvider.isParkingMap
+                ? const Color(0xFF2196F3).withValues(alpha: 0.9) // 停車場模式：藍色
+                : const Color(0xFF4CAF50).withValues(alpha: 0.9), // 充電站模式：綠色
+            tooltip: mapProvider.isParkingMap ? '切換到充電站地圖' : '切換到停車場地圖',
+            child: Text(
+              'P',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12), // 增加間距以區分功能區域
           FloatingActionButton(
             heroTag: 'zoomInBtn', // 確保 heroTag 唯一
             mini: true,
             onPressed: mapProvider.zoomIn,
             backgroundColor: const Color(0xFF5C4EB4).withValues(alpha: 0.8),
-            child: const Icon(Icons.add, color: Colors.white),
             tooltip: '放大',
+            child: const Icon(Icons.add, color: Colors.white),
           ),
           const SizedBox(height: 8),
           FloatingActionButton(
@@ -573,8 +641,8 @@ class MapOverlayState extends State<MapOverlay> {
             mini: true,
             onPressed: mapProvider.zoomOut,
             backgroundColor: const Color(0xFF5C4EB4).withValues(alpha: 0.8),
-            child: const Icon(Icons.remove, color: Colors.white),
             tooltip: '縮小',
+            child: const Icon(Icons.remove, color: Colors.white),
           ),
           const SizedBox(height: 8),
           FloatingActionButton(
@@ -582,8 +650,8 @@ class MapOverlayState extends State<MapOverlay> {
             mini: true,
             onPressed: mapProvider.moveToCurrentUserLocation,
             backgroundColor: const Color(0xFF5C4EB4).withValues(alpha: 0.8),
-            child: const Icon(Icons.my_location, color: Colors.white),
             tooltip: '定位到當前位置',
+            child: const Icon(Icons.my_location, color: Colors.white),
           ),
         ],
       ),
