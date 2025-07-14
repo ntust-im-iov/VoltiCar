@@ -33,6 +33,11 @@ class MapProvider extends ChangeNotifier {
   bool _isFirstLoad = true;
   LatLngBounds? _lastFetchBounds;
   double? _lastFetchZoom;
+  
+  // 速度優化：預測性載入
+  Timer? _preloadTimer;
+  LatLng? _lastMapCenter;
+  LatLng? _mapMoveDirection;
 
   bool get isInitialized => _isInitialized;
   List<Marker> get markers => _markers;
@@ -221,20 +226,38 @@ class MapProvider extends ChangeNotifier {
     _debounceTimer?.cancel();
     _throttleTimer?.cancel();
     
-    // 使用防抖機制，縮短延遲時間以提供更好的實時體驗
-    _debounceTimer = Timer(const Duration(milliseconds: 150), () {
+    // 進一步縮短延遲時間，提供更快速的響應
+    _debounceTimer = Timer(const Duration(milliseconds: 100), () {
       // 檢查是否真的需要更新數據
       if (_shouldUpdateForMapChange(bounds, currentZoom, currentCenter)) {
         _fetchStationsForBounds(bounds, currentZoom);
       }
     });
     
+    // 計算移動方向（用於預測性載入）
+    if (_lastMapCenter != null && _currentMapCenter != null) {
+      _mapMoveDirection = LatLng(
+        _currentMapCenter!.latitude - _lastMapCenter!.latitude,
+        _currentMapCenter!.longitude - _lastMapCenter!.longitude,
+      );
+      
+      // 啟動預測性載入
+      _startPredictiveLoading(bounds, currentZoom);
+    }
+    _lastMapCenter = _currentMapCenter;
+    
     // 立即更新 UI 狀態，讓用戶知道地圖位置已改變
     notifyListeners();
   }
 
-  // 提取獲取充電站數據的邏輯
+  // 提取獲取充電站數據的邏輯（添加快速響應優化）
   void _fetchStationsForBounds(LatLngBounds bounds, double zoom) {
+    // 立即設置載入狀態，提供即時視覺反饋
+    if (!_isLoading) {
+      _isLoading = true;
+      notifyListeners(); // 立即通知UI顯示載入狀態
+    }
+    
     fetchAndSetStationMarkers(
       minLat: bounds.south,
       minLon: bounds.west,
@@ -248,10 +271,95 @@ class MapProvider extends ChangeNotifier {
     _lastFetchZoom = zoom;
   }
 
+  // 預測性載入方法
+  void _startPredictiveLoading(LatLngBounds currentBounds, double zoom) {
+    // 取消之前的預載入計時器
+    _preloadTimer?.cancel();
+    
+    // 如果沒有移動方向，跳過預測
+    if (_mapMoveDirection == null) return;
+    
+    // 延遲啟動預測載入，避免過於頻繁
+    _preloadTimer = Timer(const Duration(milliseconds: 500), () {
+      _preloadAdjacentAreas(currentBounds, zoom);
+    });
+  }
+  
+  // 預載入相鄰區域的數據
+  void _preloadAdjacentAreas(LatLngBounds currentBounds, double zoom) {
+    if (_mapMoveDirection == null) return;
+    
+    // 計算預測的下一個區域
+    final moveScale = 0.3; // 預測移動30%的當前視野範圍
+    final latDelta = (currentBounds.north - currentBounds.south) * moveScale;
+    final lonDelta = (currentBounds.east - currentBounds.west) * moveScale;
+    
+    // 根據移動方向計算預測區域
+    final predictedLat = _mapMoveDirection!.latitude > 0 ? 
+        currentBounds.north + latDelta : currentBounds.south - latDelta;
+    final predictedLon = _mapMoveDirection!.longitude > 0 ? 
+        currentBounds.east + lonDelta : currentBounds.west - lonDelta;
+    
+    // 創建預測區域的邊界
+    final predictedBounds = LatLngBounds(
+      LatLng(predictedLat - latDelta, predictedLon - lonDelta),
+      LatLng(predictedLat + latDelta, predictedLon + lonDelta),
+    );
+    
+    // 檢查是否已經有這個區域的緩存
+    final cacheKey = _generateCacheKey(
+      predictedBounds.south,
+      predictedBounds.west,
+      predictedBounds.north,
+      predictedBounds.east,
+      zoom,
+    );
+    
+    // 如果沒有緩存，在背景中預載入
+    if (!_isValidCache(cacheKey)) {
+      _preloadStationsInBackground(predictedBounds, zoom, cacheKey);
+    }
+  }
+  
+  // 背景預載入充電站數據
+  void _preloadStationsInBackground(LatLngBounds bounds, double zoom, String cacheKey) async {
+    try {
+      // 計算動態限制（預載入時使用較小的限制）
+      final limit = _calculateDynamicLimit(zoom) ~/ 2; // 預載入時減半
+      
+      final stations = await _stationService.getStationsWithDetails(
+        minLat: bounds.south,
+        minLon: bounds.west,
+        maxLat: bounds.north,
+        maxLon: bounds.east,
+        limit: limit,
+      );
+      
+      // 將預載入的數據存入緩存
+      _stationCache[cacheKey] = stations;
+      _cacheTimestamps[cacheKey] = DateTime.now();
+      
+      _logger.i('預載入完成: ${stations.length}站');
+    } catch (e) {
+      // 預載入失敗不影響主要功能
+      _logger.w('預載入失敗: $e');
+    }
+  }
+  
+  // 計算動態限制的輔助方法
+  int _calculateDynamicLimit(double zoomLevel) {
+    if (zoomLevel < 8) return 20;
+    if (zoomLevel < 10) return 40;
+    if (zoomLevel < 12) return 80;
+    if (zoomLevel < 14) return 120;
+    return 150;
+  }
+
   @override
   void dispose() {
     _debounceTimer?.cancel();
     _throttleTimer?.cancel();
+    _preloadTimer?.cancel();
     _stationCache.clear();
     _cacheTimestamps.clear();
     super.dispose();
