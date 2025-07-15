@@ -35,6 +35,7 @@ class MapProvider extends ChangeNotifier {
 
   // 停車場相關數據
   List<ParkingLot> _parkingLots = [];
+  List<ParkingLot> _filteredParkingLots = [];
   ParkingLot? _selectedParkingDetail;
 
   // 通用數據
@@ -89,21 +90,23 @@ class MapProvider extends ChangeNotifier {
   List<ParkingLot> get parkingLots => _parkingLots;
   ParkingLot? get selectedParkingDetail => _selectedParkingDetail;
 
-  // 新增：獲取當前視野範圍內的停車場數量（停車場暫無篩選功能，保持原邏輯）
+  // 獲取當前視野範圍內的停車場數量（使用篩選後的數據）
   int get visibleParkingCount {
-    if (_parkingLots.isEmpty) return 0;
+    // 使用篩選後的停車場數據
+    final parkingData = _filteredParkingLots.isNotEmpty ? _filteredParkingLots : _parkingLots;
+    if (parkingData.isEmpty) return 0;
 
     try {
       final bounds = mapController.camera.visibleBounds;
-      return _parkingLots.where((parking) {
+      return parkingData.where((parking) {
         return parking.latitude >= bounds.south &&
             parking.latitude <= bounds.north &&
             parking.longitude >= bounds.west &&
             parking.longitude <= bounds.east;
       }).length;
     } catch (e) {
-      // 如果無法獲取視野範圍，返回所有停車場數量
-      return _parkingLots.length;
+      // 如果無法獲取視野範圍，返回篩選後的總數量
+      return parkingData.length;
     }
   }
 
@@ -476,6 +479,9 @@ class MapProvider extends ChangeNotifier {
 
     // 根據縮放級別和視野範圍篩選停車場
     List<ParkingLot> visibleParkings = _parkingLots;
+    
+    // 當沒有搜尋查詢時，重置篩選後的停車場數據為原始數據
+    _filteredParkingLots = List.from(_parkingLots);
 
     if (zoomLevel != null) {
       // 計算動態限制
@@ -1028,6 +1034,9 @@ class MapProvider extends ChangeNotifier {
       }).toList();
     }
 
+    // 更新篩選後的停車場數據
+    _filteredParkingLots = result;
+    
     // 更新停車場標記
     _updateParkingMarkersFromFiltered(result);
 
