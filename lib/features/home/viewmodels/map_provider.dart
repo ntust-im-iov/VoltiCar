@@ -1360,4 +1360,11 @@ class MapProvider extends ChangeNotifier {
       );
     }).toList();
   }
+
+  // 清除選中的停車場詳細資訊
+  void clearSelectedParkingDetail() {
+    _selectedParkingDetail = null;
+    notifyListeners();
+  }
+
 }

@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart'; // Required for LatLng
 import 'package:provider/provider.dart';
 import 'package:volticar_app/features/home/viewmodels/map_provider.dart';
+import 'package:volticar_app/features/home/models/parking_lot_model.dart';
 
 class MapOverlay extends StatefulWidget {
   final VoidCallback onClose;
@@ -140,6 +141,9 @@ class MapOverlayState extends State<MapOverlay> {
                     _buildSearchAndFilterUI(context, mapProvider),
                     _buildMapInfoFooter(context, mapProvider), // 添加左下角地圖資訊
                     _buildMapControlsUI(context, mapProvider), // 添加右下角地圖控制按鈕
+                    // 顯示停車場詳細資訊
+                    if (mapProvider.selectedParkingDetail != null)
+                      _buildParkingDetailSheet(context, mapProvider),
                   ],
                 ),
               ),
@@ -657,4 +661,198 @@ class MapOverlayState extends State<MapOverlay> {
       ),
     );
   }
+
+  // 顯示停車場詳細資訊底部彈窗
+  Widget _buildParkingDetailSheet(BuildContext context, MapProvider mapProvider) {
+    final parking = mapProvider.selectedParkingDetail!;
+    
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.6,
+        ),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1F1638),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          border: Border.all(color: const Color(0xFF5C4EB4), width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.5),
+              blurRadius: 20,
+              spreadRadius: 5,
+            ),
+          ],
+        ),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 標題和狀態
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      parking.parkingName,
+                      style: TextStyle(
+                        fontSize: 20.0,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: (parking.availableSpaces != null && parking.availableSpaces! > 0) 
+                          ? Colors.green 
+                          : Colors.orange,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      parking.availableSpaces != null 
+                          ? '${parking.availableSpaces}/${parking.totalSpaces ?? 0} 可用'
+                          : '停車場',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 16),
+              
+              // 地址資訊
+              if (parking.address?.isNotEmpty == true)
+                _buildInfoRow(Icons.location_on, '地址', parking.address!, Colors.orange),
+              
+              if (parking.address?.isNotEmpty == true) 
+                Divider(color: Colors.white.withValues(alpha: 0.2)),
+              
+              // 停車位資訊
+              if (parking.totalSpaces != null) ...[
+                _buildInfoRow(Icons.local_parking, '總停車位', '${parking.totalSpaces} 個', Colors.orange),
+                Divider(color: Colors.white.withValues(alpha: 0.2)),
+              ],
+              
+              if (parking.availableSpaces != null) ...[
+                _buildInfoRow(Icons.check_circle, '可用停車位', '${parking.availableSpaces} 個', Colors.orange),
+                Divider(color: Colors.white.withValues(alpha: 0.2)),
+              ],
+              
+              // 費率資訊
+              if (parking.parkingRate?.isNotEmpty == true) ...[
+                _buildInfoRow(Icons.attach_money, '停車費率', parking.parkingRate!, Colors.orange),
+                Divider(color: Colors.white.withValues(alpha: 0.2)),
+              ],
+              
+              // 營業時間
+              if (parking.operatingHours?.isNotEmpty == true) ...[
+                _buildInfoRow(Icons.access_time, '營業時間', parking.operatingHours!, Colors.orange),
+                Divider(color: Colors.white.withValues(alpha: 0.2)),
+              ],
+              
+              // 聯絡電話
+              if (parking.telephone?.isNotEmpty == true) ...[
+                _buildInfoRow(Icons.phone, '聯絡電話', parking.telephone!, Colors.orange),
+                Divider(color: Colors.white.withValues(alpha: 0.2)),
+              ],
+              
+              // 描述資訊
+              if (parking.description?.isNotEmpty == true) ...[
+                _buildInfoRow(Icons.info, '說明', parking.description!, Colors.orange),
+                Divider(color: Colors.white.withValues(alpha: 0.2)),
+              ],
+              
+              SizedBox(height: 20),
+              // 按鈕區域
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => mapProvider.clearSelectedParkingDetail(),
+                    child: Text('關閉', style: TextStyle(color: Colors.white70)),
+                  ),
+                  SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      _navigateToParking(parking);
+                    },
+                    icon: Icon(Icons.directions),
+                    label: Text('導航'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  // 資訊行建構器
+  Widget _buildInfoRow(IconData icon, String label, String value, Color iconColor) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: iconColor, size: 20),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 導航到停車場
+  void _navigateToParking(ParkingLot parking) {
+    // 暫時顯示提示訊息
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('導航到 ${parking.parkingName}'),
+        backgroundColor: Colors.orange,
+        action: SnackBarAction(
+          label: '確定',
+          textColor: Colors.white,
+          onPressed: () {},
+        ),
+      ),
+    );
+  }
+
 }
