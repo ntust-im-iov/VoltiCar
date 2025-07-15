@@ -26,8 +26,8 @@ class ApiConstants {
   static const String apiVersion = '/api/v1';
 
   // Request timeouts
-  static const int connectionTimeout = 10000; // 10 seconds
-  static const int receiveTimeout = 10000; // 10 seconds
+  static const int connectionTimeout = 30000; // 30 seconds
+  static const int receiveTimeout = 30000; // 30 seconds
 
   // Header keys
   static const String authHeader = 'Authorization';

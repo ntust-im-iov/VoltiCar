@@ -30,6 +30,7 @@ class MapProvider extends ChangeNotifier {
   
   // 充電站相關數據
   List<ChargingStation> _stations = [];
+  List<ChargingStation> _filteredStations = [];
   ChargingStation? _selectedStationDetail;
   
   // 停車場相關數據
@@ -79,6 +80,7 @@ class MapProvider extends ChangeNotifier {
   
   // 充電站相關 getters
   List<ChargingStation> get stations => _stations;
+  List<ChargingStation> get filteredStations => _filteredStations;
   ChargingStation? get selectedStationDetail => _selectedStationDetail;
   
   // 停車場相關 getters
@@ -132,9 +134,6 @@ class MapProvider extends ChangeNotifier {
   List<String> get selectedConnectorTypes => _selectedConnectorTypes;
   List<String> get availableConnectorTypes => _availableConnectorTypes;
 
-  // 新增缺失的 getter
-  List<ChargingStation> _filteredStations = [];
-  List<ChargingStation> get filteredStations => _filteredStations;
   String? get lastError => null;
   LatLng? get currentLocation => _currentMapCenter;
 
@@ -222,27 +221,13 @@ class MapProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    // 根據縮放級別動態計算 limit
-    // 如果 currentZoom 未提供，則嘗試從 mapController 獲取
+    // 獲取當前縮放級別用於緩存鍵值
     final double zoomLevel;
     if (currentZoom == null) {
       zoomLevel = MapOptions().initialZoom;
     } else {
       zoomLevel = currentZoom;
     }
-    int dynamicLimit = 50; // 預設值
-    if (zoomLevel < 8) {
-      dynamicLimit = 30;
-    } else if (zoomLevel < 10) {
-      dynamicLimit = 50;
-    } else if (zoomLevel < 12) {
-      dynamicLimit = 100;
-    } else if (zoomLevel < 14) {
-      dynamicLimit = 150;
-    } else {
-      dynamicLimit = 200; // 更高的縮放級別，請求更多站點 (API 上限可能是 1000 或 200)
-    }
-    // 移除詳細的動態 limit 日誌
 
     try {
       // 性能優化：檢查緩存
@@ -265,7 +250,7 @@ class MapProvider extends ChangeNotifier {
         minLon: minLon,
         maxLat: maxLat,
         maxLon: maxLon,
-        limit: dynamicLimit,
+        limit: 3000, // 與停車場一樣，獲取所有充電站數據
       );
 
       // 更新緩存
@@ -275,78 +260,11 @@ class MapProvider extends ChangeNotifier {
 
       _stations = stations;
       _filteredStations = stations;
+      _updateStationMarkers(zoomLevel);
+      _updateAvailableConnectorTypes();
+      applyFilters();
 
-      int stationsWithConnectors =
-          _stations.where((station) => station.connectors.isNotEmpty).length;
-      _logger
-          .i('地圖載入: ${_stations.length}站 (有connector:$stationsWithConnectors)');
-
-      _markers = _stations.map((station) {
-        return Marker(
-          width: 50.0,
-          height: 50.0,
-          point: LatLng(station.latitude, station.longitude),
-          child: GestureDetector(
-            onTap: () {
-              selectStation(station.stationID);
-            },
-            child: Container(
-              width: 50.0,
-              height: 50.0,
-              decoration: BoxDecoration(
-                color: _getStationStatusColor(station),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 3),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    blurRadius: 6,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Stack(
-                children: [
-                  // 主要充電站圖標
-                  Center(
-                    child: Icon(
-                      Icons.ev_station,
-                      color: Colors.white,
-                      size: 24,
-                      weight: 700,
-                    ),
-                  ),
-                  // 充電點數量指示器
-                  if (station.chargingPoints > 0)
-                    Positioned(
-                      top: 2,
-                      right: 2,
-                      child: Container(
-                        width: 16,
-                        height: 16,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: _getStationStatusColor(station), width: 1),
-                        ),
-                        child: Center(
-                          child: Text(
-                            '${station.chargingPoints}',
-                            style: TextStyle(
-                              color: _getStationStatusColor(station),
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }).toList();
+      _logger.i('充電站載入: ${_stations.length}個');
     } catch (e) {
       _logger.e('載入充電站失敗: $e');
       _stations = [];
@@ -506,6 +424,159 @@ class MapProvider extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  // 更新充電站標記
+  void _updateStationMarkers([double? zoomLevel]) {
+    // 根據縮放級別和視野範圍篩選充電站
+    List<ChargingStation> visibleStations = _stations;
+    
+    if (zoomLevel != null) {
+      // 計算動態限制
+      final limit = _calculateDynamicLimit(zoomLevel);
+      
+      try {
+        // 獲取當前視野範圍
+        final bounds = mapController.camera.visibleBounds;
+        
+        // 篩選視野範圍內的充電站
+        final stationsInView = _stations.where((station) {
+          return station.latitude >= bounds.south &&
+                 station.latitude <= bounds.north &&
+                 station.longitude >= bounds.west &&
+                 station.longitude <= bounds.east;
+        }).toList();
+        
+        // 如果視野內的充電站數量超過限制，按距離排序並取前N個
+        if (stationsInView.length > limit) {
+          final center = bounds.center;
+          stationsInView.sort((a, b) {
+            final distanceA = _calculateDistance(
+                center.latitude, center.longitude, a.latitude, a.longitude);
+            final distanceB = _calculateDistance(
+                center.latitude, center.longitude, b.latitude, b.longitude);
+            return distanceA.compareTo(distanceB);
+          });
+          visibleStations = stationsInView.take(limit).toList();
+        } else {
+          visibleStations = stationsInView;
+        }
+        
+        _logger.i(
+            '顯示 ${visibleStations.length} 個充電站（縮放級別: $zoomLevel, 限制: $limit）');
+      } catch (e) {
+        // 如果無法獲取視野範圍，使用距離中心點最近的充電站
+        if (_stations.length > limit) {
+          final center = _currentMapCenter ?? LatLng(25.0330, 121.5654); // 預設台北
+          _stations.sort((a, b) {
+            final distanceA = _calculateDistance(
+                center.latitude, center.longitude, a.latitude, a.longitude);
+            final distanceB = _calculateDistance(
+                center.latitude, center.longitude, b.latitude, b.longitude);
+            return distanceA.compareTo(distanceB);
+          });
+          visibleStations = _stations.take(limit).toList();
+        }
+      }
+    }
+    
+    // 更新 _filteredStations 以供其他方法使用
+    _filteredStations = visibleStations;
+    
+    // 生成充電站標記
+    _markers = visibleStations.map((station) {
+      return Marker(
+        width: 50.0,
+        height: 50.0,
+        point: LatLng(station.latitude, station.longitude),
+        child: GestureDetector(
+          onTap: () {
+            selectStation(station.stationID);
+          },
+          child: Container(
+            width: 50.0,
+            height: 50.0,
+            decoration: BoxDecoration(
+              color: _getStationStatusColor(station),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 3),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Stack(
+              children: [
+                // 主要充電站圖標
+                Center(
+                  child: Icon(
+                    Icons.ev_station,
+                    color: Colors.white,
+                    size: 24,
+                    weight: 700,
+                  ),
+                ),
+                // 充電點數量指示器
+                if (station.chargingPoints > 0)
+                  Positioned(
+                    top: 2,
+                    right: 2,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        '${station.chargingPoints}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }).toList();
+  }
+
+  // 計算動態限制的輔助方法
+  int _calculateDynamicLimit(double zoomLevel) {
+    // 停車場和充電站使用相同的動態限制邏輯
+    if (zoomLevel < 8) return 20;
+    if (zoomLevel < 10) return 40;
+    if (zoomLevel < 12) return 80;
+    if (zoomLevel < 14) return 120;
+    return 150;
+  }
+
+  // 計算兩點間距離（公里）
+  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    const double earthRadius = 6371; // 地球半徑（公里）
+    
+    final double dLat = (lat2 - lat1) * math.pi / 180;
+    final double dLon = (lon2 - lon1) * math.pi / 180;
+    
+    final double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1 * math.pi / 180) * math.cos(lat2 * math.pi / 180) *
+        math.sin(dLon / 2) * math.sin(dLon / 2);
+    
+    final double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    
+    return earthRadius * c;
   }
 
   // 更新停車場標記
@@ -757,32 +828,6 @@ class MapProvider extends ChangeNotifier {
     }
   }
   
-  // 計算動態限制的輔助方法
-  int _calculateDynamicLimit(double zoomLevel) {
-    // 停車場和充電站使用相同的動態限制邏輯
-    if (zoomLevel < 8) return 20;
-    if (zoomLevel < 10) return 40;
-    if (zoomLevel < 12) return 80;
-    if (zoomLevel < 14) return 120;
-    return 150;
-  }
-
-  // 計算兩點間距離（公里）
-  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-    const double earthRadius = 6371; // 地球半徑（公里）
-    
-    final double dLat = (lat2 - lat1) * math.pi / 180;
-    final double dLon = (lon2 - lon1) * math.pi / 180;
-    
-    final double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
-        math.cos(lat1 * math.pi / 180) * math.cos(lat2 * math.pi / 180) *
-        math.sin(dLon / 2) * math.sin(dLon / 2);
-    
-    final double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
-    
-    return earthRadius * c;
-  }
-
   // 啟動實時更新
   void _startRealTimeUpdates() {
     _stopRealTimeUpdates(); // 先停止現有的定時器
@@ -961,7 +1006,7 @@ class MapProvider extends ChangeNotifier {
     return intersectionArea / bounds1Area;
   }
 
-  // 計算兩點間距離（優化版本）
+
 
   void setFilterOnlyAvailable(bool value) {
     _filterOnlyAvailable = value;
