@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart'; // Required for LatLng
 import 'package:provider/provider.dart';
 import 'package:volticar_app/features/home/viewmodels/map_provider.dart';
 import 'package:volticar_app/features/home/models/parking_lot_model.dart';
+import 'package:url_launcher/url_launcher.dart'; // 導入url_launcher
 
 class MapOverlay extends StatefulWidget {
   final VoidCallback onClose;
@@ -1039,35 +1040,84 @@ class MapOverlayState extends State<MapOverlay> {
   Future<void> _navigateToParking(ParkingLot parking) async {
     try {
       // 顯示載入中的訊息
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Text('正在開啟導航至 ${parking.parkingName}...'),
-            ],
+                const SizedBox(width: 12),
+                Text('正在開啟Google Maps導航至 ${parking.parkingName}...'),
+              ],
+            ),
+            backgroundColor: const Color(0xFFFF8C00),
+            duration: const Duration(seconds: 2),
           ),
-          backgroundColor: const Color(0xFFFF8C00),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+        );
+      }
+
+      // 構建不同地圖應用的URL
+      final double lat = parking.latitude;
+      final double lng = parking.longitude;
+      final String parkingName = Uri.encodeComponent(parking.parkingName);
+      
+      // Google Maps App URL (首選)
+      final String googleMapsAppUrl = 'google.navigation:q=$lat,$lng&mode=d';
+      
+      // Apple Maps URL (備選，僅當Google Maps App不可用時)
+      final String appleMapsUrl = 'https://maps.apple.com/?daddr=$lat,$lng&dirflg=d&q=$parkingName';
+
+      bool navigationOpened = false;
+
+      // 直接調用原生地圖應用，不使用網頁版
+      // 1. 首先嘗試Google Maps App
+      if (!navigationOpened && await canLaunchUrl(Uri.parse(googleMapsAppUrl))) {
+        await launchUrl(
+          Uri.parse(googleMapsAppUrl),
+          mode: LaunchMode.externalApplication,
+        );
+        navigationOpened = true;
+      }
+      
+      // 2. 如果Google Maps App不可用，嘗試Apple Maps
+      if (!navigationOpened && await canLaunchUrl(Uri.parse(appleMapsUrl))) {
+        await launchUrl(
+          Uri.parse(appleMapsUrl),
+          mode: LaunchMode.externalApplication,
+        );
+        navigationOpened = true;
+      }
+
+      // 如果都無法打開，顯示錯誤訊息
+      if (!navigationOpened) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('無法打開地圖應用，請確認已安裝Google Maps或其他地圖應用'),
+              backgroundColor: Color(0xFFFF5E5B),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      }
     } catch (e) {
       // 處理錯誤
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('導航功能發生錯誤：${e.toString()}'),
-          backgroundColor: const Color(0xFFFF5E5B),
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('導航功能發生錯誤：${e.toString()}'),
+            backgroundColor: const Color(0xFFFF5E5B),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
