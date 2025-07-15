@@ -89,7 +89,7 @@ class MapProvider extends ChangeNotifier {
   List<ParkingLot> get parkingLots => _parkingLots;
   ParkingLot? get selectedParkingDetail => _selectedParkingDetail;
 
-  // 新增：獲取當前視野範圍內的停車場數量
+  // 新增：獲取當前視野範圍內的停車場數量（停車場暫無篩選功能，保持原邏輯）
   int get visibleParkingCount {
     if (_parkingLots.isEmpty) return 0;
 
@@ -107,21 +107,21 @@ class MapProvider extends ChangeNotifier {
     }
   }
 
-  // 新增：獲取當前視野範圍內的充電站數量
+  // 修復：獲取當前視野範圍內的篩選後充電站數量
   int get visibleStationCount {
-    if (_stations.isEmpty) return 0;
+    if (_filteredStations.isEmpty) return 0;
 
     try {
       final bounds = mapController.camera.visibleBounds;
-      return _stations.where((station) {
+      return _filteredStations.where((station) {
         return station.latitude >= bounds.south &&
             station.latitude <= bounds.north &&
             station.longitude >= bounds.west &&
             station.longitude <= bounds.east;
       }).length;
     } catch (e) {
-      // 如果無法獲取視野範圍，返回所有充電站數量
-      return _stations.length;
+      // 如果無法獲取視野範圍，返回篩選後的總數量
+      return _filteredStations.length;
     }
   }
 
