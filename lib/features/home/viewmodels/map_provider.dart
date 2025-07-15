@@ -468,6 +468,12 @@ class MapProvider extends ChangeNotifier {
 
   // 更新停車場標記
   void _updateParkingMarkers([double? zoomLevel]) {
+    // 如果有搜尋查詢，使用篩選邏輯
+    if (_searchQuery.isNotEmpty) {
+      applyParkingFilters();
+      return;
+    }
+
     // 根據縮放級別和視野範圍篩選停車場
     List<ParkingLot> visibleParkings = _parkingLots;
 
@@ -894,7 +900,11 @@ class MapProvider extends ChangeNotifier {
 
   void updateSearchQuery(String query) {
     _searchQuery = query;
-    applyFilters();
+    if (isParkingMap) {
+      applyParkingFilters();
+    } else {
+      applyFilters();
+    }
   }
 
   /// 新的簡潔篩選邏輯
@@ -990,6 +1000,68 @@ class MapProvider extends ChangeNotifier {
             ),
             child: const Icon(
               Icons.ev_station,
+              color: Colors.white,
+              size: 20.0,
+            ),
+          ),
+        ),
+      );
+    }).toList();
+  }
+
+  /// 停車場篩選邏輯
+  void applyParkingFilters() {
+    _logger.i('停車場篩選: ${_parkingLots.length}個 -> 搜索:"$_searchQuery"');
+
+    _isLoading = true;
+    notifyListeners();
+
+    // 從原始停車場數據開始篩選
+    List<ParkingLot> result = List.from(_parkingLots);
+
+    // 搜索篩選
+    if (_searchQuery.isNotEmpty) {
+      String query = _searchQuery.toLowerCase().trim();
+      result = result.where((parking) {
+        return parking.parkingName.toLowerCase().contains(query) ||
+            (parking.address?.toLowerCase().contains(query) ?? false);
+      }).toList();
+    }
+
+    // 更新停車場標記
+    _updateParkingMarkersFromFiltered(result);
+
+    _logger.i('停車場篩選完成: ${result.length}個');
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  /// 更新停車場地圖標記（從篩選後的結果）
+  void _updateParkingMarkersFromFiltered(List<ParkingLot> filteredParkingLots) {
+    _markers = filteredParkingLots.map((parking) {
+      return Marker(
+        width: 40.0,
+        height: 40.0,
+        point: LatLng(parking.latitude, parking.longitude),
+        child: GestureDetector(
+          onTap: () => selectParkingLot(parking.parkingID),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.blue,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2.0),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  spreadRadius: 1,
+                  blurRadius: 3,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.local_parking,
               color: Colors.white,
               size: 20.0,
             ),
