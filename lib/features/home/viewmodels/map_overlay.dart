@@ -215,14 +215,18 @@ class MapOverlayState extends State<MapOverlay> {
                 },
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.filter_list, color: Colors.grey),
-              onPressed: () {
-                // TODO: 實現打開篩選器對話框或頁面的邏輯
-                _showFilterDialog(context, mapProvider);
-              },
-              tooltip: mapProvider.isParkingMap ? '篩選停車場' : '篩選充電站',
-            ),
+            // 篩選按鈕僅在充電站地圖中顯示
+            if (!mapProvider.isParkingMap)
+              IconButton(
+                icon: const Icon(Icons.filter_list, color: Colors.grey),
+                onPressed: () {
+                  _showFilterDialog(context, mapProvider);
+                },
+                tooltip: '篩選充電站',
+              )
+            else
+              // 在停車場地圖中添加相同寬度的空白區域，保持搜尋框大小一致
+              const SizedBox(width: 48), // IconButton 的標準寬度
           ],
         ),
       ),

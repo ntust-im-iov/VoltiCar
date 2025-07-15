@@ -54,7 +54,7 @@ class MapProvider extends ChangeNotifier {
   // 實時更新機制
   Timer? _realTimeUpdateTimer;
   static const Duration _realTimeUpdateInterval =
-      Duration(seconds: 30); // 每30秒更新一次停車場數據
+      Duration(minutes: 60); // 每60更新一次停車場數據
 
   // 性能優化：防抖和節流
   Timer? _debounceTimer;
@@ -255,7 +255,7 @@ class MapProvider extends ChangeNotifier {
         maxLon: maxLon,
         limit: 3000, // 載入基本資訊
       );
-      
+
       // 如果有篩選條件，則需要獲取詳細資料
       if (_selectedConnectorTypes.isNotEmpty) {
         _logger.i('檢測到充電槍類型篩選，開始獲取詳細資料...');
@@ -433,7 +433,7 @@ class MapProvider extends ChangeNotifier {
     // 注意：_updateStationMarkers 不應該直接更新標記
     // 標記更新應該由 applyFilters() 中的 _updateMarkers() 處理
     // 這個方法只負責視野範圍和縮放級別的優化，不直接生成標記
-    
+
     _logger.i('_updateStationMarkers 被調用，但標記更新由 applyFilters 處理');
   }
 
@@ -930,7 +930,7 @@ class MapProvider extends ChangeNotifier {
     // 3. 充電槍類型篩選
     if (_selectedConnectorTypes.isNotEmpty) {
       _logger.i('開始充電槍類型篩選，選中類型: $_selectedConnectorTypes');
-      
+
       List<ChargingStation> beforeFilter = List.from(result);
       result = result.where((station) {
         if (station.connectors.isEmpty) {
@@ -940,16 +940,18 @@ class MapProvider extends ChangeNotifier {
 
         // 檢查是否有匹配的充電槍類型
         bool hasMatch = station.connectors.any((connector) {
-          bool matches = _selectedConnectorTypes.contains(connector.typeDescription);
+          bool matches =
+              _selectedConnectorTypes.contains(connector.typeDescription);
           if (matches) {
-            _logger.d('${station.stationName}: 匹配到 ${connector.typeDescription}');
+            _logger
+                .d('${station.stationName}: 匹配到 ${connector.typeDescription}');
           }
           return matches;
         });
-        
+
         return hasMatch;
       }).toList();
-      
+
       _logger.i('充電槍類型篩選: ${beforeFilter.length} -> ${result.length}');
     }
 
@@ -1162,7 +1164,7 @@ class MapProvider extends ChangeNotifier {
     }
 
     _logger.i('充電槍篩選: $_selectedConnectorTypes');
-    
+
     // 如果選擇了充電槍類型篩選，需要確保有詳細資料
     if (_selectedConnectorTypes.isNotEmpty) {
       _ensureDetailedDataForFiltering();
@@ -1203,37 +1205,40 @@ class MapProvider extends ChangeNotifier {
   // 新增：確保有詳細資料用於篩選
   Future<void> _ensureDetailedDataForFiltering() async {
     // 檢查是否已經有詳細資料
-    bool hasDetailedData = _stations.any((station) => station.connectors.isNotEmpty);
-    
+    bool hasDetailedData =
+        _stations.any((station) => station.connectors.isNotEmpty);
+
     if (!hasDetailedData) {
       _logger.i('需要載入詳細資料以支援充電槍類型篩選');
       _isLoading = true;
       notifyListeners();
-      
+
       await _loadDetailedStationsForFiltering(_stations);
-      
+
       _isLoading = false;
     }
-    
+
     applyFilters();
   }
 
   // 新增：為篩選功能載入詳細資料
-  Future<void> _loadDetailedStationsForFiltering(List<ChargingStation> basicStations) async {
+  Future<void> _loadDetailedStationsForFiltering(
+      List<ChargingStation> basicStations) async {
     _logger.i('開始為 ${basicStations.length} 個充電站載入詳細資料...');
-    
+
     List<ChargingStation> detailedStations = [];
     int successCount = 0;
     int failCount = 0;
-    
+
     // 分批處理，避免過多並發請求
     const int batchSize = 10;
     for (int i = 0; i < basicStations.length; i += batchSize) {
       final batch = basicStations.skip(i).take(batchSize).toList();
-      
+
       final futures = batch.map((station) async {
         try {
-          final detailed = await _stationService.getStationById(station.stationID);
+          final detailed =
+              await _stationService.getStationById(station.stationID);
           if (detailed != null && detailed.connectors.isNotEmpty) {
             successCount++;
             return detailed;
@@ -1246,16 +1251,16 @@ class MapProvider extends ChangeNotifier {
           return station; // 失敗時使用基本資料
         }
       });
-      
+
       final batchResults = await Future.wait(futures);
       detailedStations.addAll(batchResults);
-      
+
       // 每批次後更新進度
       _logger.i('已處理 ${detailedStations.length}/${basicStations.length} 個充電站');
     }
-    
+
     _logger.i('詳細資料載入完成: 成功 $successCount, 失敗 $failCount');
-    
+
     // 更新 _stations 為詳細資料
     _stations = detailedStations;
   }
@@ -1263,21 +1268,22 @@ class MapProvider extends ChangeNotifier {
   // 調試方法：檢查 connector 數據
   void _debugConnectorTypes() {
     _logger.i('=== 調試 Connector 數據 ===');
-    
+
     Set<String> allFoundTypes = <String>{};
     int stationsWithConnectors = 0;
     int stationsWithoutConnectors = 0;
-    
+
     for (int i = 0; i < _stations.length && i < 10; i++) {
       final station = _stations[i];
-      
+
       if (station.connectors.isEmpty) {
         stationsWithoutConnectors++;
         _logger.d('${station.stationName}: 無 connector 數據');
       } else {
         stationsWithConnectors++;
-        _logger.d('${station.stationName}: ${station.connectors.length} 個 connectors');
-        
+        _logger.d(
+            '${station.stationName}: ${station.connectors.length} 個 connectors');
+
         for (final connector in station.connectors) {
           final typeDesc = connector.typeDescription;
           allFoundTypes.add(typeDesc);
@@ -1285,8 +1291,9 @@ class MapProvider extends ChangeNotifier {
         }
       }
     }
-    
-    _logger.i('統計: ${stationsWithConnectors} 個站有 connector 數據, ${stationsWithoutConnectors} 個站無數據');
+
+    _logger.i(
+        '統計: ${stationsWithConnectors} 個站有 connector 數據, ${stationsWithoutConnectors} 個站無數據');
     _logger.i('發現的充電槍類型: $allFoundTypes');
     _logger.i('選中的充電槍類型: $_selectedConnectorTypes');
     _logger.i('=== 調試結束 ===');
