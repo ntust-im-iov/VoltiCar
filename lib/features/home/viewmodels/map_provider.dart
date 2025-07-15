@@ -1,28 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:logger/logger.dart';
+import 'dart:async';
+import 'dart:math' as math;
+import 'package:geolocator/geolocator.dart';
+
+// Models
 import 'package:volticar_app/features/home/models/charging_station_model.dart';
 import 'package:volticar_app/features/home/models/parking_lot_model.dart';
+
+// Services
 import 'package:volticar_app/features/home/services/station_service.dart';
 import 'package:volticar_app/features/home/services/parking_service.dart';
-import 'package:logger/logger.dart';
-import 'dart:async'; // Import for Timer
-import 'dart:math' as math; // Import for math functions
-import 'package:geolocator/geolocator.dart'; // For GPS functionality
-// flutter_map.dart 已經在頂部導入，MapController 應該可以直接使用
 
-// 地圖類型枚舉
+// ============================================================================
+// ENUMS & CONSTANTS
+// ============================================================================
+
+/// 地圖類型枚舉
 enum MapType {
   chargingStation,
   parking,
 }
 
+// ============================================================================
+// MAP PROVIDER CLASS
+// ============================================================================
+
 class MapProvider extends ChangeNotifier {
+  // ============================================================================
+  // SERVICES & DEPENDENCIES
+  // ============================================================================
+  
   final StationService _stationService = StationService();
   final ParkingService _parkingService = ParkingService();
   final Logger _logger = Logger();
   final MapController mapController = MapController();
 
+  // ============================================================================
+  // STATE VARIABLES
+  // ============================================================================
+  
+  // 初始化狀態
   bool _isInitialized = false;
 
   // 地圖類型相關
@@ -38,24 +58,26 @@ class MapProvider extends ChangeNotifier {
   List<ParkingLot> _filteredParkingLots = [];
   ParkingLot? _selectedParkingDetail;
 
-  // 通用數據
+  // 地圖顯示相關
   List<Marker> _markers = [];
   bool _isLoading = false;
   LatLng? _currentMapCenter;
   bool _isFetchingDetail = false;
 
-  // 性能優化：添加緩存機制
+  // ============================================================================
+  // CACHING & PERFORMANCE
+  // ============================================================================
+  
+  // 緩存機制
   final Map<String, List<ChargingStation>> _stationCache = {};
   final Map<String, List<ParkingLot>> _parkingCache = {};
   final Map<String, DateTime> _cacheTimestamps = {};
-  static const Duration _cacheExpiry = Duration(minutes: 60); // 緩存60分鐘
-  static const Duration _parkingCacheExpiry =
-      Duration(minutes: 60); // 停車場緩存60分鐘，實現更頻繁的更新
+  static const Duration _cacheExpiry = Duration(minutes: 60);
+  static const Duration _parkingCacheExpiry = Duration(minutes: 60);
 
   // 實時更新機制
   Timer? _realTimeUpdateTimer;
-  static const Duration _realTimeUpdateInterval =
-      Duration(minutes: 60); // 每60更新一次停車場數據
+  static const Duration _realTimeUpdateInterval = Duration(minutes: 60);
 
   // 性能優化：防抖和節流
   Timer? _debounceTimer;
@@ -64,12 +86,16 @@ class MapProvider extends ChangeNotifier {
   LatLngBounds? _lastFetchBounds;
   double? _lastFetchZoom;
 
-  // 速度優化：預測性載入
+  // 預測性載入
   Timer? _preloadTimer;
   LatLng? _lastMapCenter;
   LatLng? _mapMoveDirection;
 
-  // Getters
+  // ============================================================================
+  // GETTERS
+  // ============================================================================
+  
+  // 基本狀態 getters
   bool get isInitialized => _isInitialized;
   List<Marker> get markers => _markers;
   bool get isLoading => _isLoading;
@@ -128,20 +154,31 @@ class MapProvider extends ChangeNotifier {
     }
   }
 
-  // Filter states
+  // ============================================================================
+  // FILTERING & SEARCH
+  // ============================================================================
+  
+  // 篩選狀態
   bool _filterOnlyAvailable = false;
   String _searchQuery = '';
-  final List<String> _selectedConnectorTypes = []; // 新增：選中的充電槍類型
-  List<String> _availableConnectorTypes = []; // 新增：可用的充電槍類型，將從實際數據中動態獲取
+  final List<String> _selectedConnectorTypes = [];
+  List<String> _availableConnectorTypes = [];
 
+  // 篩選相關 getters
   bool get filterOnlyAvailable => _filterOnlyAvailable;
   String get searchQuery => _searchQuery;
   List<String> get selectedConnectorTypes => _selectedConnectorTypes;
   List<String> get availableConnectorTypes => _availableConnectorTypes;
 
+  // 其他 getters
   String? get lastError => null;
   LatLng? get currentLocation => _currentMapCenter;
 
+  // ============================================================================
+  // INITIALIZATION
+  // ============================================================================
+  
+  /// 初始化地圖提供者
   Future<void> initialize() async {
     if (_isInitialized) return;
 
@@ -167,7 +204,11 @@ class MapProvider extends ChangeNotifier {
     debugPrint('MapProvider initialized and initial markers fetched');
   }
 
-  // 切換地圖類型
+  // ============================================================================
+  // MAP TYPE MANAGEMENT
+  // ============================================================================
+  
+  /// 切換地圖類型
   void toggleMapType() {
     if (_currentMapType == MapType.chargingStation) {
       _currentMapType = MapType.parking;
@@ -216,6 +257,7 @@ class MapProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 獲取並設置充電站標記
   Future<void> fetchAndSetStationMarkers({
     double? minLat,
     double? minLon,
@@ -342,6 +384,11 @@ class MapProvider extends ChangeNotifier {
   }
 
   // 提取獲取充電站數據的邏輯（添加快速響應優化）
+  // ============================================================================
+  // DATA FETCHING METHODS
+  // ============================================================================
+  
+  /// 根據邊界獲取充電站數據
   void _fetchStationsForBounds(LatLngBounds bounds, double zoom) {
     // 立即設置載入狀態，提供即時視覺反饋
     if (!_isLoading) {
@@ -363,6 +410,7 @@ class MapProvider extends ChangeNotifier {
   }
 
   // 提取獲取停車場數據的邏輯
+  /// 根據邊界獲取停車場數據
   void _fetchParkingForBounds(LatLngBounds bounds, double zoom) {
     // 立即設置載入狀態，提供即時視覺反饋
     if (!_isLoading) {
@@ -384,6 +432,7 @@ class MapProvider extends ChangeNotifier {
   }
 
   // 獲取停車場標記
+  /// 獲取並設置停車場標記
   Future<void> fetchAndSetParkingMarkers({
     double? minLat,
     double? minLon,
@@ -410,7 +459,7 @@ class MapProvider extends ChangeNotifier {
       }
 
       // 優化：使用 overview 端點載入基本資訊，提升載入效率
-      final parkingLots = await _parkingService.getAllRegionsStations();
+      final parkingLots = await _parkingService.getAllRegionsParkings();
 
       // 更新緩存
       _parkingCache[cacheKey] = parkingLots;
@@ -432,6 +481,11 @@ class MapProvider extends ChangeNotifier {
   }
 
   // 更新充電站標記 - 已修復：不再干擾篩選功能
+  // ============================================================================
+  // MARKER UPDATE METHODS
+  // ============================================================================
+  
+  /// 更新充電站標記
   void _updateStationMarkers([double? zoomLevel]) {
     // 注意：_updateStationMarkers 不應該直接更新標記
     // 標記更新應該由 applyFilters() 中的 _updateMarkers() 處理
@@ -470,6 +524,7 @@ class MapProvider extends ChangeNotifier {
   }
 
   // 更新停車場標記
+  /// 更新停車場標記
   void _updateParkingMarkers([double? zoomLevel]) {
     // 如果有搜尋查詢，使用篩選邏輯
     if (_searchQuery.isNotEmpty) {
@@ -622,6 +677,7 @@ class MapProvider extends ChangeNotifier {
   }
 
   // 選擇停車場
+  /// 選擇停車場
   Future<void> selectParkingLot(String parkingId) async {
     _isFetchingDetail = true;
     notifyListeners();
@@ -765,6 +821,10 @@ class MapProvider extends ChangeNotifier {
     }
   }
 
+  // ============================================================================
+  // LIFECYCLE & CLEANUP
+  // ============================================================================
+  
   @override
   void dispose() {
     _debounceTimer?.cancel();
@@ -899,11 +959,17 @@ class MapProvider extends ChangeNotifier {
     return intersectionArea / bounds1Area;
   }
 
+  /// 設置僅顯示可用充電站
   void setFilterOnlyAvailable(bool value) {
     _filterOnlyAvailable = value;
     applyFilters();
   }
 
+  // ============================================================================
+  // SEARCH & FILTER SETTERS
+  // ============================================================================
+  
+  /// 更新搜索查詢
   void updateSearchQuery(String query) {
     _searchQuery = query;
     if (isParkingMap) {
@@ -914,6 +980,11 @@ class MapProvider extends ChangeNotifier {
   }
 
   /// 新的簡潔篩選邏輯
+  // ============================================================================
+  // FILTERING METHODS
+  // ============================================================================
+  
+  /// 應用篩選條件
   void applyFilters() {
     _logger.i(
         '篩選: ${_stations.length}站 -> 搜索:"$_searchQuery", 可用:$_filterOnlyAvailable, 類型:$_selectedConnectorTypes');
@@ -1016,6 +1087,7 @@ class MapProvider extends ChangeNotifier {
   }
 
   /// 停車場篩選邏輯
+  /// 應用停車場篩選條件
   void applyParkingFilters() {
     _logger.i('停車場篩選: ${_parkingLots.length}個 -> 搜索:"$_searchQuery"');
 
@@ -1080,6 +1152,11 @@ class MapProvider extends ChangeNotifier {
     }).toList();
   }
 
+  // ============================================================================
+  // SELECTION & DETAIL METHODS
+  // ============================================================================
+  
+  /// 選擇充電站
   Future<void> selectStation(String stationId) async {
     if (_isFetchingDetail) return;
 
@@ -1101,6 +1178,7 @@ class MapProvider extends ChangeNotifier {
     }
   }
 
+  /// 清除選中的充電站詳情
   void clearSelectedStation() {
     _selectedStationDetail = null;
     _isFetchingDetail = false;
@@ -1453,6 +1531,7 @@ class MapProvider extends ChangeNotifier {
   }
 
   // 清除選中的停車場詳細資訊
+  /// 清除選中的停車場詳情
   void clearSelectedParkingDetail() {
     _selectedParkingDetail = null;
     notifyListeners();
