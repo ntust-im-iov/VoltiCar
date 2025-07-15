@@ -13,6 +13,21 @@ class StationService {
   final ApiClient _apiClient = ApiClient();
   final Logger _logger = Logger();
 
+  // 緩存相關
+  List<ChargingStation> _cachedStations = [];
+  DateTime? _lastCacheTime;
+  final Duration _cacheValidity = const Duration(minutes: 60); // 充電站緩存60分鐘
+
+  // 檢查緩存是否有效
+  bool _isCacheValid() {
+    if (_cachedStations.isEmpty || _lastCacheTime == null) {
+      return false;
+    }
+
+    final now = DateTime.now();
+    return now.difference(_lastCacheTime!) < _cacheValidity;
+  }
+
   Future<List<ChargingStation>> getStationsOverview({
     double? minLat,
     double? minLon,
@@ -190,10 +205,16 @@ class StationService {
     }
   }
 
-  // 新增缺失的方法
+  // 新增缺失的方法 - 添加60分鐘緩存機制
   Future<List<ChargingStation>> getAllRegionsStations() async {
+    // 優先使用緩存數據，減少API調用
+    if (_isCacheValid()) {
+      _logger.i('使用緩存中的充電站數據 (${_cachedStations.length} 個站點)');
+      return _cachedStations;
+    }
+
     try {
-      _logger.i('Fetching all regions stations');
+      _logger.i('從API獲取所有區域充電站數據...');
       final response = await _apiClient.get(
         ApiConstants.stationsOverview,
         queryParameters: {'limit': 1000},
@@ -201,13 +222,27 @@ class StationService {
 
       if (response.statusCode == 200 && response.data is List) {
         List<dynamic> responseData = response.data as List<dynamic>;
-        return responseData
+        final stations = responseData
             .map((json) => ChargingStation.fromOverviewJson(json as Map<String, dynamic>))
             .toList();
+        
+        // 更新緩存
+        _cachedStations = stations;
+        _lastCacheTime = DateTime.now();
+        _logger.i('成功獲取並緩存 ${stations.length} 個充電站');
+        
+        return stations;
       }
       return [];
     } catch (e, stackTrace) {
-      _logger.e('Error fetching all regions stations', error: e, stackTrace: stackTrace);
+      _logger.e('獲取所有區域充電站時出錯: $e', error: e, stackTrace: stackTrace);
+      
+      // 如果有緩存數據，即使過期也返回
+      if (_cachedStations.isNotEmpty) {
+        _logger.w('使用過期緩存數據 (${_cachedStations.length} 個站點)');
+        return _cachedStations;
+      }
+      
       return [];
     }
   }
