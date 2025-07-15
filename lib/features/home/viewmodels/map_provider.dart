@@ -245,12 +245,13 @@ class MapProvider extends ChangeNotifier {
         return;
       }
 
-      final stations = await _stationService.getStationsWithDetails(
+      // 優化：只載入基本資訊，詳細資訊在用戶點擊時載入
+      final stations = await _stationService.getStationsOverview(
         minLat: minLat,
         minLon: minLon,
         maxLat: maxLat,
         maxLon: maxLon,
-        limit: 3000, // 與停車場一樣，獲取所有充電站數據
+        limit: 3000, // 載入所有基本資訊用於數量統計
       );
 
       // 更新緩存
@@ -397,14 +398,8 @@ class MapProvider extends ChangeNotifier {
         return;
       }
 
-      // 對於停車場，獲取所有數據然後在客戶端篩選
-      final parkingLots = await _parkingService.getParkingsWithDetails(
-        minLat: minLat,
-        minLon: minLon,
-        maxLat: maxLat,
-        maxLon: maxLon,
-        limit: 3000, // 獲取所有停車場數據
-      );
+      // 優化：使用 overview 端點載入基本資訊，提升載入效率
+      final parkingLots = await _parkingService.getAllRegionsStations();
 
       // 更新緩存
       _parkingCache[cacheKey] = parkingLots;
