@@ -1,59 +1,198 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:volticar_app/features/home/models/charging_station_model.dart';
-import 'package:volticar_app/features/home/services/station_service.dart';
 import 'package:logger/logger.dart';
-import 'dart:async'; // Import for Timer
-import 'package:geolocator/geolocator.dart'; // For GPS functionality
-// flutter_map.dart 已經在頂部導入，MapController 應該可以直接使用
+import 'dart:async';
+import 'dart:math' as math;
+import 'package:geolocator/geolocator.dart';
+
+// Models
+import 'package:volticar_app/features/home/models/charging_station_model.dart';
+import 'package:volticar_app/features/home/models/parking_lot_model.dart';
+
+// Services
+import 'package:volticar_app/features/home/services/station_service.dart';
+import 'package:volticar_app/features/home/services/parking_service.dart';
+
+// ============================================================================
+// ENUMS & CONSTANTS
+// ============================================================================
+
+/// 地圖類型枚舉
+enum MapType {
+  chargingStation,
+  parking,
+}
+
+// ============================================================================
+// MAP PROVIDER CLASS
+// ============================================================================
 
 class MapProvider extends ChangeNotifier {
+  // ============================================================================
+  // SERVICES & DEPENDENCIES
+  // ============================================================================
+  
   final StationService _stationService = StationService();
+  final ParkingService _parkingService = ParkingService();
   final Logger _logger = Logger();
-  final MapController mapController = MapController(); // 新增 MapController
+  final MapController mapController = MapController();
 
+  // ============================================================================
+  // STATE VARIABLES
+  // ============================================================================
+  
+  // 初始化狀態
   bool _isInitialized = false;
+
+  // 地圖類型相關
+  MapType _currentMapType = MapType.chargingStation;
+
+  // 充電站相關數據
   List<ChargingStation> _stations = [];
+  List<ChargingStation> _filteredStations = [];
+  ChargingStation? _selectedStationDetail;
+
+  // 停車場相關數據
+  List<ParkingLot> _parkingLots = [];
+  List<ParkingLot> _filteredParkingLots = [];
+  ParkingLot? _selectedParkingDetail;
+
+  // 地圖顯示相關
   List<Marker> _markers = [];
   bool _isLoading = false;
-  LatLng? _currentMapCenter; // 新增：存儲地圖中心點
-  ChargingStation? _selectedStationDetail; // 新增：存儲選中充電站的詳細資訊
-  bool _isFetchingDetail = false; // 新增：標記是否正在獲取詳細資訊
+  LatLng? _currentMapCenter;
+  bool _isFetchingDetail = false;
 
+  // ============================================================================
+  // CACHING & PERFORMANCE
+  // ============================================================================
+  
+  // 緩存機制
+  final Map<String, List<ChargingStation>> _stationCache = {};
+  final Map<String, List<ParkingLot>> _parkingCache = {};
+  final Map<String, DateTime> _cacheTimestamps = {};
+  static const Duration _cacheExpiry = Duration(minutes: 60);
+  static const Duration _parkingCacheExpiry = Duration(minutes: 60);
+
+  // 實時更新機制
+  Timer? _realTimeUpdateTimer;
+  static const Duration _realTimeUpdateInterval = Duration(minutes: 60);
+
+  // 性能優化：防抖和節流
+  Timer? _debounceTimer;
+  Timer? _throttleTimer;
+  bool _isFirstLoad = true;
+  LatLngBounds? _lastFetchBounds;
+  double? _lastFetchZoom;
+
+  // 預測性載入
+  Timer? _preloadTimer;
+  LatLng? _lastMapCenter;
+  LatLng? _mapMoveDirection;
+
+  // ============================================================================
+  // GETTERS
+  // ============================================================================
+  
+  // 基本狀態 getters
   bool get isInitialized => _isInitialized;
   List<Marker> get markers => _markers;
-  List<ChargingStation> get stations => _stations; // 可以選擇性地暴露原始站點數據
-  bool get isLoading => _isLoading; // 恢復原始載入邏輯
-  LatLng? get currentMapCenter => _currentMapCenter; // 新增：getter
-  ChargingStation? get selectedStationDetail =>
-      _selectedStationDetail; // 新增：getter
-  bool get isFetchingDetail => _isFetchingDetail; // 新增：getter
+  bool get isLoading => _isLoading;
+  LatLng? get currentMapCenter => _currentMapCenter;
+  bool get isFetchingDetail => _isFetchingDetail;
 
-  // Filter states
+  // 地圖類型相關 getters
+  MapType get currentMapType => _currentMapType;
+  bool get isChargingStationMap => _currentMapType == MapType.chargingStation;
+  bool get isParkingMap => _currentMapType == MapType.parking;
+
+  // 充電站相關 getters
+  List<ChargingStation> get stations => _stations;
+  List<ChargingStation> get filteredStations => _filteredStations;
+  ChargingStation? get selectedStationDetail => _selectedStationDetail;
+
+  // 停車場相關 getters
+  List<ParkingLot> get parkingLots => _parkingLots;
+  ParkingLot? get selectedParkingDetail => _selectedParkingDetail;
+
+  // 獲取當前視野範圍內的停車場數量（使用篩選後的數據）
+  int get visibleParkingCount {
+    // 使用篩選後的停車場數據
+    final parkingData = _filteredParkingLots.isNotEmpty ? _filteredParkingLots : _parkingLots;
+    if (parkingData.isEmpty) return 0;
+
+    try {
+      final bounds = mapController.camera.visibleBounds;
+      return parkingData.where((parking) {
+        return parking.latitude >= bounds.south &&
+            parking.latitude <= bounds.north &&
+            parking.longitude >= bounds.west &&
+            parking.longitude <= bounds.east;
+      }).length;
+    } catch (e) {
+      // 如果無法獲取視野範圍，返回篩選後的總數量
+      return parkingData.length;
+    }
+  }
+
+  // 修復：獲取當前視野範圍內的篩選後充電站數量
+  int get visibleStationCount {
+    if (_filteredStations.isEmpty) return 0;
+
+    try {
+      final bounds = mapController.camera.visibleBounds;
+      return _filteredStations.where((station) {
+        return station.latitude >= bounds.south &&
+            station.latitude <= bounds.north &&
+            station.longitude >= bounds.west &&
+            station.longitude <= bounds.east;
+      }).length;
+    } catch (e) {
+      // 如果無法獲取視野範圍，返回篩選後的總數量
+      return _filteredStations.length;
+    }
+  }
+
+  // ============================================================================
+  // FILTERING & SEARCH
+  // ============================================================================
+  
+  // 篩選狀態
   bool _filterOnlyAvailable = false;
   String _searchQuery = '';
-  List<String> _selectedConnectorTypes = []; // 新增：選中的充電槍類型
-  List<String> _availableConnectorTypes = [
-    'CCS1', 'CCS2', 'CHAdeMO', 'Tesla TPC', 'J1772(Type1)', 'Mennekes(Type2)'
-  ]; // 新增：可用的充電槍類型，初始化時提供常見類型
+  final List<String> _selectedConnectorTypes = [];
+  List<String> _availableConnectorTypes = [];
 
+  // 篩選相關 getters
   bool get filterOnlyAvailable => _filterOnlyAvailable;
   String get searchQuery => _searchQuery;
   List<String> get selectedConnectorTypes => _selectedConnectorTypes;
   List<String> get availableConnectorTypes => _availableConnectorTypes;
 
+  // 其他 getters
+  String? get lastError => null;
+  LatLng? get currentLocation => _currentMapCenter;
+
+  // ============================================================================
+  // INITIALIZATION
+  // ============================================================================
+  
+  /// 初始化地圖提供者
   Future<void> initialize() async {
     if (_isInitialized) return;
-    
+
+    // 首先初始化完整的充電槍類型列表，確保用戶可以看到所有可能的選項
+    _initializeAllConnectorTypes();
+
     // 載入初始區域的充電站數據（台北市周圍）
     const initialCenter = LatLng(25.0340, 121.5645);
     const initialZoom = 10.0;
-    
+
     // 根據縮放級別估算可視範圍
     final latDelta = 1.0 / (initialZoom * 0.1);
     final lngDelta = 1.0 / (initialZoom * 0.1);
-    
+
     await fetchAndSetStationMarkers(
       minLat: initialCenter.latitude - latDelta,
       maxLat: initialCenter.latitude + latDelta,
@@ -61,12 +200,64 @@ class MapProvider extends ChangeNotifier {
       maxLon: initialCenter.longitude + lngDelta,
       currentZoom: initialZoom,
     ); // 首次加載數據
-    
-    _updateAvailableConnectorTypes(); // 更新可用的充電槍類型
     _isInitialized = true;
     debugPrint('MapProvider initialized and initial markers fetched');
   }
 
+  // ============================================================================
+  // MAP TYPE MANAGEMENT
+  // ============================================================================
+  
+  /// 切換地圖類型
+  void toggleMapType() {
+    if (_currentMapType == MapType.chargingStation) {
+      _currentMapType = MapType.parking;
+      _logger.i('切換到停車場地圖');
+      _startRealTimeUpdates(); // 啟動實時更新
+
+      // 立即載入當前視野範圍的停車場數據
+      if (_lastFetchBounds != null && _lastFetchZoom != null) {
+        fetchAndSetParkingMarkers(
+          minLat: _lastFetchBounds!.south,
+          minLon: _lastFetchBounds!.west,
+          maxLat: _lastFetchBounds!.north,
+          maxLon: _lastFetchBounds!.east,
+          currentZoom: _lastFetchZoom,
+        );
+      }
+    } else {
+      _currentMapType = MapType.chargingStation;
+      _logger.i('切換到充電站地圖');
+      _stopRealTimeUpdates(); // 停止實時更新
+
+      // 立即載入當前視野範圍的充電站數據
+      if (_lastFetchBounds != null && _lastFetchZoom != null) {
+        fetchAndSetStationMarkers(
+          minLat: _lastFetchBounds!.south,
+          minLon: _lastFetchBounds!.west,
+          maxLat: _lastFetchBounds!.north,
+          maxLon: _lastFetchBounds!.east,
+          currentZoom: _lastFetchZoom,
+        );
+      }
+    }
+
+    // 清空當前標記
+    _markers.clear();
+
+    // 重新載入對應類型的數據
+    if (_lastFetchBounds != null && _lastFetchZoom != null) {
+      if (_currentMapType == MapType.chargingStation) {
+        _fetchStationsForBounds(_lastFetchBounds!, _lastFetchZoom!);
+      } else {
+        _fetchParkingForBounds(_lastFetchBounds!, _lastFetchZoom!);
+      }
+    }
+
+    notifyListeners();
+  }
+
+  /// 獲取並設置充電站標記
   Future<void> fetchAndSetStationMarkers({
     double? minLat,
     double? minLon,
@@ -74,216 +265,796 @@ class MapProvider extends ChangeNotifier {
     double? maxLon,
     double? currentZoom, // 新增：接收當前縮放級別
   }) async {
-
     _isLoading = true;
     notifyListeners();
 
-    // 根據縮放級別動態計算 limit
-    // 如果 currentZoom 未提供，則嘗試從 mapController 獲取
-    final zoomLevel;
+    // 獲取當前縮放級別用於緩存鍵值
+    final double zoomLevel;
     if (currentZoom == null) {
       zoomLevel = MapOptions().initialZoom;
     } else {
       zoomLevel = currentZoom;
     }
-    int dynamicLimit = 50; // 預設值
-    if (zoomLevel < 8) {
-      dynamicLimit = 30;
-    } else if (zoomLevel < 10) {
-      dynamicLimit = 50;
-    } else if (zoomLevel < 12) {
-      dynamicLimit = 100;
-    } else if (zoomLevel < 14) {
-      dynamicLimit = 150;
-    } else {
-      dynamicLimit = 200; // 更高的縮放級別，請求更多站點 (API 上限可能是 1000 或 200)
-    }
-    _logger.i(
-        'Fetching stations with dynamic limit: $dynamicLimit based on zoom: $zoomLevel');
 
     try {
-      _stations = await _stationService.getStationsOverview(
+      // 性能優化：檢查緩存
+      final cacheKey =
+          _generateCacheKey(minLat, minLon, maxLat, maxLon, zoomLevel);
+
+      if (_isValidCache(cacheKey)) {
+        _stations = _stationCache[cacheKey]!;
+        _filteredStations = _stations;
+        _logger.i('使用緩存: ${_stations.length}站');
+        _updateAvailableConnectorTypes();
+        applyFilters();
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
+
+      // 修復：先獲取基本資訊，然後在需要篩選時才獲取詳細資料
+      final stations = await _stationService.getStationsOverview(
         minLat: minLat,
         minLon: minLon,
         maxLat: maxLat,
         maxLon: maxLon,
-        limit: dynamicLimit, // 使用動態計算的 limit
+        limit: 3000, // 載入基本資訊
       );
 
-      _logger.i('Fetched ${_stations.length} stations from API.');
-      
-      // 檢查是否需要從詳細API獲取充電槍資訊
-      int stationsWithConnectors = _stations.where((station) => station.connectors.isNotEmpty).length;
-      
-      if (_stations.isNotEmpty && stationsWithConnectors == 0) {
-        _logger.i('正在獲取充電槍類型資訊...');
-        await _fetchConnectorTypesFromDetails();
+      // 如果有篩選條件，則需要獲取詳細資料
+      if (_selectedConnectorTypes.isNotEmpty) {
+        _logger.i('檢測到充電槍類型篩選，開始獲取詳細資料...');
+        await _loadDetailedStationsForFiltering(stations);
       }
 
-      _markers = _stations.map((station) {
-        return Marker(
-          width: 40.0, // 調整標記大小
-          height: 40.0, // 調整標記大小
-          point: LatLng(station.latitude, station.longitude),
-          child: GestureDetector(
-            // 使用 GestureDetector 保持點擊區域
-            onTap: () {
-              _logger.i(
-                  'Tapped on station: ${station.stationName}, ID: ${station.stationID}');
-              selectStation(station.stationID);
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.green, // 外圈綠色背景
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2.0), // 白色邊框
-                boxShadow: [
-                  // 可選：添加一點陰影使其更突出
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    spreadRadius: 1,
-                    blurRadius: 3,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.ev_station, // 中間的充電站圖示
-                color: Colors.white, // 圖示顏色改為白色
-                size: 20.0, // 調整圖示大小
-              ),
-            ),
-          ),
-        );
-      }).toList();
+      // 更新緩存
+      _stationCache[cacheKey] = stations;
+      _cacheTimestamps[cacheKey] = DateTime.now();
+      _cleanExpiredCache();
+
+      _stations = stations;
+      _filteredStations = stations;
+      _updateAvailableConnectorTypes();
+      applyFilters(); // 移除 _updateStationMarkers 調用，讓 applyFilters 處理標記更新
+
+      _logger.i('充電站載入: ${_stations.length}個');
     } catch (e) {
-      _logger.e('Error fetching station markers: $e');
-      _stations = []; // 出錯時清空原始站點數據
+      _logger.e('載入充電站失敗: $e');
+      _stations = [];
+      _filteredStations = [];
     }
 
-    // 在獲取新數據後，立即應用當前的篩選和搜索條件
-    _updateAvailableConnectorTypes(); // 在新數據後更新可用的充電槍類型
-    applyFilters();
-    // applyFilters 內部會設置 _isLoading = false 和 notifyListeners()，所以這裡不再需要
-
-    // _isLoading = false; // 由 applyFilters 處理
-    // notifyListeners(); // 由 applyFilters 處理
+    // 在獲取新數據後，立即應用當前的篩選條件
+    _updateAvailableConnectorTypes(); // 記錄發現的充電槍類型
+    applyFilters(); // 應用篩選並更新 UI
   }
 
-  Timer? _debounceTimer;
-  bool _isFirstLoad = true; // 新增：標記是否為首次載入
+  // 移除重複的變量定義
 
   void onMapPositionChanged(LatLngBounds bounds, LatLng? center) {
     // 修改：接收 center
     if (center != null) {
       _currentMapCenter = center;
     }
-    
-    // 如果是首次載入，立即執行，不使用 debounce
+
+    final currentZoom = mapController.camera.zoom;
+    final currentCenter = _currentMapCenter!;
+
+    // 如果是首次載入，立即執行
     if (_isFirstLoad) {
       _isFirstLoad = false;
-      final currentZoom = mapController.camera.zoom;
-      fetchAndSetStationMarkers(
-        minLat: bounds.southWest.latitude,
-        minLon: bounds.southWest.longitude,
-        maxLat: bounds.northEast.latitude,
-        maxLon: bounds.northEast.longitude,
-        currentZoom: currentZoom,
-      );
-      _currentMapCenter = mapController.camera.center;
-      notifyListeners();
+      _fetchStationsForBounds(bounds, currentZoom);
       return;
     }
-    
-    if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 1000), () {
-      // 恢復原來的1000ms延遲
-      
-      final currentZoom = mapController.camera.zoom;
-      fetchAndSetStationMarkers(
-        minLat: bounds.southWest.latitude,
-        minLon: bounds.southWest.longitude,
-        maxLat: bounds.northEast.latitude,
-        maxLon: bounds.northEast.longitude,
-        currentZoom: currentZoom,
+
+    // 取消之前的計時器
+    _debounceTimer?.cancel();
+    _throttleTimer?.cancel();
+
+    // 使用防抖機制，縮短延遲時間以提供更好的實時體驗
+    _debounceTimer = Timer(const Duration(milliseconds: 100), () {
+      // 檢查是否真的需要更新數據
+      if (_shouldUpdateForMapChange(bounds, currentZoom, currentCenter)) {
+        // 根據當前地圖類型載入對應數據
+        if (_currentMapType == MapType.chargingStation) {
+          _fetchStationsForBounds(bounds, currentZoom);
+        } else {
+          _fetchParkingForBounds(bounds, currentZoom);
+        }
+      } else {
+        // 即使不需要載入新數據，也要更新UI以反映視野範圍內數量的變化
+        notifyListeners();
+      }
+    });
+
+    // 計算移動方向（用於預測性載入）
+    if (_lastMapCenter != null && _currentMapCenter != null) {
+      _mapMoveDirection = LatLng(
+        _currentMapCenter!.latitude - _lastMapCenter!.latitude,
+        _currentMapCenter!.longitude - _lastMapCenter!.longitude,
       );
-      _currentMapCenter = mapController.camera.center;
-      notifyListeners();
+
+      // 啟動預測性載入
+      _startPredictiveLoading(bounds, currentZoom);
+    }
+    _lastMapCenter = _currentMapCenter;
+
+    // 立即更新 UI 狀態，讓用戶知道地圖位置已改變
+    notifyListeners();
+  }
+
+  // 提取獲取充電站數據的邏輯（添加快速響應優化）
+  // ============================================================================
+  // DATA FETCHING METHODS
+  // ============================================================================
+  
+  /// 根據邊界獲取充電站數據
+  void _fetchStationsForBounds(LatLngBounds bounds, double zoom) {
+    // 立即設置載入狀態，提供即時視覺反饋
+    if (!_isLoading) {
+      _isLoading = true;
+      notifyListeners(); // 立即通知UI顯示載入狀態
+    }
+
+    fetchAndSetStationMarkers(
+      minLat: bounds.south,
+      minLon: bounds.west,
+      maxLat: bounds.north,
+      maxLon: bounds.east,
+      currentZoom: zoom,
+    );
+
+    // 更新記錄的範圍和縮放級別
+    _lastFetchBounds = bounds;
+    _lastFetchZoom = zoom;
+  }
+
+  // 提取獲取停車場數據的邏輯
+  /// 根據邊界獲取停車場數據
+  void _fetchParkingForBounds(LatLngBounds bounds, double zoom) {
+    // 立即設置載入狀態，提供即時視覺反饋
+    if (!_isLoading) {
+      _isLoading = true;
+      notifyListeners(); // 立即通知UI顯示載入狀態
+    }
+
+    fetchAndSetParkingMarkers(
+      minLat: bounds.south,
+      minLon: bounds.west,
+      maxLat: bounds.north,
+      maxLon: bounds.east,
+      currentZoom: zoom,
+    );
+
+    // 更新記錄的範圍和縮放級別
+    _lastFetchBounds = bounds;
+    _lastFetchZoom = zoom;
+  }
+
+  // 獲取停車場標記
+  /// 獲取並設置停車場標記
+  Future<void> fetchAndSetParkingMarkers({
+    double? minLat,
+    double? minLon,
+    double? maxLat,
+    double? maxLon,
+    double? currentZoom,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // 性能優化：檢查緩存
+      final zoomLevel = currentZoom ?? 10.0;
+      final cacheKey =
+          _generateCacheKey(minLat, minLon, maxLat, maxLon, zoomLevel);
+
+      if (_isValidParkingCache(cacheKey)) {
+        _parkingLots = _parkingCache[cacheKey]!;
+        _updateParkingMarkers(zoomLevel);
+        _logger.i('使用停車場緩存: ${_parkingLots.length}個');
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
+
+      // 優化：使用 overview 端點載入基本資訊，提升載入效率
+      final parkingLots = await _parkingService.getAllRegionsParkings();
+
+      // 更新緩存
+      _parkingCache[cacheKey] = parkingLots;
+      _cacheTimestamps[cacheKey] = DateTime.now();
+      _cleanExpiredCache();
+
+      _parkingLots = parkingLots;
+      _updateParkingMarkers(zoomLevel);
+
+      _logger.i('停車場載入: ${_parkingLots.length}個');
+    } catch (e) {
+      _logger.e('載入停車場失敗: $e');
+      _parkingLots = [];
+      _markers = [];
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  // 更新充電站標記 - 已修復：不再干擾篩選功能
+  // ============================================================================
+  // MARKER UPDATE METHODS
+  // ============================================================================
+  
+  /// 更新充電站標記
+  void _updateStationMarkers([double? zoomLevel]) {
+    // 注意：_updateStationMarkers 不應該直接更新標記
+    // 標記更新應該由 applyFilters() 中的 _updateMarkers() 處理
+    // 這個方法只負責視野範圍和縮放級別的優化，不直接生成標記
+
+    _logger.i('_updateStationMarkers 被調用，但標記更新由 applyFilters 處理');
+  }
+
+  // 計算動態限制的輔助方法
+  int _calculateDynamicLimit(double zoomLevel) {
+    // 停車場和充電站使用相同的動態限制邏輯
+    if (zoomLevel < 8) return 20;
+    if (zoomLevel < 10) return 40;
+    if (zoomLevel < 12) return 80;
+    if (zoomLevel < 14) return 120;
+    return 150;
+  }
+
+  // 計算兩點間距離（公里）
+  double _calculateDistance(
+      double lat1, double lon1, double lat2, double lon2) {
+    const double earthRadius = 6371; // 地球半徑（公里）
+
+    final double dLat = (lat2 - lat1) * math.pi / 180;
+    final double dLon = (lon2 - lon1) * math.pi / 180;
+
+    final double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1 * math.pi / 180) *
+            math.cos(lat2 * math.pi / 180) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+
+    final double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+
+    return earthRadius * c;
+  }
+
+  // 更新停車場標記
+  /// 更新停車場標記
+  void _updateParkingMarkers([double? zoomLevel]) {
+    // 如果有搜尋查詢，使用篩選邏輯
+    if (_searchQuery.isNotEmpty) {
+      applyParkingFilters();
+      return;
+    }
+
+    // 根據縮放級別和視野範圍篩選停車場
+    List<ParkingLot> visibleParkings = _parkingLots;
+    
+    // 當沒有搜尋查詢時，重置篩選後的停車場數據為原始數據
+    _filteredParkingLots = List.from(_parkingLots);
+
+    if (zoomLevel != null) {
+      // 計算動態限制
+      final limit = _calculateDynamicLimit(zoomLevel);
+
+      try {
+        // 獲取當前視野範圍
+        final bounds = mapController.camera.visibleBounds;
+
+        // 篩選視野範圍內的停車場
+        final parkingsInView = _parkingLots.where((parking) {
+          return parking.latitude >= bounds.south &&
+              parking.latitude <= bounds.north &&
+              parking.longitude >= bounds.west &&
+              parking.longitude <= bounds.east;
+        }).toList();
+
+        // 如果視野內的停車場數量超過限制，按距離排序並取前N個
+        if (parkingsInView.length > limit) {
+          final center = bounds.center;
+          parkingsInView.sort((a, b) {
+            final distanceA = _calculateDistance(
+                center.latitude, center.longitude, a.latitude, a.longitude);
+            final distanceB = _calculateDistance(
+                center.latitude, center.longitude, b.latitude, b.longitude);
+            return distanceA.compareTo(distanceB);
+          });
+          visibleParkings = parkingsInView.take(limit).toList();
+        } else {
+          visibleParkings = parkingsInView;
+        }
+
+        _logger.i(
+            '顯示 ${visibleParkings.length} 個停車場（縮放級別: $zoomLevel, 限制: $limit）');
+      } catch (e) {
+        // 如果無法獲取視野範圍，使用距離中心點最近的停車場
+        if (_parkingLots.length > limit) {
+          final center = _currentMapCenter ?? LatLng(25.0330, 121.5654); // 預設台北
+          _parkingLots.sort((a, b) {
+            final distanceA = _calculateDistance(
+                center.latitude, center.longitude, a.latitude, a.longitude);
+            final distanceB = _calculateDistance(
+                center.latitude, center.longitude, b.latitude, b.longitude);
+            return distanceA.compareTo(distanceB);
+          });
+          visibleParkings = _parkingLots.take(limit).toList();
+        }
+      }
+    }
+
+    _markers = visibleParkings.map((parking) {
+      return Marker(
+        width: 40.0,
+        height: 40.0,
+        point: LatLng(parking.latitude, parking.longitude),
+        child: GestureDetector(
+          onTap: () {
+            selectParkingLot(parking.parkingID);
+          },
+          child: Container(
+            width: 40.0,
+            height: 40.0,
+            decoration: BoxDecoration(
+              color: const Color(0xFF2196F3), // 藍色背景
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Icon(
+                Icons.local_parking,
+                color: Colors.white,
+                size: 20,
+                weight: 700,
+              ),
+            ),
+          ),
+        ),
+      );
+    }).toList();
+  }
+
+  // 根據停車場可用性獲取顏色
+  Color _getParkingAvailabilityColor(ParkingLot parking) {
+    if (parking.availableSpaces == null || parking.totalSpaces == null) {
+      return Colors.grey; // 未知狀態
+    }
+
+    final availabilityRatio = parking.availableSpaces! / parking.totalSpaces!;
+
+    if (availabilityRatio > 0.5) {
+      return Colors.green; // 充足
+    } else if (availabilityRatio > 0.2) {
+      return Colors.orange; // 有限
+    } else {
+      return Colors.red; // 幾乎滿了
+    }
+  }
+
+  // 根據充電站狀態獲取顏色
+  Color _getStationStatusColor(ChargingStation station) {
+    if (station.chargingPoints <= 0) {
+      return const Color(0xFFFF5722); // 紅色：無充電點
+    }
+
+    // 根據充電點數量和連接器數量判斷狀態
+    final connectorCount = station.connectors.length;
+
+    if (connectorCount == 0) {
+      return const Color(0xFFFF9800); // 橙色：無詳細信息
+    }
+
+    // 根據充電點數量決定顏色深淺
+    if (station.chargingPoints >= 4) {
+      return const Color(0xFF2E7D32); // 深綠色：充電點充足
+    } else if (station.chargingPoints >= 2) {
+      return const Color(0xFF4CAF50); // 綠色：充電點適中
+    } else {
+      return const Color(0xFF8BC34A); // 淺綠色：充電點較少
+    }
+  }
+
+  // 檢查停車場緩存是否有效 - 使用更短的緩存時間以實現實時更新
+  bool _isValidParkingCache(String cacheKey) {
+    if (!_parkingCache.containsKey(cacheKey) ||
+        !_cacheTimestamps.containsKey(cacheKey)) {
+      return false;
+    }
+
+    final cacheTime = _cacheTimestamps[cacheKey]!;
+    return DateTime.now().difference(cacheTime) < _parkingCacheExpiry;
+  }
+
+  // 選擇停車場
+  /// 選擇停車場
+  Future<void> selectParkingLot(String parkingId) async {
+    _isFetchingDetail = true;
+    notifyListeners();
+
+    try {
+      final parkingDetail = await _parkingService.getParkingById(parkingId);
+      _selectedParkingDetail = parkingDetail;
+    } catch (e) {
+      _logger.e('獲取停車場詳情失敗: $e');
+      _selectedParkingDetail = null;
+    }
+
+    _isFetchingDetail = false;
+    notifyListeners();
+  }
+
+  // 預測性載入方法
+  void _startPredictiveLoading(LatLngBounds currentBounds, double zoom) {
+    // 取消之前的預載入計時器
+    _preloadTimer?.cancel();
+
+    // 如果沒有移動方向，跳過預測
+    if (_mapMoveDirection == null) return;
+
+    // 延遲啟動預測載入，避免過於頻繁
+    _preloadTimer = Timer(const Duration(milliseconds: 500), () {
+      _preloadAdjacentAreas(currentBounds, zoom);
     });
   }
 
+  // 預載入相鄰區域的數據
+  void _preloadAdjacentAreas(LatLngBounds currentBounds, double zoom) {
+    if (_mapMoveDirection == null) return;
+
+    // 計算預測的下一個區域
+    final moveScale = 0.3; // 預測移動30%的當前視野範圍
+    final latDelta = (currentBounds.north - currentBounds.south) * moveScale;
+    final lonDelta = (currentBounds.east - currentBounds.west) * moveScale;
+
+    // 根據移動方向計算預測區域
+    final predictedLat = _mapMoveDirection!.latitude > 0
+        ? currentBounds.north + latDelta
+        : currentBounds.south - latDelta;
+    final predictedLon = _mapMoveDirection!.longitude > 0
+        ? currentBounds.east + lonDelta
+        : currentBounds.west - lonDelta;
+
+    // 創建預測區域的邊界
+    final predictedBounds = LatLngBounds(
+      LatLng(predictedLat - latDelta, predictedLon - lonDelta),
+      LatLng(predictedLat + latDelta, predictedLon + lonDelta),
+    );
+
+    // 檢查是否已經有這個區域的緩存
+    final cacheKey = _generateCacheKey(
+      predictedBounds.south,
+      predictedBounds.west,
+      predictedBounds.north,
+      predictedBounds.east,
+      zoom,
+    );
+
+    // 如果沒有緩存，在背景中預載入
+    if (!_isValidCache(cacheKey)) {
+      _preloadStationsInBackground(predictedBounds, zoom, cacheKey);
+    }
+  }
+
+  // 背景預載入充電站數據
+  void _preloadStationsInBackground(
+      LatLngBounds bounds, double zoom, String cacheKey) async {
+    try {
+      // 計算動態限制（預載入時使用較小的限制）
+      final limit = _calculateDynamicLimit(zoom) ~/ 2; // 預載入時減半
+
+      final stations = await _stationService.getStationsWithDetails(
+        minLat: bounds.south,
+        minLon: bounds.west,
+        maxLat: bounds.north,
+        maxLon: bounds.east,
+        limit: limit,
+      );
+
+      // 將預載入的數據存入緩存
+      _stationCache[cacheKey] = stations;
+      _cacheTimestamps[cacheKey] = DateTime.now();
+
+      _logger.i('預載入完成: ${stations.length}站');
+    } catch (e) {
+      // 預載入失敗不影響主要功能
+      _logger.w('預載入失敗: $e');
+    }
+  }
+
+  // 啟動實時更新
+  void _startRealTimeUpdates() {
+    _stopRealTimeUpdates(); // 先停止現有的定時器
+
+    _realTimeUpdateTimer = Timer.periodic(_realTimeUpdateInterval, (timer) {
+      if (_currentMapType == MapType.parking &&
+          _lastFetchBounds != null &&
+          _lastFetchZoom != null) {
+        _logger.i('執行停車場實時更新');
+        // 強制清除緩存以獲取最新數據
+        _clearParkingCache();
+        _fetchParkingForBounds(_lastFetchBounds!, _lastFetchZoom!);
+      }
+    });
+
+    _logger.i('啟動停車場實時更新，間隔: ${_realTimeUpdateInterval.inSeconds}秒');
+  }
+
+  // 停止實時更新
+  void _stopRealTimeUpdates() {
+    _realTimeUpdateTimer?.cancel();
+    _realTimeUpdateTimer = null;
+    _logger.i('停止停車場實時更新');
+  }
+
+  // 清除停車場緩存
+  void _clearParkingCache() {
+    _parkingCache.clear();
+    // 只清除停車場相關的緩存時間戳
+    _cacheTimestamps.removeWhere((key, value) => key.contains('parking'));
+  }
+
+  // 手動刷新停車場數據
+  Future<void> refreshParkingData() async {
+    if (_currentMapType != MapType.parking) return;
+
+    _logger.i('手動刷新停車場數據');
+    _clearParkingCache();
+
+    if (_lastFetchBounds != null && _lastFetchZoom != null) {
+      await fetchAndSetParkingMarkers(
+        minLat: _lastFetchBounds!.south,
+        minLon: _lastFetchBounds!.west,
+        maxLat: _lastFetchBounds!.north,
+        maxLon: _lastFetchBounds!.east,
+      );
+    }
+  }
+
+  // ============================================================================
+  // LIFECYCLE & CLEANUP
+  // ============================================================================
+  
   @override
   void dispose() {
     _debounceTimer?.cancel();
+    _throttleTimer?.cancel();
+    _preloadTimer?.cancel();
+    _realTimeUpdateTimer?.cancel(); // 清理實時更新定時器
+    _stationCache.clear();
+    _parkingCache.clear();
+    _cacheTimestamps.clear();
     super.dispose();
   }
 
+  // 性能優化：緩存相關方法
+  String _generateCacheKey(double? minLat, double? minLon, double? maxLat,
+      double? maxLon, double zoom) {
+    final lat = ((minLat ?? 0) * 100).round() / 100;
+    final lon = ((minLon ?? 0) * 100).round() / 100;
+    final lat2 = ((maxLat ?? 0) * 100).round() / 100;
+    final lon2 = ((maxLon ?? 0) * 100).round() / 100;
+    final z = (zoom * 10).round() / 10;
+    return '${lat}_${lon}_${lat2}_${lon2}_$z';
+  }
+
+  bool _isValidCache(String cacheKey) {
+    if (!_stationCache.containsKey(cacheKey) ||
+        !_cacheTimestamps.containsKey(cacheKey)) {
+      return false;
+    }
+
+    final cacheTime = _cacheTimestamps[cacheKey]!;
+    return DateTime.now().difference(cacheTime) < _cacheExpiry;
+  }
+
+  void _cleanExpiredCache() {
+    final now = DateTime.now();
+    final expiredKeys = <String>[];
+
+    _cacheTimestamps.forEach((key, timestamp) {
+      if (now.difference(timestamp) > _cacheExpiry) {
+        expiredKeys.add(key);
+      }
+    });
+
+    for (final key in expiredKeys) {
+      _stationCache.remove(key);
+      _cacheTimestamps.remove(key);
+    }
+  }
+
+  // 清理所有緩存
+  void clearCache() {
+    _stationCache.clear();
+    _cacheTimestamps.clear();
+    _logger.i('緩存已清理');
+  }
+
+  // 智能判斷是否需要更新地圖數據
+  bool _shouldUpdateForMapChange(
+      LatLngBounds bounds, double zoom, LatLng center) {
+    // 如果正在加載，跳過
+    if (_isLoading) {
+      return false;
+    }
+
+    // 如果沒有之前的數據，必須更新
+    if (_lastFetchBounds == null || _lastFetchZoom == null) {
+      return true;
+    }
+
+    // 檢查縮放級別變化（降低閾值以提供更實時的體驗）
+    final zoomDiff = (zoom - _lastFetchZoom!).abs();
+    if (zoomDiff > 0.5) {
+      // 縮放變化超過0.5級別就更新
+      return true;
+    }
+
+    // 檢查地圖範圍變化（更敏感的觸發條件）
+    final overlapRatio = _calculateBoundsOverlap(bounds, _lastFetchBounds!);
+    if (overlapRatio < 0.8) {
+      // 重疊少於80%時更新（更敏感）
+      return true;
+    }
+
+    // 檢查地圖中心移動距離（更小的觸發距離）
+    final lastCenter = LatLng(
+      (_lastFetchBounds!.north + _lastFetchBounds!.south) / 2,
+      (_lastFetchBounds!.east + _lastFetchBounds!.west) / 2,
+    );
+    final distance = _calculateDistance(lastCenter.latitude,
+        lastCenter.longitude, center.latitude, center.longitude);
+
+    // 根據縮放級別調整觸發距離（更敏感的距離）
+    double triggerDistance;
+    if (zoom < 10) {
+      triggerDistance = 2000; // 2km
+    } else if (zoom < 12) {
+      triggerDistance = 1000; // 1km
+    } else if (zoom < 14) {
+      triggerDistance = 500; // 500m
+    } else {
+      triggerDistance = 250; // 250m
+    }
+
+    if (distance > triggerDistance) {
+      return true;
+    }
+
+    return false;
+  }
+
+  // 計算兩個邊界的重疊比例
+  double _calculateBoundsOverlap(LatLngBounds bounds1, LatLngBounds bounds2) {
+    final intersectionSouth =
+        [bounds1.south, bounds2.south].reduce((a, b) => a > b ? a : b);
+    final intersectionNorth =
+        [bounds1.north, bounds2.north].reduce((a, b) => a < b ? a : b);
+    final intersectionWest =
+        [bounds1.west, bounds2.west].reduce((a, b) => a > b ? a : b);
+    final intersectionEast =
+        [bounds1.east, bounds2.east].reduce((a, b) => a < b ? a : b);
+
+    if (intersectionSouth >= intersectionNorth ||
+        intersectionWest >= intersectionEast) {
+      return 0.0; // 沒有重疊
+    }
+
+    final intersectionArea = (intersectionNorth - intersectionSouth) *
+        (intersectionEast - intersectionWest);
+    final bounds1Area =
+        (bounds1.north - bounds1.south) * (bounds1.east - bounds1.west);
+
+    return intersectionArea / bounds1Area;
+  }
+
+  /// 設置僅顯示可用充電站
   void setFilterOnlyAvailable(bool value) {
     _filterOnlyAvailable = value;
     applyFilters();
   }
 
+  // ============================================================================
+  // SEARCH & FILTER SETTERS
+  // ============================================================================
+  
+  /// 更新搜索查詢
   void updateSearchQuery(String query) {
     _searchQuery = query;
-    applyFilters();
+    if (isParkingMap) {
+      applyParkingFilters();
+    } else {
+      applyFilters();
+    }
   }
 
+  /// 新的簡潔篩選邏輯
+  // ============================================================================
+  // FILTERING METHODS
+  // ============================================================================
+  
+  /// 應用篩選條件
   void applyFilters() {
+    _logger.i(
+        '篩選: ${_stations.length}站 -> 搜索:"$_searchQuery", 可用:$_filterOnlyAvailable, 類型:$_selectedConnectorTypes');
+
+    // 添加調試信息
+    if (_selectedConnectorTypes.isNotEmpty) {
+      _debugConnectorTypes();
+    }
+
     _isLoading = true;
     notifyListeners();
 
-    List<ChargingStation> filteredStations = _stations;
+    // 從原始數據開始篩選
+    List<ChargingStation> result = List.from(_stations);
 
-    // 1. 應用 "僅顯示可用" 篩選
-    if (_filterOnlyAvailable) {
-      // TODO: 實現可用性篩選邏輯
-    }
-
-    // 2. 應用充電槍類型篩選
-    if (_selectedConnectorTypes.isNotEmpty) {
-      int stationsWithConnectors = filteredStations.where((s) => s.connectors.isNotEmpty).length;
-      
-      if (stationsWithConnectors == 0) {
-        // 使用模擬篩選邏輯
-        filteredStations = filteredStations.where((station) {
-          int stationHash = station.stationID.hashCode.abs();
-          List<String> simulatedTypes = [
-            'CCS1', 'CCS2', 'CHAdeMO', 'Tesla TPC', 'J1772(Type1)', 'Mennekes(Type2)'
-          ];
-          
-          int typeCount = (stationHash % 3) + 1;
-          Set<String> stationTypes = <String>{};
-          for (int i = 0; i < typeCount; i++) {
-            int typeIndex = (stationHash + i) % simulatedTypes.length;
-            stationTypes.add(simulatedTypes[typeIndex]);
-          }
-          
-          return _selectedConnectorTypes.any((selectedType) => stationTypes.contains(selectedType));
-        }).toList();
-        
-      } else {
-        // 使用真實的connector數據
-        filteredStations = filteredStations.where((station) {
-          if (station.connectors.isEmpty) return false;
-          
-          return station.connectors.any((connector) {
-            return _selectedConnectorTypes.contains(connector.typeDescription);
-          });
-        }).toList();
-      }
-    }
-
-    // 3. 應用搜索查詢
+    // 1. 搜索篩選
     if (_searchQuery.isNotEmpty) {
-      String query = _searchQuery.toLowerCase();
-      filteredStations = filteredStations.where((station) {
+      String query = _searchQuery.toLowerCase().trim();
+      result = result.where((station) {
         return station.stationName.toLowerCase().contains(query) ||
             (station.fullAddress?.toLowerCase().contains(query) ?? false);
       }).toList();
     }
 
-    // 根據過濾後的站點重新生成 markers
-    _markers = filteredStations.map((station) {
+    // 2. 可用性篩選
+    if (_filterOnlyAvailable) {
+      result = result.where((station) => station.chargingPoints > 0).toList();
+    }
+
+    // 3. 充電槍類型篩選
+    if (_selectedConnectorTypes.isNotEmpty) {
+      _logger.i('開始充電槍類型篩選，選中類型: $_selectedConnectorTypes');
+
+      List<ChargingStation> beforeFilter = List.from(result);
+      result = result.where((station) {
+        if (station.connectors.isEmpty) {
+          _logger.d('${station.stationName}: 沒有 connector 數據，跳過');
+          return false; // 沒有 connector 數據就排除
+        }
+
+        // 檢查是否有匹配的充電槍類型
+        bool hasMatch = station.connectors.any((connector) {
+          bool matches =
+              _selectedConnectorTypes.contains(connector.typeDescription);
+          if (matches) {
+            _logger
+                .d('${station.stationName}: 匹配到 ${connector.typeDescription}');
+          }
+          return matches;
+        });
+
+        return hasMatch;
+      }).toList();
+
+      _logger.i('充電槍類型篩選: ${beforeFilter.length} -> ${result.length}');
+    }
+
+    // 更新結果
+    _filteredStations = result;
+    _updateMarkers();
+
+    _logger.i('篩選完成: ${_filteredStations.length}站');
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  /// 更新地圖標記
+  void _updateMarkers() {
+    _markers = _filteredStations.map((station) {
       return Marker(
         width: 40.0,
         height: 40.0,
@@ -297,7 +1068,7 @@ class MapProvider extends ChangeNotifier {
               border: Border.all(color: Colors.white, width: 2.0),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                   spreadRadius: 1,
                   blurRadius: 3,
                   offset: const Offset(0, 1),
@@ -313,11 +1084,79 @@ class MapProvider extends ChangeNotifier {
         ),
       );
     }).toList();
+  }
+
+  /// 停車場篩選邏輯
+  /// 應用停車場篩選條件
+  void applyParkingFilters() {
+    _logger.i('停車場篩選: ${_parkingLots.length}個 -> 搜索:"$_searchQuery"');
+
+    _isLoading = true;
+    notifyListeners();
+
+    // 從原始停車場數據開始篩選
+    List<ParkingLot> result = List.from(_parkingLots);
+
+    // 搜索篩選
+    if (_searchQuery.isNotEmpty) {
+      String query = _searchQuery.toLowerCase().trim();
+      result = result.where((parking) {
+        return parking.parkingName.toLowerCase().contains(query) ||
+            (parking.address?.toLowerCase().contains(query) ?? false);
+      }).toList();
+    }
+
+    // 更新篩選後的停車場數據
+    _filteredParkingLots = result;
+    
+    // 更新停車場標記
+    _updateParkingMarkersFromFiltered(result);
+
+    _logger.i('停車場篩選完成: ${result.length}個');
 
     _isLoading = false;
     notifyListeners();
   }
 
+  /// 更新停車場地圖標記（從篩選後的結果）
+  void _updateParkingMarkersFromFiltered(List<ParkingLot> filteredParkingLots) {
+    _markers = filteredParkingLots.map((parking) {
+      return Marker(
+        width: 40.0,
+        height: 40.0,
+        point: LatLng(parking.latitude, parking.longitude),
+        child: GestureDetector(
+          onTap: () => selectParkingLot(parking.parkingID),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.blue,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2.0),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  spreadRadius: 1,
+                  blurRadius: 3,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.local_parking,
+              color: Colors.white,
+              size: 20.0,
+            ),
+          ),
+        ),
+      );
+    }).toList();
+  }
+
+  // ============================================================================
+  // SELECTION & DETAIL METHODS
+  // ============================================================================
+  
+  /// 選擇充電站
   Future<void> selectStation(String stationId) async {
     if (_isFetchingDetail) return;
 
@@ -331,7 +1170,7 @@ class MapProvider extends ChangeNotifier {
         _selectedStationDetail = stationDetail;
       }
     } catch (e) {
-      _logger.e('Error fetching station details: $e');
+      _logger.e('獲取站點詳情失敗: $e');
       _selectedStationDetail = null;
     } finally {
       _isFetchingDetail = false;
@@ -339,6 +1178,7 @@ class MapProvider extends ChangeNotifier {
     }
   }
 
+  /// 清除選中的充電站詳情
   void clearSelectedStation() {
     _selectedStationDetail = null;
     _isFetchingDetail = false;
@@ -438,33 +1278,74 @@ class MapProvider extends ChangeNotifier {
     notifyListeners(); // Notify to update UI (e.g. center coordinates display)
   }
 
-  void _updateAvailableConnectorTypes() {
-    Set<String> types = <String>{};
-    
-    for (var station in _stations) {
-      for (var connector in station.connectors) {
-        types.add(connector.typeDescription);
-      }
-    }
-    
-    if (types.isNotEmpty) {
-      _availableConnectorTypes = types.toList();
-    }
-    
+  /// 簡化的充電槍類型初始化
+  void _initializeAllConnectorTypes() {
+    // 直接使用固定的常見充電槍類型列表，按使用頻率排序
+    _availableConnectorTypes = [
+      'CCS2',
+      'CCS1',
+      'CHAdeMO',
+      'J1772(Type1)',
+      'Mennekes(Type2)',
+      'Tesla TPC',
+      'Others'
+    ];
+
+    // 移除初始化日誌
     notifyListeners();
   }
 
-  // 充電槍類型篩選相關方法
+  /// 簡化的充電槍類型更新 - 只記錄實際發現的類型
+  void _updateAvailableConnectorTypes() {
+    Set<String> foundTypes = <String>{};
+
+    // 統計實際充電站中發現的充電槍類型
+    for (var station in _stations) {
+      for (var connector in station.connectors) {
+        String typeDesc = connector.typeDescription;
+        if (typeDesc.isNotEmpty &&
+            typeDesc != '未知類型' &&
+            typeDesc != 'Unknown') {
+          foundTypes.add(typeDesc);
+        }
+      }
+    }
+
+    // 移除充電槍類型發現日誌，減少輸出
+  }
+
+  // 新的簡化充電槍類型篩選方法
+  void toggleConnectorTypeFilter(String connectorType) {
+    if (_selectedConnectorTypes.contains(connectorType)) {
+      _selectedConnectorTypes.remove(connectorType);
+    } else {
+      _selectedConnectorTypes.add(connectorType);
+    }
+
+    _logger.i('充電槍篩選: $_selectedConnectorTypes');
+
+    // 如果選擇了充電槍類型篩選，需要確保有詳細資料
+    if (_selectedConnectorTypes.isNotEmpty) {
+      _ensureDetailedDataForFiltering();
+    } else {
+      applyFilters();
+    }
+  }
+
   void addConnectorTypeFilter(String connectorType) {
     if (!_selectedConnectorTypes.contains(connectorType)) {
       _selectedConnectorTypes.add(connectorType);
-      applyFilters();
+      _ensureDetailedDataForFiltering();
     }
   }
 
   void removeConnectorTypeFilter(String connectorType) {
     if (_selectedConnectorTypes.remove(connectorType)) {
-      applyFilters();
+      if (_selectedConnectorTypes.isNotEmpty) {
+        _ensureDetailedDataForFiltering();
+      } else {
+        applyFilters();
+      }
     }
   }
 
@@ -480,40 +1361,179 @@ class MapProvider extends ChangeNotifier {
     applyFilters();
   }
 
-  Future<void> _fetchConnectorTypesFromDetails() async {
-    int fetchCount = _stations.length > 10 ? 10 : _stations.length;
-    Set<String> detectedTypes = <String>{};
-    
-    for (int i = 0; i < fetchCount; i++) {
-      try {
-        String stationId = _stations[i].stationID;
-        ChargingStation? detailStation = await _stationService.getStationById(stationId);
-        
-        if (detailStation != null && detailStation.connectors.isNotEmpty) {
-          for (var connector in detailStation.connectors) {
-            String typeDesc = connector.typeDescription;
-            if (typeDesc.isNotEmpty && typeDesc != '未知類型') {
-              detectedTypes.add(typeDesc);
-            }
+  // 新增：確保有詳細資料用於篩選
+  Future<void> _ensureDetailedDataForFiltering() async {
+    // 檢查是否已經有詳細資料
+    bool hasDetailedData =
+        _stations.any((station) => station.connectors.isNotEmpty);
+
+    if (!hasDetailedData) {
+      _logger.i('需要載入詳細資料以支援充電槍類型篩選');
+      _isLoading = true;
+      notifyListeners();
+
+      await _loadDetailedStationsForFiltering(_stations);
+
+      _isLoading = false;
+    }
+
+    applyFilters();
+  }
+
+  // 新增：為篩選功能載入詳細資料
+  Future<void> _loadDetailedStationsForFiltering(
+      List<ChargingStation> basicStations) async {
+    _logger.i('開始為 ${basicStations.length} 個充電站載入詳細資料...');
+
+    List<ChargingStation> detailedStations = [];
+    int successCount = 0;
+    int failCount = 0;
+
+    // 分批處理，避免過多並發請求
+    const int batchSize = 10;
+    for (int i = 0; i < basicStations.length; i += batchSize) {
+      final batch = basicStations.skip(i).take(batchSize).toList();
+
+      final futures = batch.map((station) async {
+        try {
+          final detailed =
+              await _stationService.getStationById(station.stationID);
+          if (detailed != null && detailed.connectors.isNotEmpty) {
+            successCount++;
+            return detailed;
+          } else {
+            failCount++;
+            return station; // 使用基本資料
           }
+        } catch (e) {
+          failCount++;
+          return station; // 失敗時使用基本資料
         }
-        
-        if (detectedTypes.length >= 5) break;
-        
-      } catch (e) {
-        // 忽略個別錯誤，繼續處理
+      });
+
+      final batchResults = await Future.wait(futures);
+      detailedStations.addAll(batchResults);
+
+      // 每批次後更新進度
+      _logger.i('已處理 ${detailedStations.length}/${basicStations.length} 個充電站');
+    }
+
+    _logger.i('詳細資料載入完成: 成功 $successCount, 失敗 $failCount');
+
+    // 更新 _stations 為詳細資料
+    _stations = detailedStations;
+  }
+
+  // 調試方法：檢查 connector 數據
+  void _debugConnectorTypes() {
+    _logger.i('=== 調試 Connector 數據 ===');
+
+    Set<String> allFoundTypes = <String>{};
+    int stationsWithConnectors = 0;
+    int stationsWithoutConnectors = 0;
+
+    for (int i = 0; i < _stations.length && i < 10; i++) {
+      final station = _stations[i];
+
+      if (station.connectors.isEmpty) {
+        stationsWithoutConnectors++;
+        _logger.d('${station.stationName}: 無 connector 數據');
+      } else {
+        stationsWithConnectors++;
+        _logger.d(
+            '${station.stationName}: ${station.connectors.length} 個 connectors');
+
+        for (final connector in station.connectors) {
+          final typeDesc = connector.typeDescription;
+          allFoundTypes.add(typeDesc);
+          _logger.d('  - type=${connector.type}, typeDescription="$typeDesc"');
+        }
       }
     }
-    
-    if (detectedTypes.isNotEmpty) {
-      _availableConnectorTypes = detectedTypes.toList()..sort();
-      notifyListeners();
-    }
+
+    _logger.i(
+        '統計: ${stationsWithConnectors} 個站有 connector 數據, ${stationsWithoutConnectors} 個站無數據');
+    _logger.i('發現的充電槍類型: $allFoundTypes');
+    _logger.i('選中的充電槍類型: $_selectedConnectorTypes');
+    _logger.i('=== 調試結束 ===');
   }
 
   // 新增：重置地圖狀態，用於每次打開地圖overlay時
   void resetMapState() {
     _isFirstLoad = true;
-    debugPrint('MapProvider state reset for new map overlay');
+  }
+
+  // 新增缺失的方法
+  Future<void> fetchCurrentLocation() async {
+    try {
+      _currentMapCenter = const LatLng(25.0340, 121.5645);
+      notifyListeners();
+    } catch (e) {
+      _logger.e('獲取當前位置失敗: $e');
+    }
+  }
+
+  Future<void> searchChargingStations(String query) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      if (query.isEmpty) {
+        _stations = await _stationService.getAllRegionsStations();
+      } else {
+        _stations = await _stationService.searchStations(query);
+      }
+
+      _updateMarkersFromStations();
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _logger.e('搜索充電站失敗: $e');
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> searchNearbyChargingStations(String query, double radius) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      if (_currentMapCenter != null) {
+        _stations = await _stationService.getNearbyStations(
+            _currentMapCenter!.latitude, _currentMapCenter!.longitude, radius);
+      }
+
+      _updateMarkersFromStations();
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _logger.e('搜索附近充電站失敗: $e');
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // 新增缺失的 _updateMarkersFromStations 方法
+  void _updateMarkersFromStations() {
+    _markers = _stations.map((station) {
+      return Marker(
+        point: LatLng(station.location.latitude, station.location.longitude),
+        width: 40,
+        height: 40,
+        child: Icon(
+          Icons.ev_station,
+          color: station.isAvailable ? Colors.green : Colors.red,
+          size: 30,
+        ),
+      );
+    }).toList();
+  }
+
+  // 清除選中的停車場詳細資訊
+  /// 清除選中的停車場詳情
+  void clearSelectedParkingDetail() {
+    _selectedParkingDetail = null;
+    notifyListeners();
   }
 }

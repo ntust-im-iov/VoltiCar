@@ -80,7 +80,7 @@ class MyApp extends StatelessWidget {
         ),
         initialRoute: '/login',
         onGenerateRoute: (RouteSettings settings) {
-          print('Generating route: ${settings.name}'); // 方便調試
+          debugPrint('Generating route: ${settings.name}'); // 方便調試
 
           WidgetBuilder builder; // 用於構建頁面的 Widget
 

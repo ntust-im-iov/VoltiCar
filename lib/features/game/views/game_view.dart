@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 import '../viewmodels/game_viewmodel.dart';
 
 class GameView extends StatefulWidget {
-  const GameView({Key? key}) : super(key: key);
+  const GameView({super.key});
 
   @override
   State<GameView> createState() => _GameViewState();
@@ -71,7 +71,9 @@ class MyGame extends FlameGame {
   @override
   Future<void> onLoad() async {
     await Flame.images.load('car.png');
-    viewModel = Provider.of<GameViewModel>(context, listen: false);
+    if (context.mounted) {
+      viewModel = Provider.of<GameViewModel>(context, listen: false);
+    }
 
     // Load player sprite
     playerSprite = SpriteComponent(
