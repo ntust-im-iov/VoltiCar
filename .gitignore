@@ -1,3 +1,6 @@
+# Override global gitignore lib/ rule for Flutter projects
+!lib/
+
 # Miscellaneous
 *.class
 *.log
