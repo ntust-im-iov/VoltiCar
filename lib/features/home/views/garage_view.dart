@@ -4,7 +4,7 @@ import 'package:flame/components.dart'; // Flame import
 import 'package:flame/events.dart'; // Flame import
 import 'package:volticar_app/features/home/models/charging_station_model.dart';
 import 'package:volticar_app/features/home/viewmodels/map_overlay.dart';
-import 'package:volticar_app/shared/maplist/car_details.dart'; //導入車輛訊息MAP列表
+import 'package:volticar_app/shared/maplist/carDetails.dart'; //導入車輛訊息MAP列表
 import 'package:volticar_app/shared/widgets/adaptive_component.dart'; //導入自適應點擊元件原型
 import 'package:volticar_app/features/auth/viewmodels/login_viewmodel.dart'; // 導入身份驗證視圖模型
 import 'package:provider/provider.dart'; // 導入 Provider
@@ -342,7 +342,8 @@ class _GarageViewState extends State<GarageView> {
                         ),
                       ),
                       elevation: 8,
-                      shadowColor: const Color(0xFF5C4EB4).withValues(alpha: 0.5),
+                      shadowColor:
+                          const Color(0xFF5C4EB4).withValues(alpha: 0.5),
                     ),
                     child: const Text(
                       '查看詳細資料',
@@ -612,7 +613,8 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                            icon: const Icon(Icons.close,
+                                color: Colors.white, size: 20),
                             onPressed: () {
                               Navigator.of(context).pop();
                             },
@@ -686,13 +688,16 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
           children: [
             _buildDetailRow(
               label: '充電費率',
-              value: station.chargingRate.isNotEmpty ? station.chargingRate : '未提供',
+              value: station.chargingRate.isNotEmpty
+                  ? station.chargingRate
+                  : '未提供',
               icon: Icons.electric_bolt,
               iconColor: const Color(0xFFFFD166),
             ),
             _buildDetailRow(
               label: '停車費率',
-              value: station.parkingRate.isNotEmpty ? station.parkingRate : '未提供',
+              value:
+                  station.parkingRate.isNotEmpty ? station.parkingRate : '未提供',
               icon: Icons.local_parking,
               iconColor: const Color(0xFF5DE8EB),
             ),
@@ -744,7 +749,8 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
                 final index = entry.key;
                 final connector = entry.value;
                 return Container(
-                  margin: EdgeInsets.only(bottom: index < station.connectors.length - 1 ? 12 : 0),
+                  margin: EdgeInsets.only(
+                      bottom: index < station.connectors.length - 1 ? 12 : 0),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Color(0xFF0F0A1F).withValues(alpha: 0.5),
@@ -851,8 +857,10 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
                                 color: Color(0xFF0F0A1F),
                                 child: Center(
                                   child: CircularProgressIndicator(
-                                    value: loadingProgress.expectedTotalBytes != null
-                                        ? loadingProgress.cumulativeBytesLoaded /
+                                    value: loadingProgress.expectedTotalBytes !=
+                                            null
+                                        ? loadingProgress
+                                                .cumulativeBytesLoaded /
                                             loadingProgress.expectedTotalBytes!
                                         : null,
                                     color: Color(0xFFFFD166),
@@ -861,7 +869,8 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
                                 ),
                               );
                             },
-                            errorBuilder: (context, error, stackTrace) => Container(
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
                               color: Color(0xFF0F0A1F),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1048,7 +1057,7 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                                 Text('正在開啟Google Maps導航至 ${station.stationName}...'),
+                Text('正在開啟Google Maps導航至 ${station.stationName}...'),
               ],
             ),
             backgroundColor: const Color(0xFF06D6A0),
@@ -1061,25 +1070,27 @@ class _MapOverlayWidgetState extends State<_MapOverlayWidget> {
       final double lat = station.latitude;
       final double lng = station.longitude;
       final String stationName = Uri.encodeComponent(station.stationName);
-      
+
       // Google Maps App URL (首選)
       final String googleMapsAppUrl = 'google.navigation:q=$lat,$lng&mode=d';
-      
+
       // Apple Maps URL (備選，僅當Google Maps App不可用時)
-      final String appleMapsUrl = 'https://maps.apple.com/?daddr=$lat,$lng&dirflg=d&q=$stationName';
+      final String appleMapsUrl =
+          'https://maps.apple.com/?daddr=$lat,$lng&dirflg=d&q=$stationName';
 
       bool navigationOpened = false;
 
       // 直接調用原生地圖應用，不使用網頁版
       // 1. 首先嘗試Google Maps App
-      if (!navigationOpened && await canLaunchUrl(Uri.parse(googleMapsAppUrl))) {
+      if (!navigationOpened &&
+          await canLaunchUrl(Uri.parse(googleMapsAppUrl))) {
         await launchUrl(
           Uri.parse(googleMapsAppUrl),
           mode: LaunchMode.externalApplication,
         );
         navigationOpened = true;
       }
-      
+
       // 2. 如果Google Maps App不可用，嘗試Apple Maps
       if (!navigationOpened && await canLaunchUrl(Uri.parse(appleMapsUrl))) {
         await launchUrl(
