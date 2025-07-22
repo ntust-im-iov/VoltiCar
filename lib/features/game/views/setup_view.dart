@@ -2,6 +2,7 @@ import 'package:flutter/material.dart'; // 引入 Flutter Material UI 库
 import 'package:flutter/services.dart'; // 引入 Flutter Services 库，用于控制设备方向
 import '../models/cargo_model.dart'; // 引入货物模型
 import '../../../shared/widgets/adaptive_button.dart'; // 引入 AdaptiveButton
+import '../views/task_assignment_view.dart';
 
 class SetupView extends StatefulWidget {
   // 设置页面，用于设置游戏参数
@@ -15,14 +16,58 @@ class _SetupViewState extends State<SetupView> {
   // SetupView 的状态
   List<Cargo> warehouseCargo = [
     // 仓库货物列表
-    Cargo(name: 'Box 1', description: 'Fragile items', weight: 10),
-    Cargo(name: 'Box 2', description: 'Electronics', weight: 15),
+    Cargo(
+      itemId: '708d1d5c-bd49-495e-916a-5ef219b315a6',
+      name: '鐵礦石 (v4)',
+      description: '未加工的鐵礦石，用於工業生產。',
+      category: '原材料',
+      weightPerUnit: 100,
+      volumePerUnit: 0.05,
+      baseValuePerUnit: 20,
+      isFragile: false,
+      isPerishable: false,
+      iconUrl: '/icons/iron_ore_v4.png',
+    ),
+    Cargo(
+      itemId: '708d1d5c-bd49-495e-916a-5ef219b315a7',
+      name: '鐵礦石 (v5)',
+      description: '未加工的鐵礦石，用於工業生產。',
+      category: '原材料',
+      weightPerUnit: 100,
+      volumePerUnit: 0.05,
+      baseValuePerUnit: 20,
+      isFragile: false,
+      isPerishable: false,
+      iconUrl: '/icons/iron_ore_v4.png',
+    ),
   ];
 
   List<Cargo> trunkCargo = [
     // 后备箱货物列表
-    Cargo(name: 'Spare Tire', description: 'For emergencies', weight: 20),
-    Cargo(name: 'Toolkit', description: 'Essential tools', weight: 5),
+    Cargo(
+      itemId: '708d1d5c-bd49-495e-916a-5ef219b315a8',
+      name: '鐵礦石 (v6)',
+      description: '未加工的鐵礦石，用於工業生產。',
+      category: '原材料',
+      weightPerUnit: 100,
+      volumePerUnit: 0.05,
+      baseValuePerUnit: 20,
+      isFragile: false,
+      isPerishable: false,
+      iconUrl: '/icons/iron_ore_v4.png',
+    ),
+    Cargo(
+      itemId: '708d1d5c-bd49-495e-916a-5ef219b315a9',
+      name: '鐵礦石 (v7)',
+      description: '未加工的鐵礦石，用於工業生產。',
+      category: '原材料',
+      weightPerUnit: 100,
+      volumePerUnit: 0.05,
+      baseValuePerUnit: 20,
+      isFragile: false,
+      isPerishable: false,
+      iconUrl: '/icons/iron_ore_v4.png',
+    ),
   ];
 
   @override
@@ -44,6 +89,24 @@ class _SetupViewState extends State<SetupView> {
     super.dispose();
   }
 
+  void _onTaskAssigned() {
+    print('委託任務按鈕被點擊');
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return TaskAssignmentDialog();
+      },
+    );
+  }
+
+  void _onRouteSelected() {
+    print('路線選擇按鈕被點擊');
+  }
+
+  void _onCargoChecked() {
+    print('貨物檢查按鈕被點擊');
+  }
+
   @override
   Widget build(BuildContext context) {
     // 构建 Widget
@@ -63,11 +126,103 @@ class _SetupViewState extends State<SetupView> {
         body: Stack(
           // 使用 Stack 布局，允许 Widget 重叠
           children: [
-            SafeArea(
-              child: IconButton(
-                icon: Icon(Icons.arrow_back),
-                color: Colors.white,
-                onPressed: () => Navigator.pop(context),
+            Positioned(
+              top: MediaQuery.of(context).size.height * 0.07,
+              right: MediaQuery.of(context).size.width * 0.04,
+              child: SafeArea(
+                child: IconButton(
+                  icon: Icon(Icons.arrow_back),
+                  color: Colors.white,
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+            ),
+            Positioned(
+              top: MediaQuery.of(context).size.height * 0.07,
+              left: MediaQuery.of(context).size.width * 0.04,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return Dialog(
+                            backgroundColor:
+                                const Color.fromARGB(255, 38, 36, 36)
+                                    .withOpacity(0.5),
+                            shape: RoundedRectangleBorder(
+                              side: BorderSide(
+                                  color: Color(0xFF42A5F5), width: 2),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: Container(
+                              width: MediaQuery.of(context).size.width * 0.8,
+                              height: MediaQuery.of(context).size.height * 0.8,
+                              child: Column(
+                                children: [
+                                  Text(
+                                    '玩家資料',
+                                    style: TextStyle(
+                                        color: Color(0xFF42A5F5), fontSize: 25),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    child: Stack(
+                      alignment: Alignment.bottomCenter,
+                      children: [
+                        CircleAvatar(
+                          backgroundImage: AssetImage(
+                              'assets/images/volticar_logo.png'), // 使用預設圖片
+                          radius: 30,
+                        ),
+                        Text(
+                          'Lv.1',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '玩家名稱',
+                        style: TextStyle(color: Colors.white, fontSize: 18),
+                      ),
+                      SizedBox(height: 5),
+                      Container(
+                        width: 100,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[800],
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: FractionallySizedBox(
+                          alignment: Alignment.centerLeft,
+                          widthFactor: 0.7,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.lightGreenAccent,
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
             Container(), // 空 Container，用于占位
@@ -129,9 +284,3 @@ class _SetupViewState extends State<SetupView> {
     );
   }
 }
-
-void _onTaskAssigned() {}
-
-void _onRouteSelected() {}
-
-void _onCargoChecked() {}
