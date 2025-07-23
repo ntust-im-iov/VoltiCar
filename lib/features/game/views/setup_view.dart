@@ -14,61 +14,61 @@ class SetupView extends StatefulWidget {
 
 class _SetupViewState extends State<SetupView> {
   // SetupView 的状态
-  List<Cargo> warehouseCargo = [
-    // 仓库货物列表
-    Cargo(
-      itemId: '708d1d5c-bd49-495e-916a-5ef219b315a6',
-      name: '鐵礦石 (v4)',
-      description: '未加工的鐵礦石，用於工業生產。',
-      category: '原材料',
-      weightPerUnit: 100,
-      volumePerUnit: 0.05,
-      baseValuePerUnit: 20,
-      isFragile: false,
-      isPerishable: false,
-      iconUrl: '/icons/iron_ore_v4.png',
-    ),
-    Cargo(
-      itemId: '708d1d5c-bd49-495e-916a-5ef219b315a7',
-      name: '鐵礦石 (v5)',
-      description: '未加工的鐵礦石，用於工業生產。',
-      category: '原材料',
-      weightPerUnit: 100,
-      volumePerUnit: 0.05,
-      baseValuePerUnit: 20,
-      isFragile: false,
-      isPerishable: false,
-      iconUrl: '/icons/iron_ore_v4.png',
-    ),
-  ];
+  // List<Cargo> warehouseCargo = [
+  //   // 仓库货物列表
+  //   Cargo(
+  //     itemId: '708d1d5c-bd49-495e-916a-5ef219b315a6',
+  //     name: '鐵礦石 (v4)',
+  //     description: '未加工的鐵礦石，用於工業生產。',
+  //     category: '原材料',
+  //     weightPerUnit: 100,
+  //     volumePerUnit: 0.05,
+  //     baseValuePerUnit: 20,
+  //     isFragile: false,
+  //     isPerishable: false,
+  //     iconUrl: '/icons/iron_ore_v4.png',
+  //   ),
+  //   Cargo(
+  //     itemId: '708d1d5c-bd49-495e-916a-5ef219b315a7',
+  //     name: '鐵礦石 (v5)',
+  //     description: '未加工的鐵礦石，用於工業生產。',
+  //     category: '原材料',
+  //     weightPerUnit: 100,
+  //     volumePerUnit: 0.05,
+  //     baseValuePerUnit: 20,
+  //     isFragile: false,
+  //     isPerishable: false,
+  //     iconUrl: '/icons/iron_ore_v4.png',
+  //   ),
+  // ];
 
-  List<Cargo> trunkCargo = [
-    // 后备箱货物列表
-    Cargo(
-      itemId: '708d1d5c-bd49-495e-916a-5ef219b315a8',
-      name: '鐵礦石 (v6)',
-      description: '未加工的鐵礦石，用於工業生產。',
-      category: '原材料',
-      weightPerUnit: 100,
-      volumePerUnit: 0.05,
-      baseValuePerUnit: 20,
-      isFragile: false,
-      isPerishable: false,
-      iconUrl: '/icons/iron_ore_v4.png',
-    ),
-    Cargo(
-      itemId: '708d1d5c-bd49-495e-916a-5ef219b315a9',
-      name: '鐵礦石 (v7)',
-      description: '未加工的鐵礦石，用於工業生產。',
-      category: '原材料',
-      weightPerUnit: 100,
-      volumePerUnit: 0.05,
-      baseValuePerUnit: 20,
-      isFragile: false,
-      isPerishable: false,
-      iconUrl: '/icons/iron_ore_v4.png',
-    ),
-  ];
+  // List<Cargo> trunkCargo = [
+  //   // 后备箱货物列表
+  //   Cargo(
+  //     itemId: '708d1d5c-bd49-495e-916a-5ef219b315a8',
+  //     name: '鐵礦石 (v6)',
+  //     description: '未加工的鐵礦石，用於工業生產。',
+  //     category: '原材料',
+  //     weightPerUnit: 100,
+  //     volumePerUnit: 0.05,
+  //     baseValuePerUnit: 20,
+  //     isFragile: false,
+  //     isPerishable: false,
+  //     iconUrl: '/icons/iron_ore_v4.png',
+  //   ),
+  //   Cargo(
+  //     itemId: '708d1d5c-bd49-495e-916a-5ef219b315a9',
+  //     name: '鐵礦石 (v7)',
+  //     description: '未加工的鐵礦石，用於工業生產。',
+  //     category: '原材料',
+  //     weightPerUnit: 100,
+  //     volumePerUnit: 0.05,
+  //     baseValuePerUnit: 20,
+  //     isFragile: false,
+  //     isPerishable: false,
+  //     iconUrl: '/icons/iron_ore_v4.png',
+  //   ),
+  // ];
 
   @override
   void initState() {
@@ -94,7 +94,7 @@ class _SetupViewState extends State<SetupView> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return TaskAssignmentDialog();
+        return TaskAssignmentView();
       },
     );
   }

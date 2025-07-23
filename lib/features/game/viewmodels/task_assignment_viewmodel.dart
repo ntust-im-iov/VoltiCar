@@ -4,7 +4,10 @@ import 'package:volticar_app/features/game/repositories/task_assignment_reposito
 
 class TaskAssignmentViewModel extends ChangeNotifier {
   final TaskAssignmentRepositories _taskAssignmentRepositories;
-  Task? _assignmentTask;
+  
+  List<Task> _assignmentTasks = [];
+  List<Task> _acceptedTasks = [];
+  Task? _selectedTask;
 
   // 任務指派相關狀態
   bool _isTaskLoading = false;
@@ -20,29 +23,17 @@ class TaskAssignmentViewModel extends ChangeNotifier {
   bool get isTaskLoading => _isTaskLoading;
   String? get isTaskError => _isTaskError;
   bool get isTaskSuccess => _isTaskSuccess;
+  List<Task> get availableTasks => _assignmentTasks;
+  List<Task> get acceptedTasks => _acceptedTasks;
+  Task? get selectedTask => _selectedTask;
 
-  Future<Task?> taskassignment(String type) async {
-    // 狀態初始化
-    _isTaskLoading = true;
-    _isTaskSuccess = false;
-    _isTaskError = null;
-    notifyListeners();
+  Future<void> fetchTasks(String type) async {
+    _updateTaskState(isLoading: true, error: null, isSuccess: false);
 
     try {
-      _updateTaskState(isLoading: true, error: null);
-
-      final task = await _taskAssignmentRepositories.taskassignment(type);
-
-      if (task != null) {
-        _assignmentTask = task;
-        _updateTaskState(isLoading: false, isSuccess: true);
-      } else {
-        _updateTaskState(
-          isLoading: false,
-          error: '擷取失敗',
-          isSuccess: false,
-        );
-      }
+      final tasks = await _taskAssignmentRepositories.taskassignment(type);
+      _assignmentTasks = tasks;
+      _updateTaskState(isLoading: false, isSuccess: true);
     } catch (e) {
       String errorMessage = e.toString();
       if (errorMessage.contains('Exception:')) {
@@ -54,15 +45,48 @@ class TaskAssignmentViewModel extends ChangeNotifier {
         isSuccess: false,
       );
     }
-    return _assignmentTask;
+  }
+
+  void selectTask(Task? task) {
+    if (_selectedTask?.taskId == task?.taskId) {
+      _selectedTask = null;
+    } else {
+      _selectedTask = task;
+    }
+    notifyListeners();
+  }
+
+  void acceptTask() {
+    if (_selectedTask == null) return;
+    if (_acceptedTasks.any((task) => task.taskId == _selectedTask!.taskId)) return;
+
+    _acceptedTasks = [..._acceptedTasks, _selectedTask!];
+    _assignmentTasks = _assignmentTasks
+        .where((task) => task.taskId != _selectedTask!.taskId)
+        .toList();
+    _selectedTask = null;
+    notifyListeners();
+  }
+
+  void abandonTask() {
+    if (_selectedTask == null) return;
+    final taskToAbandon = _selectedTask!;
+    if (!_acceptedTasks.any((task) => task.taskId == taskToAbandon.taskId)) return;
+
+    _acceptedTasks = _acceptedTasks
+        .where((task) => task.taskId != taskToAbandon.taskId)
+        .toList();
+    // For now, abandoning a task removes it permanently.
+    // We could add it back to the available list if needed:
+    _assignmentTasks = [..._assignmentTasks, taskToAbandon];
+    _selectedTask = null;
+    notifyListeners();
   }
 
   void _updateTaskState({bool? isLoading, String? error, bool? isSuccess}) {
-    if (isLoading != null) _isTaskLoading = isLoading;
-    if (error != null) {
-      _isTaskError = error;
-    }
-    if (isSuccess != null) _isTaskSuccess = isSuccess;
+    _isTaskLoading = isLoading ?? _isTaskLoading;
+    _isTaskError = error;
+    _isTaskSuccess = isSuccess ?? _isTaskSuccess;
     notifyListeners();
   }
 

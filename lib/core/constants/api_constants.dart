@@ -18,7 +18,7 @@ class ApiConstants {
   static const String stationsByCity = '/stations/city'; // 按城市搜尋充電站
 
   // Task
-  static const String taskDefinitions = '/tasks'; //任務清單
+  static const String taskDefinitions = '/api/v1/tasks/'; //任務清單
 
   // API version
   static const String apiVersion = '/api/v1';
