@@ -4,7 +4,10 @@ import 'package:volticar_app/features/game/repositories/task_assignment_reposito
 
 class TaskAssignmentViewModel extends ChangeNotifier {
   final TaskAssignmentRepositories _taskAssignmentRepositories;
-  
+
+  //任務切換相關物件
+  bool _isMainTask = false;
+  String _taskDescription = '';
   List<Task> _assignmentTasks = [];
   List<Task> _acceptedTasks = [];
   Task? _selectedTask;
@@ -26,6 +29,8 @@ class TaskAssignmentViewModel extends ChangeNotifier {
   List<Task> get availableTasks => _assignmentTasks;
   List<Task> get acceptedTasks => _acceptedTasks;
   Task? get selectedTask => _selectedTask;
+  bool get isMainTask => _isMainTask;
+  String get taskDescription => _taskDescription;
 
   Future<void> fetchTasks(String type) async {
     _updateTaskState(isLoading: true, error: null, isSuccess: false);
@@ -50,15 +55,18 @@ class TaskAssignmentViewModel extends ChangeNotifier {
   void selectTask(Task? task) {
     if (_selectedTask?.taskId == task?.taskId) {
       _selectedTask = null;
+      _taskDescription = "";
     } else {
       _selectedTask = task;
+      _taskDescription = task?.description ?? '無任務描述';
     }
     notifyListeners();
   }
 
   void acceptTask() {
     if (_selectedTask == null) return;
-    if (_acceptedTasks.any((task) => task.taskId == _selectedTask!.taskId)) return;
+    if (_acceptedTasks.any((task) => task.taskId == _selectedTask!.taskId))
+      return;
 
     _acceptedTasks = [..._acceptedTasks, _selectedTask!];
     _assignmentTasks = _assignmentTasks
@@ -71,7 +79,8 @@ class TaskAssignmentViewModel extends ChangeNotifier {
   void abandonTask() {
     if (_selectedTask == null) return;
     final taskToAbandon = _selectedTask!;
-    if (!_acceptedTasks.any((task) => task.taskId == taskToAbandon.taskId)) return;
+    if (!_acceptedTasks.any((task) => task.taskId == taskToAbandon.taskId))
+      return;
 
     _acceptedTasks = _acceptedTasks
         .where((task) => task.taskId != taskToAbandon.taskId)
@@ -88,6 +97,12 @@ class TaskAssignmentViewModel extends ChangeNotifier {
     _isTaskError = error;
     _isTaskSuccess = isSuccess ?? _isTaskSuccess;
     notifyListeners();
+  }
+
+  void toggleTaskType() {
+    _isMainTask = !_isMainTask;
+    _selectedTask = null;
+    notifyListeners(); // 通知 UI 更新
   }
 
   @override
