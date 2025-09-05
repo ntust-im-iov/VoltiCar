@@ -22,6 +22,9 @@ class ApiConstants {
   static const String parkingOverview = '/parkings/overview'; // 停車場概覽
   static const String parkingDetail = '/parkings/id'; // 停車場詳細信息
 
+  // Task
+  static const String taskDefinitions = '/api/v1/tasks/'; //任務清單
+
   // API version
   static const String apiVersion = '/api/v1';
 
