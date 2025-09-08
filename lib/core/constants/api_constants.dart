@@ -1,5 +1,5 @@
 class ApiConstants {
-  static const String baseUrl = 'https://volticar.dynns.com:22000/';
+  static const String baseUrl = 'https://volticar.dynns.com/';
   // Auth endpoints
   static const String login = '/users/login'; // 登入
   static const String registerVerification =
