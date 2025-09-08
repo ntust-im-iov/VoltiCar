@@ -23,7 +23,7 @@ class ParkingService {
   ParkingService() {
     // 初始化Dio客戶端
     _dio = Dio(BaseOptions(
-      baseUrl: 'https://volticar.dynns.com:22000',
+      baseUrl: ApiConstants.baseUrl,
       connectTimeout: Duration(milliseconds: ApiConstants.connectionTimeout),
       receiveTimeout: Duration(milliseconds: ApiConstants.receiveTimeout),
       headers: {
@@ -32,7 +32,7 @@ class ParkingService {
       },
     ));
 
-    _logger.i('停車場服務已初始化，使用API: https://volticar.dynns.com:22000');
+    _logger.i('停車場服務已初始化，使用API: ${ApiConstants.baseUrl}');
   }
 
   // 檢查緩存是否有效
@@ -80,7 +80,7 @@ class ParkingService {
         if (response.data is List) {
           final List<dynamic> parkingsData = response.data;
           _logger.i('開始解析 ${parkingsData.length} 個停車場數據...');
-          
+
           // 逐個解析，捕獲解析錯誤
           for (int i = 0; i < parkingsData.length; i++) {
             try {
@@ -91,18 +91,21 @@ class ParkingService {
               _logger.w('問題數據: ${parkingsData[i]}');
             }
           }
-          
-          _logger.i('成功解析 ${parkings.length} 個停車場數據（總共 ${parkingsData.length} 個）');
+
+          _logger
+              .i('成功解析 ${parkings.length} 個停車場數據（總共 ${parkingsData.length} 個）');
         } else if (response.data is Map<String, dynamic>) {
           // 嘗試處理單個停車場或包含停車場列表的對象
           final Map<String, dynamic> data = response.data;
 
           if (data.containsKey('parkings') && data['parkings'] is List) {
             final List<dynamic> parkingsData = data['parkings'];
-            parkings = parkingsData.map((data) => ParkingLot.fromJson(data)).toList();
+            parkings =
+                parkingsData.map((data) => ParkingLot.fromJson(data)).toList();
           } else if (data.containsKey('data') && data['data'] is List) {
             final List<dynamic> parkingsData = data['data'];
-            parkings = parkingsData.map((data) => ParkingLot.fromJson(data)).toList();
+            parkings =
+                parkingsData.map((data) => ParkingLot.fromJson(data)).toList();
           } else {
             try {
               final parking = ParkingLot.fromJson(data);
@@ -148,8 +151,8 @@ class ParkingService {
 
       // 過濾出範圍內的停車場
       return allParkings.where((parking) {
-        final distance = _calculateDistance(
-            lat, lng, parking.latitude, parking.longitude);
+        final distance =
+            _calculateDistance(lat, lng, parking.latitude, parking.longitude);
         return distance <= radiusKm;
       }).toList();
     } catch (e) {
@@ -225,31 +228,31 @@ class ParkingService {
     int limit = 3000,
   }) async {
     try {
-      final response = await _dio.get('/parkings/overview',
-          queryParameters: {
-            'skip': skip,
-            'limit': limit,
-            if (city != null) 'city': city,
-            if (minLat != null) 'minLat': minLat,
-            if (minLon != null) 'minLon': minLon,
-            if (maxLat != null) 'maxLat': maxLat,
-            if (maxLon != null) 'maxLon': maxLon,
-          });
+      final response = await _dio.get('/parkings/overview', queryParameters: {
+        'skip': skip,
+        'limit': limit,
+        if (city != null) 'city': city,
+        if (minLat != null) 'minLat': minLat,
+        if (minLon != null) 'minLon': minLon,
+        if (maxLat != null) 'maxLat': maxLat,
+        if (maxLon != null) 'maxLon': maxLon,
+      });
 
       if (response.statusCode == 200) {
         List<ParkingLot> parkingsList = [];
-        
+
         if (response.data is List) {
           final List<dynamic> parkingsData = response.data;
-          parkingsList = parkingsData.map((data) => ParkingLot.fromJson(data)).toList();
+          parkingsList =
+              parkingsData.map((data) => ParkingLot.fromJson(data)).toList();
         }
-        
+
         return parkingsList;
       }
     } catch (e) {
       _logger.e('獲取停車場時出錯: $e');
     }
-    
+
     return [];
   }
 
@@ -289,7 +292,7 @@ class ParkingService {
           // 緩存中沒有找到，繼續從API獲取
         }
       }
-      
+
       // 如果緩存中沒有，從所有停車場中查找
       final allParkings = await getAllRegionsParkings();
       return allParkings.firstWhere(
