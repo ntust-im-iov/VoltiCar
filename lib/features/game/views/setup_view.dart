@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart'; // 引入 Flutter Material UI 库
 import 'package:flutter/services.dart'; // 引入 Flutter Services 库，用于控制设备方向
-import '../models/cargo_model.dart'; // 引入货物模型
 import '../../../shared/widgets/adaptive_button.dart'; // 引入 AdaptiveButton
 import '../views/task_assignment_view.dart';
 
