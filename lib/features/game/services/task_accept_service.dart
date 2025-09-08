@@ -22,7 +22,6 @@ class TaskAcceptService {
             'task_id': taskId
         },
        options: Options(
-          contentType: 'application/json',
           headers: {
             'Accept': 'application/json',
           },

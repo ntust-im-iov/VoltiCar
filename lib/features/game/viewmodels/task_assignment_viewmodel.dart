@@ -21,6 +21,9 @@ class TaskAssignmentViewModel extends ChangeNotifier {
   
   // 存儲已接受任務的 PlayerTask 對象
   List<PlayerTask> _playerTasks = [];
+  
+  // 存儲已放棄任務的ID列表，用於從可用任務列表中過濾掉已放棄的任務
+  Set<String> _abandonedTaskIds = {};
 
   // 任務指派相關狀態
   bool _isTaskLoading = false;
@@ -39,9 +42,14 @@ class TaskAssignmentViewModel extends ChangeNotifier {
   String? get isTaskError => _isTaskError;
   bool get isTaskSuccess => _isTaskSuccess;
   
-  // 過濾availableTasks，確保已接受的任務不會顯示在可用任務列表中
+  // 過濾availableTasks，確保已接受的任務和已放棄的任務不會顯示在可用任務列表中
   List<Task> get availableTasks => _assignmentTasks
-      .where((task) => !_acceptedTasks.any((accepted) => accepted.taskId == task.taskId))
+      .where((task) => 
+        // 排除已接受的任務
+        !_acceptedTasks.any((accepted) => accepted.taskId == task.taskId) &&
+        // 排除已放棄的任務
+        !_abandonedTaskIds.contains(task.taskId)
+      )
       .toList();
   
   List<Task> get acceptedTasks => _acceptedTasks;
@@ -74,7 +82,7 @@ class TaskAssignmentViewModel extends ChangeNotifier {
     }
   }
   
-  // 加載已接受的任務
+  // 加載已接受和已放棄的任務
   Future<void> _loadAcceptedTasks() async {
     try {
       // 使用TaskStatusRepository獲取玩家已接受的任務
@@ -106,10 +114,34 @@ class TaskAssignmentViewModel extends ChangeNotifier {
         _acceptedTasks.add(matchingTask);
         _playerTasks.add(playerTask);
       }
+      
+      // 加載已放棄的任務，僅用於過濾可用任務列表
+      await _loadAbandonedTasks();
+      
     } catch (e) {
       print('加載已接受任務失敗: $e');
       // 這裡我們不拋出異常，而是靜默處理失敗
       // 用戶仍然可以看到可用任務
+    }
+  }
+  
+  // 加載已放棄的任務
+  Future<void> _loadAbandonedTasks() async {
+    try {
+      // 使用TaskStatusRepository獲取玩家已放棄的任務
+      final abandonedTasks = await _taskStatusRepository.getAbandonedTasks();
+      
+      // 清空現有已放棄任務ID列表
+      _abandonedTaskIds.clear();
+      
+      // 將已放棄任務的taskId添加到列表中
+      for (final playerTask in abandonedTasks) {
+        _abandonedTaskIds.add(playerTask.taskId);
+      }
+      
+    } catch (e) {
+      print('加載已放棄任務失敗: $e');
+      // 這裡我們不拋出異常，而是靜默處理失敗
     }
   }
 
@@ -198,6 +230,9 @@ class TaskAssignmentViewModel extends ChangeNotifier {
       _playerTasks = _playerTasks
           .where((pt) => pt.taskId != taskToAbandon.taskId)
           .toList();
+      
+      // 將放棄的任務ID添加到已放棄任務集合中
+      _abandonedTaskIds.add(taskToAbandon.taskId);
       
       _selectedTask = null;
       _updateTaskState(isLoading: false, isSuccess: true);
