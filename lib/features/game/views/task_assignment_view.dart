@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:volticar_app/features/game/models/task_model.dart';
 import 'package:volticar_app/features/game/viewmodels/task_assignment_viewmodel.dart';
 
 class TaskAssignmentView extends StatefulWidget {

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:volticar_app/features/game/models/task_model.dart';
-import 'package:volticar_app/features/game/models/player_task_model.dart';
 import 'package:volticar_app/features/game/repositories/task_assignment_repositories.dart';
 import 'package:volticar_app/features/game/viewmodels/task_accept_viewmodel.dart';
 
