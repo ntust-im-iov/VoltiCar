@@ -24,6 +24,7 @@ class ApiConstants {
 
   // Task
   static const String taskDefinitions = '/api/v1/tasks/'; //任務清單
+  static const String acceptTask = '/api/v1/player/tasks/'; //接受任務
 
   // API version
   static const String apiVersion = '/api/v1';
