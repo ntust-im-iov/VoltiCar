@@ -18,6 +18,7 @@ import 'features/game/viewmodels/game_viewmodel.dart';
 import 'features/game/views/game_view.dart';
 import 'features/game/views/setup_view.dart';
 import 'package:volticar_app/features/game/viewmodels/task_assignment_viewmodel.dart';
+import 'package:volticar_app/features/game/viewmodels/task_accept_viewmodel.dart'; // Import TaskAcceptViewModel
 import 'features/home/services/station_service.dart'; // Import StationService
 import 'features/home/viewmodels/map_provider.dart'; // Import MapProvider
 
@@ -66,6 +67,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ResetPasswordViewModel()),
         ChangeNotifierProvider(create: (_) => GameViewModel()), // Added from feature/game
         ChangeNotifierProvider(create: (_) => TaskAssignmentViewModel()),
+        ChangeNotifierProvider(create: (_) => TaskAcceptViewModel()), // Added Task Accept ViewModel
         Provider(create: (_) => StationService()), // Provide StationService
         ChangeNotifierProvider(create: (_) => MapProvider()), // Provide MapProvider
       ],
