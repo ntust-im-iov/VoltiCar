@@ -209,6 +209,16 @@ class TaskAssignmentViewModel extends ChangeNotifier {
     if (!_acceptedTasks.any((task) => task.taskId == taskToAbandon.taskId))
       return;
     
+    // 檢查是否為故事模式任務，故事模式任務不可放棄
+    if (!canAbandonTask(taskToAbandon)) {
+      _updateTaskState(
+        isLoading: false, 
+        error: '故事模式任務不可放棄', 
+        isSuccess: false
+      );
+      return;
+    }
+    
     _updateTaskState(isLoading: true, error: null);
     
     try {
@@ -275,6 +285,12 @@ class TaskAssignmentViewModel extends ChangeNotifier {
     } catch (e) {
       return null;
     }
+  }
+  
+  // 檢查任務是否可以放棄
+  // 故事模式（type:story）的任務不可放棄
+  bool canAbandonTask(Task task) {
+    return task.type.toLowerCase() != 'story';
   }
   
   // 手動刷新任務狀態
