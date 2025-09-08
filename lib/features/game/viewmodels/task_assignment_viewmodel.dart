@@ -89,26 +89,61 @@ class TaskAssignmentViewModel extends ChangeNotifier {
       final activeTasks = await _taskStatusRepository.getAcceptedTasks();
       
       // 清空現有數據
-      _acceptedTasks = [];
       _playerTasks = [];
+      
+      // 先保留現有的已接受任務，以防切換類型後找不到對應的任務
+      final existingAcceptedTasks = Map<String, Task>.fromIterable(
+        _acceptedTasks,
+        key: (task) => task.taskId,
+        value: (task) => task
+      );
+      
+      _acceptedTasks = [];
       
       // 為每個PlayerTask創建對應的Task對象
       for (final playerTask in activeTasks) {
-        // 尋找對應的Task
-        final matchingTask = _assignmentTasks.firstWhere(
-          (task) => task.taskId == playerTask.taskId,
-          orElse: () => Task(
-            taskId: playerTask.taskId,
-            title: '任務 ${playerTask.taskId}',  // 簡單的標題
-            description: '此任務的詳細信息無法顯示',
-            type: 'unknown',
-            requirements: {},
-            rewards: {},
-            isRepeatable: false,
-            isActive: true,
-            prerequisiteTaskIds: [],
-          ),
-        );
+        // 先檢查現有的已接受任務中是否有對應的Task
+        Task matchingTask;
+        if (existingAcceptedTasks.containsKey(playerTask.taskId)) {
+          matchingTask = existingAcceptedTasks[playerTask.taskId]!;
+        } else {
+          // 尋找當前載入的可用任務中是否有對應的Task
+          try {
+            matchingTask = _assignmentTasks.firstWhere(
+              (task) => task.taskId == playerTask.taskId
+            );
+          } catch (e) {
+            // 從任務ID中獲取任務類型和名稱
+            String taskType = 'unknown';
+            String taskTitle = '未知任務';
+            
+            // 從taskId中嘗試判斷任務類型
+            if (playerTask.taskId.toLowerCase().contains('daily')) {
+              taskType = 'daily';
+              taskTitle = '日常任務';
+            } else if (playerTask.taskId.toLowerCase().contains('story')) {
+              taskType = 'story';
+              taskTitle = '主線任務';
+            } else {
+              // 如果無法判斷，根據當前顯示模式推測
+              taskType = _isMainTask ? 'daily' : 'story';
+              taskTitle = _isMainTask ? '日常任務' : '主線任務';
+            }
+            
+            // 創建臨時Task對象
+            matchingTask = Task(
+              taskId: playerTask.taskId,
+              title: taskTitle,
+              description: '此任務的詳細信息將在下次刷新時更新',
+              type: taskType,
+              requirements: {},
+              rewards: {},
+              isRepeatable: true,
+              isActive: true,
+              prerequisiteTaskIds: [],
+            );
+          }
+        }
         
         // 將任務添加到列表中
         _acceptedTasks.add(matchingTask);
@@ -275,6 +310,10 @@ class TaskAssignmentViewModel extends ChangeNotifier {
   void toggleTaskType() {
     _isMainTask = !_isMainTask;
     _selectedTask = null;
+    
+    // 不需要清除已接受任務，這樣切換類型時已接受任務仍然會顯示
+    // 在fetchTasks中會重新加載可用任務，並保留已接受任務
+    
     notifyListeners(); // 通知 UI 更新
   }
   
