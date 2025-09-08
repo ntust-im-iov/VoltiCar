@@ -149,13 +149,43 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                           ),
                           const SizedBox(width: 10),
                           ElevatedButton(
-                            onPressed: viewModel.selectedTask != null &&
+                            onPressed: viewModel.isTaskLoading
+                                ? null
+                                : (viewModel.selectedTask != null &&
                                     viewModel.acceptedTasks.any((task) =>
                                         task.taskId ==
                                         viewModel.selectedTask!.taskId)
-                                ? viewModel.abandonTask
-                                : null,
-                            child: const Text('放棄任務'),
+                                    ? () async {
+                                        await viewModel.abandonTask();
+                                        if (viewModel.isTaskError != null) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(viewModel.isTaskError!),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                        } else if (viewModel.isTaskSuccess) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('任務已成功放棄'),
+                                              backgroundColor: Colors.green,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    : null),
+                            child: viewModel.isTaskLoading && viewModel.selectedTask != null &&
+                                   viewModel.acceptedTasks.any((task) =>
+                                      task.taskId == viewModel.selectedTask!.taskId)
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Text('放棄任務'),
                           ),
                           const SizedBox(width: 10),
                           ElevatedButton(
