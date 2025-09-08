@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:volticar_app/features/game/models/task_model.dart';
+import 'package:volticar_app/features/game/models/player_task_model.dart';
 import 'package:volticar_app/features/game/repositories/task_assignment_repositories.dart';
+import 'package:volticar_app/features/game/viewmodels/task_accept_viewmodel.dart';
 
 class TaskAssignmentViewModel extends ChangeNotifier {
   final TaskAssignmentRepositories _taskAssignmentRepositories;
+  final TaskAcceptViewModel _taskAcceptViewModel;
 
   //任務切換相關物件
   bool _isMainTask = false;
@@ -17,16 +20,23 @@ class TaskAssignmentViewModel extends ChangeNotifier {
   String? _isTaskError;
   bool _isTaskSuccess = false;
 
-  TaskAssignmentViewModel(
-      {TaskAssignmentRepositories? taskAssignmentRepositories})
-      : _taskAssignmentRepositories =
-            taskAssignmentRepositories ?? TaskAssignmentRepositories();
+  TaskAssignmentViewModel({
+    TaskAssignmentRepositories? taskAssignmentRepositories,
+    TaskAcceptViewModel? taskAcceptViewModel,
+  })  : _taskAssignmentRepositories =
+            taskAssignmentRepositories ?? TaskAssignmentRepositories(),
+        _taskAcceptViewModel = taskAcceptViewModel ?? TaskAcceptViewModel();
 
   // 狀態 getter
   bool get isTaskLoading => _isTaskLoading;
   String? get isTaskError => _isTaskError;
   bool get isTaskSuccess => _isTaskSuccess;
-  List<Task> get availableTasks => _assignmentTasks;
+  
+  // 過濾availableTasks，確保已接受的任務不會顯示在可用任務列表中
+  List<Task> get availableTasks => _assignmentTasks
+      .where((task) => !_acceptedTasks.any((accepted) => accepted.taskId == task.taskId))
+      .toList();
+  
   List<Task> get acceptedTasks => _acceptedTasks;
   Task? get selectedTask => _selectedTask;
   bool get isMainTask => _isMainTask;
@@ -63,17 +73,44 @@ class TaskAssignmentViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void acceptTask() {
+  Future<void> acceptTask() async {
     if (_selectedTask == null) return;
     if (_acceptedTasks.any((task) => task.taskId == _selectedTask!.taskId))
       return;
 
-    _acceptedTasks = [..._acceptedTasks, _selectedTask!];
-    _assignmentTasks = _assignmentTasks
-        .where((task) => task.taskId != _selectedTask!.taskId)
-        .toList();
-    _selectedTask = null;
-    notifyListeners();
+    _updateTaskState(isLoading: true, error: null);
+    try {
+      // 使用TaskAcceptViewModel的acceptTask方法
+      final success = await _taskAcceptViewModel.acceptTask(_selectedTask!.taskId);
+      
+      if (success) {
+        // 如果成功，更新本地狀態
+        final taskToAccept = _selectedTask!;
+        _acceptedTasks = [..._acceptedTasks, taskToAccept];
+        
+        // 不需要在這裡從_assignmentTasks中移除，因為availableTasks getter已經處理了過濾邏輯
+        // 但為了保持資料一致性，仍然執行這一步
+        _assignmentTasks = _assignmentTasks
+            .where((task) => task.taskId != taskToAccept.taskId)
+            .toList();
+            
+        _selectedTask = null;
+        _updateTaskState(isLoading: false, isSuccess: true);
+      } else {
+        // 如果失敗，顯示錯誤信息
+        _updateTaskState(
+          isLoading: false, 
+          error: _taskAcceptViewModel.errorMessage ?? "接受任務失敗", 
+          isSuccess: false
+        );
+      }
+    } catch (e) {
+      _updateTaskState(
+        isLoading: false,
+        error: e.toString(),
+        isSuccess: false,
+      );
+    }
   }
 
   void abandonTask() {
@@ -82,12 +119,20 @@ class TaskAssignmentViewModel extends ChangeNotifier {
     if (!_acceptedTasks.any((task) => task.taskId == taskToAbandon.taskId))
       return;
 
+    // 從已接受任務中移除
     _acceptedTasks = _acceptedTasks
         .where((task) => task.taskId != taskToAbandon.taskId)
         .toList();
-    // For now, abandoning a task removes it permanently.
-    // We could add it back to the available list if needed:
-    _assignmentTasks = [..._assignmentTasks, taskToAbandon];
+        
+    // 檢查任務是否已經存在於可用任務列表中
+    bool taskAlreadyInAssignments = _assignmentTasks
+        .any((task) => task.taskId == taskToAbandon.taskId);
+        
+    // 只有當任務不在可用任務列表中時，才將其添加回去
+    if (!taskAlreadyInAssignments) {
+      _assignmentTasks = [..._assignmentTasks, taskToAbandon];
+    }
+    
     _selectedTask = null;
     notifyListeners();
   }
