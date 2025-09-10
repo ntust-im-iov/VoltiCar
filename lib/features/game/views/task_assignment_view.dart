@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:volticar_app/features/game/models/task_model.dart';
 import 'package:volticar_app/features/game/viewmodels/task_assignment_viewmodel.dart';
 
 class TaskAssignmentView extends StatefulWidget {
@@ -112,23 +111,91 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           ElevatedButton(
-                            onPressed: viewModel.selectedTask != null &&
+                            onPressed: viewModel.isTaskLoading
+                                ? null
+                                : (viewModel.selectedTask != null &&
                                     !viewModel.acceptedTasks.any((task) =>
                                         task.taskId ==
                                         viewModel.selectedTask!.taskId)
-                                ? viewModel.acceptTask
-                                : null,
-                            child: const Text('接取任務'),
+                                    ? () async {
+                                        await viewModel.acceptTask();
+                                        if (viewModel.isTaskError != null) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(viewModel.isTaskError!),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                        } else if (viewModel.isTaskSuccess) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('成功接取任務！'),
+                                              backgroundColor: Colors.green,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    : null),
+                            child: viewModel.isTaskLoading
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Text('接取任務'),
                           ),
                           const SizedBox(width: 10),
-                          ElevatedButton(
-                            onPressed: viewModel.selectedTask != null &&
-                                    viewModel.acceptedTasks.any((task) =>
-                                        task.taskId ==
-                                        viewModel.selectedTask!.taskId)
-                                ? viewModel.abandonTask
-                                : null,
-                            child: const Text('放棄任務'),
+                          Tooltip(
+                            message: viewModel.selectedTask != null && 
+                                     viewModel.acceptedTasks.any((task) =>
+                                        task.taskId == viewModel.selectedTask!.taskId) && 
+                                     !viewModel.canAbandonTask(viewModel.selectedTask!)
+                                     ? '故事模式任務不可放棄'
+                                     : '放棄選中的任務',
+                            child: ElevatedButton(
+                              onPressed: viewModel.isTaskLoading
+                                  ? null
+                                  : (viewModel.selectedTask != null &&
+                                      viewModel.acceptedTasks.any((task) =>
+                                          task.taskId ==
+                                          viewModel.selectedTask!.taskId) &&
+                                      // 檢查是否為可放棄的任務（非故事模式）
+                                      viewModel.canAbandonTask(viewModel.selectedTask!)
+                                      ? () async {
+                                          await viewModel.abandonTask();
+                                          if (viewModel.isTaskError != null) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text(viewModel.isTaskError!),
+                                                backgroundColor: Colors.red,
+                                              ),
+                                            );
+                                          } else if (viewModel.isTaskSuccess) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(
+                                                content: Text('任務已成功放棄'),
+                                                backgroundColor: Colors.green,
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      : null),
+                              child: viewModel.isTaskLoading && viewModel.selectedTask != null &&
+                                     viewModel.acceptedTasks.any((task) =>
+                                        task.taskId == viewModel.selectedTask!.taskId)
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    )
+                                  : const Text('放棄任務'),
+                            ),
                           ),
                           const SizedBox(width: 10),
                           ElevatedButton(
