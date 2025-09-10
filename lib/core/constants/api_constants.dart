@@ -9,7 +9,7 @@ class ApiConstants {
   static const String forgotPassword = '/users/forgot-password'; // 驗證信箱
   static const String verifyResetOtp = '/users/verify-reset-otp'; // 驗證重置密碼驗證碼
   static const String resetPassword = '/users/reset-password'; // 重置密碼
-  static const String googleLogin = '/users/login/google'; // 再次修正為正確的路徑
+  static const String googleLogin = '/users/login/google'; //google路徑
   static const String checkUsername = '/users/check-username'; // 檢查用戶名稱是否存在
 
   // Station endpoints
