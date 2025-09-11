@@ -14,15 +14,17 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<TaskAssignmentViewModel>(context, listen: false)
-          .fetchTasks('story');
+      final viewModel = Provider.of<TaskAssignmentViewModel>(context, listen: false);
+      // 獲取當前應該載入的任務模式
+      final mode = viewModel.isMainTask ? 'daily' : 'story';
+      viewModel.fetchTasks(mode);
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: const Color.fromARGB(255, 38, 36, 36).withOpacity(0.5),
+      backgroundColor: const Color.fromARGB(255, 38, 36, 36),
       shape: RoundedRectangleBorder(
         side: const BorderSide(color: Color(0xFF42A5F5), width: 2),
         borderRadius: BorderRadius.circular(5),
@@ -202,14 +204,14 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                             onPressed: () {
                               setState(() {
                                 viewModel.toggleTaskType(); // 切換狀態
-                                WidgetsBinding.instance
-                                    .addPostFrameCallback((_) {
-                                  Provider.of<TaskAssignmentViewModel>(context,
-                                          listen: false)
-                                      .fetchTasks(viewModel.isMainTask
-                                          ? 'daily'
-                                          : 'story');
-                                });
+                              });
+                              WidgetsBinding.instance
+                                  .addPostFrameCallback((_) {
+                                // 注意這裡的邏輯：切換後的狀態來決定載入哪種任務
+                                final mode = viewModel.isMainTask ? 'story' : 'daily';
+                                Provider.of<TaskAssignmentViewModel>(context,
+                                        listen: false)
+                                    .fetchTasks(mode);
                               });
                             },
                             child: Text(viewModel.isMainTask ? '主線任務' : '日常任務'),

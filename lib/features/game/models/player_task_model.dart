@@ -53,14 +53,18 @@ class PlayerTask {
 
   factory PlayerTask.fromJson(Map<String, dynamic> json) {
     return PlayerTask(
-      id: json['_id'],
-      playerTaskId: json['player_task_id'],
-      userId: json['user_id'],
-      taskId: json['task_id'],
-      status: json['status'],
-      acceptedAt: DateTime.parse(json['accepted_at']),
+      id: json['_id'] ?? '',
+      playerTaskId: json['player_task_id'] ?? '',
+      userId: json['user_id'] ?? '',
+      taskId: json['task_id'] ?? '',
+      status: json['status'] ?? 'unknown',
+      acceptedAt: json['accepted_at'] != null 
+          ? DateTime.parse(json['accepted_at']) 
+          : DateTime.now(),
       linkedGameSessionId: json['linked_game_session_id'],
-      progress: TaskProgress.fromJson(json['progress']),
+      progress: json['progress'] != null 
+          ? TaskProgress.fromJson(json['progress']) 
+          : TaskProgress(),
       completedAt: json['completed_at'] != null 
           ? DateTime.parse(json['completed_at']) 
           : null,
@@ -70,7 +74,9 @@ class PlayerTask {
       abandonedAt: json['abandoned_at'] != null 
           ? DateTime.parse(json['abandoned_at']) 
           : null,
-      lastUpdatedAt: DateTime.parse(json['last_updated_at']),
+      lastUpdatedAt: json['last_updated_at'] != null 
+          ? DateTime.parse(json['last_updated_at']) 
+          : DateTime.now(),
     );
   }
 

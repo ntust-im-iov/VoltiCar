@@ -29,22 +29,24 @@ class Task {
 
   factory Task.fromJson(Map<String, dynamic> json) {
     return Task(
-      taskId: json['task_id'],
-      title: json['title'],
-      description: json['description'],
-      type: json['type'],
-      mode: json['mode'],
-      requirements: json['requirements'],
-      rewards: json['rewards'],
-      isRepeatable: json['is_repeatable'],
-      isActive: json['is_active'],
+      taskId: json['task_id'] ?? '',
+      title: json['title'] ?? 'Unknown Task',
+      description: json['description'] ?? 'No description available',
+      type: json['type'] ?? 'general',
+      mode: json['mode'] ?? 'story',
+      requirements: json['requirements'] ?? {},
+      rewards: json['rewards'] ?? {},
+      isRepeatable: json['is_repeatable'] ?? false,
+      isActive: json['is_active'] ?? true,
       availabilityStartDate: json['availability_start_date'] != null
           ? DateTime.parse(json['availability_start_date'])
           : null,
       availabilityEndDate: json['availability_end_date'] != null
           ? DateTime.parse(json['availability_end_date'])
           : null,
-      prerequisiteTaskIds: List<String>.from(json['prerequisite_task_ids']),
+      prerequisiteTaskIds: json['prerequisite_task_ids'] != null 
+          ? List<String>.from(json['prerequisite_task_ids'])
+          : [],
     );
   }
 
