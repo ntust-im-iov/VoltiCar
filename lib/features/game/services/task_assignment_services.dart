@@ -14,11 +14,11 @@ class TaskAssignmentServices {
 
   TaskAssignmentServices._internal();
 
-  Future<List<Task>> taskassignment(String type) async {
+  Future<List<Task>> taskassignment(String mode) async {
     final response = await _apiClient.get(
       ApiConstants.taskDefinitions,
       queryParameters: {
-        'type': type,
+        'mode': mode,
       },
       options: Options(
         headers: {

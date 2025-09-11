@@ -3,6 +3,7 @@ class Task {
   String title;
   String description;
   String type;
+  String mode;
   Map<String, dynamic> requirements;
   Map<String, dynamic> rewards;
   bool isRepeatable;
@@ -16,6 +17,7 @@ class Task {
     required this.title,
     required this.description,
     required this.type,
+    required this.mode,
     required this.requirements,
     required this.rewards,
     required this.isRepeatable,
@@ -31,6 +33,7 @@ class Task {
       title: json['title'],
       description: json['description'],
       type: json['type'],
+      mode: json['mode'],
       requirements: json['requirements'],
       rewards: json['rewards'],
       isRepeatable: json['is_repeatable'],
@@ -46,6 +49,19 @@ class Task {
   }
 
   Map<String, dynamic> toJson() {
-    return {'type': type};
+    return {
+      'task_id': taskId,
+      'title': title,
+      'description': description,
+      'type': type,
+      'mode': mode,
+      'requirements': requirements,
+      'rewards': rewards,
+      'is_repeatable': isRepeatable,
+      'is_active': isActive,
+      'availability_start_date': availabilityStartDate?.toIso8601String(),
+      'availability_end_date': availabilityEndDate?.toIso8601String(),
+      'prerequisite_task_ids': prerequisiteTaskIds,
+    };
   }
 }

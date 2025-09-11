@@ -58,11 +58,11 @@ class TaskAssignmentViewModel extends ChangeNotifier {
   bool get isMainTask => _isMainTask;
   String get taskDescription => _taskDescription;
 
-  Future<void> fetchTasks(String type) async {
+  Future<void> fetchTasks(String mode) async {
     _updateTaskState(isLoading: true, error: null, isSuccess: false);
 
     try {
-      final tasks = await _taskAssignmentRepositories.taskassignment(type);
+      final tasks = await _taskAssignmentRepositories.taskassignment(mode);
       _assignmentTasks = tasks;
       
       // 加載已接受的任務
@@ -136,6 +136,7 @@ class TaskAssignmentViewModel extends ChangeNotifier {
               title: taskTitle,
               description: '此任務的詳細信息將在下次刷新時更新',
               type: taskType,
+              mode: taskType, // 使用同樣的值填充mode字段
               requirements: {},
               rewards: {},
               isRepeatable: true,
@@ -327,9 +328,9 @@ class TaskAssignmentViewModel extends ChangeNotifier {
   }
   
   // 檢查任務是否可以放棄
-  // 故事模式（type:story）的任務不可放棄
+  // 故事模式（mode:story）的任務不可放棄
   bool canAbandonTask(Task task) {
-    return task.type.toLowerCase() != 'story';
+    return task.mode.toLowerCase() != 'story';
   }
   
   // 手動刷新任務狀態
