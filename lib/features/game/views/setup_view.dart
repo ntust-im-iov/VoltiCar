@@ -2,6 +2,7 @@ import 'package:flutter/material.dart'; // 引入 Flutter Material UI 库
 import 'package:flutter/services.dart'; // 引入 Flutter Services 库，用于控制设备方向
 import '../../../shared/widgets/adaptive_button.dart'; // 引入 AdaptiveButton
 import '../views/task_assignment_view.dart';
+import '../views/player_data_display_view.dart';
 
 class SetupView extends StatefulWidget {
   // 设置页面，用于设置游戏参数
@@ -106,6 +107,10 @@ class _SetupViewState extends State<SetupView> {
     print('貨物檢查按鈕被點擊');
   }
 
+  void _onPlayerAvatarTapped() {
+    PlayerDataDisplayView().showPlayerDataDialog(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     // 构建 Widget
@@ -143,36 +148,7 @@ class _SetupViewState extends State<SetupView> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   GestureDetector(
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return Dialog(
-                            backgroundColor:
-                                const Color.fromARGB(255, 38, 36, 36)
-                                    .withOpacity(0.5),
-                            shape: RoundedRectangleBorder(
-                              side: BorderSide(
-                                  color: Color(0xFF42A5F5), width: 2),
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            child: Container(
-                              width: MediaQuery.of(context).size.width * 0.8,
-                              height: MediaQuery.of(context).size.height * 0.8,
-                              child: Column(
-                                children: [
-                                  Text(
-                                    '玩家資料',
-                                    style: TextStyle(
-                                        color: Color(0xFF42A5F5), fontSize: 25),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
+                    onTap: _onPlayerAvatarTapped,
                     child: Stack(
                       alignment: Alignment.bottomCenter,
                       children: [
