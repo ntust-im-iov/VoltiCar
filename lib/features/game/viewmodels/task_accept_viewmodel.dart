@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:volticar_app/features/game/models/player_task_model.dart';
 import 'package:volticar_app/features/game/repositories/task_accept_repository.dart';
+import 'package:volticar_app/core/exceptions/task_exceptions.dart';
 
 /// TaskAcceptViewModel 負責處理任務接受相關的業務邏輯
 /// 
@@ -65,6 +66,9 @@ class TaskAcceptViewModel extends ChangeNotifier {
       notifyListeners();
       
       return true;
+    } on LevelRequirementException catch (e) {
+      _setError(e.message);
+      return false;
     } catch (e) {
       _setError("接受任務失敗: ${e.toString()}");
       return false;

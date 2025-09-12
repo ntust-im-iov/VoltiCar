@@ -5,6 +5,7 @@ import 'package:volticar_app/features/game/repositories/task_assignment_reposito
 import 'package:volticar_app/features/game/repositories/task_status_repository.dart';
 import 'package:volticar_app/features/game/services/task_abandon_service.dart';
 import 'package:volticar_app/features/game/viewmodels/task_accept_viewmodel.dart';
+import 'package:volticar_app/core/exceptions/task_exceptions.dart';
 
 class TaskAssignmentViewModel extends ChangeNotifier {
   final TaskAssignmentRepositories _taskAssignmentRepositories;
@@ -27,7 +28,8 @@ class TaskAssignmentViewModel extends ChangeNotifier {
 
   // 任務指派相關狀態
   bool _isTaskLoading = false;
-  String? _isTaskError;
+  String? _fetchTasksError; // 載入任務列表的錯誤
+  String? _acceptTaskError; // 接受任務的錯誤
   bool _isTaskSuccess = false;
 
   TaskAssignmentViewModel({
@@ -39,7 +41,8 @@ class TaskAssignmentViewModel extends ChangeNotifier {
 
   // 狀態 getter
   bool get isTaskLoading => _isTaskLoading;
-  String? get isTaskError => _isTaskError;
+  String? get isTaskError => _fetchTasksError; // 只有載入任務的錯誤會影響整個畫面
+  String? get acceptTaskError => _acceptTaskError; // 接受任務的錯誤用於 SnackBar
   bool get isTaskSuccess => _isTaskSuccess;
   
   // 過濾availableTasks，確保已接受的任務和已放棄的任務不會顯示在可用任務列表中
@@ -59,7 +62,7 @@ class TaskAssignmentViewModel extends ChangeNotifier {
   String get taskDescription => _taskDescription;
 
   Future<void> fetchTasks(String mode) async {
-    _updateTaskState(isLoading: true, error: null, isSuccess: false);
+    _updateTaskState(isLoading: true, fetchError: null, isSuccess: false);
 
     try {
       final tasks = await _taskAssignmentRepositories.taskassignment(mode);
@@ -76,7 +79,7 @@ class TaskAssignmentViewModel extends ChangeNotifier {
       }
       _updateTaskState(
         isLoading: false,
-        error: errorMessage,
+        fetchError: errorMessage,
         isSuccess: false,
       );
     }
@@ -197,7 +200,9 @@ class TaskAssignmentViewModel extends ChangeNotifier {
     if (_acceptedTasks.any((task) => task.taskId == _selectedTask!.taskId))
       return;
 
-    _updateTaskState(isLoading: true, error: null);
+    _updateTaskState(isLoading: true);
+    _clearAcceptTaskError(); // 清除之前的接受任務錯誤
+    
     try {
       // 使用TaskAcceptViewModel的acceptTask方法
       final success = await _taskAcceptViewModel.acceptTask(_selectedTask!.taskId);
@@ -224,16 +229,25 @@ class TaskAssignmentViewModel extends ChangeNotifier {
         _updateTaskState(isLoading: false, isSuccess: true);
       } else {
         // 如果失敗，顯示錯誤信息
+        // 特別處理等級限制錯誤訊息，確保完整顯示後端回傳的訊息
+        String errorMessage = _taskAcceptViewModel.errorMessage ?? "接受任務失敗";
         _updateTaskState(
           isLoading: false, 
-          error: _taskAcceptViewModel.errorMessage ?? "接受任務失敗", 
+          acceptError: errorMessage, 
           isSuccess: false
         );
       }
+    } on LevelRequirementException catch (e) {
+      // 直接處理等級限制異常，確保訊息完整傳遞
+      _updateTaskState(
+        isLoading: false,
+        acceptError: e.message,
+        isSuccess: false,
+      );
     } catch (e) {
       _updateTaskState(
         isLoading: false,
-        error: e.toString(),
+        acceptError: e.toString(),
         isSuccess: false,
       );
     }
@@ -249,13 +263,13 @@ class TaskAssignmentViewModel extends ChangeNotifier {
     if (!canAbandonTask(taskToAbandon)) {
       _updateTaskState(
         isLoading: false, 
-        error: '故事模式任務不可放棄', 
+        acceptError: '故事模式任務不可放棄', 
         isSuccess: false
       );
       return;
     }
     
-    _updateTaskState(isLoading: true, error: null);
+    _updateTaskState(isLoading: true);
     
     try {
       // 查找對應的PlayerTask對象
@@ -283,8 +297,8 @@ class TaskAssignmentViewModel extends ChangeNotifier {
       _selectedTask = null;
       _updateTaskState(isLoading: false, isSuccess: true);
       
-      // 將成功訊息設置為可以被UI讀取的值
-      _isTaskError = null;  // 清除之前的錯誤
+      // 清除之前的錯誤
+      _clearAcceptTaskError();
       
       // 不需要將任務添加回可用任務列表，因為放棄的任務不會回到委託任務中
       
@@ -295,17 +309,27 @@ class TaskAssignmentViewModel extends ChangeNotifier {
       }
       _updateTaskState(
         isLoading: false,
-        error: errorMessage,
+        acceptError: errorMessage,
         isSuccess: false,
       );
     }
   }
 
-  void _updateTaskState({bool? isLoading, String? error, bool? isSuccess}) {
+  void _updateTaskState({
+    bool? isLoading, 
+    String? fetchError, 
+    String? acceptError, 
+    bool? isSuccess
+  }) {
     _isTaskLoading = isLoading ?? _isTaskLoading;
-    _isTaskError = error;
+    if (fetchError != null) _fetchTasksError = fetchError;
+    if (acceptError != null) _acceptTaskError = acceptError;
     _isTaskSuccess = isSuccess ?? _isTaskSuccess;
     notifyListeners();
+  }
+
+  void _clearAcceptTaskError() {
+    _acceptTaskError = null;
   }
 
   void toggleTaskType() {
@@ -335,7 +359,7 @@ class TaskAssignmentViewModel extends ChangeNotifier {
   
   // 手動刷新任務狀態
   Future<void> refreshTaskStatus() async {
-    _updateTaskState(isLoading: true, error: null);
+    _updateTaskState(isLoading: true);
     try {
       await _loadAcceptedTasks();
       _updateTaskState(isLoading: false, isSuccess: true);
@@ -346,7 +370,7 @@ class TaskAssignmentViewModel extends ChangeNotifier {
       }
       _updateTaskState(
         isLoading: false,
-        error: errorMessage,
+        fetchError: errorMessage,
         isSuccess: false,
       );
     }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:volticar_app/features/game/viewmodels/task_assignment_viewmodel.dart';
+import 'package:volticar_app/shared/widgets/top_notification.dart';
 
 class TaskAssignmentView extends StatefulWidget {
   const TaskAssignmentView({super.key});
@@ -121,19 +122,20 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                                         viewModel.selectedTask!.taskId)
                                     ? () async {
                                         await viewModel.acceptTask();
-                                        if (viewModel.isTaskError != null) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text(viewModel.isTaskError!),
-                                              backgroundColor: Colors.red,
-                                            ),
+                                        if (viewModel.acceptTaskError != null) {
+                                          // 檢查是否為等級限制錯誤
+                                          bool isLevelError = viewModel.acceptTaskError!.contains('需要等級');
+                                          
+                                          TopNotificationUtils.showTopNotification(
+                                            context,
+                                            message: viewModel.acceptTaskError!,
+                                            isLevelError: isLevelError,
                                           );
                                         } else if (viewModel.isTaskSuccess) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(
-                                              content: Text('成功接取任務！'),
-                                              backgroundColor: Colors.green,
-                                            ),
+                                          TopNotificationUtils.showTopNotification(
+                                            context,
+                                            message: '成功接取任務！',
+                                            isSuccess: true,
                                           );
                                         }
                                       }
@@ -168,19 +170,17 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                                       viewModel.canAbandonTask(viewModel.selectedTask!)
                                       ? () async {
                                           await viewModel.abandonTask();
-                                          if (viewModel.isTaskError != null) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: Text(viewModel.isTaskError!),
-                                                backgroundColor: Colors.red,
-                                              ),
+                                          if (viewModel.acceptTaskError != null) {
+                                            TopNotificationUtils.showTopNotification(
+                                              context,
+                                              message: viewModel.acceptTaskError!,
+                                              isLevelError: false,
                                             );
                                           } else if (viewModel.isTaskSuccess) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(
-                                                content: Text('任務已成功放棄'),
-                                                backgroundColor: Colors.green,
-                                              ),
+                                            TopNotificationUtils.showTopNotification(
+                                              context,
+                                              message: '任務已成功放棄',
+                                              isSuccess: true,
                                             );
                                           }
                                         }
