@@ -316,13 +316,20 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
   }
 
   List<dynamic> _getAllTasks(TaskAssignmentViewModel viewModel) {
-    // 將可用任務和已接受任務合併，並去除重複
+    // 將可用任務和當前類型的已接受任務合併，並去除重複
     List<dynamic> allTasks = List.from(viewModel.availableTasks);
     
-    // 添加不在可用任務列表中的已接受任務
+    // 當前任務模式
+    final currentMode = viewModel.isMainTask ? 'story' : 'daily';
+    
+    // 添加不在可用任務列表中但屬於當前類型的已接受任務
     for (var acceptedTask in viewModel.acceptedTasks) {
       bool alreadyExists = allTasks.any((task) => task.taskId == acceptedTask.taskId);
-      if (!alreadyExists) {
+      
+      // 檢查任務類型是否匹配當前模式
+      bool isCorrectType = acceptedTask.mode.toLowerCase() == currentMode;
+      
+      if (!alreadyExists && isCorrectType) {
         allTasks.add(acceptedTask);
       }
     }
