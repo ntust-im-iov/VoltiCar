@@ -453,27 +453,6 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
           
           const SizedBox(height: 16),
           
-          // 任務描述
-          const Text(
-            '任務描述',
-            style: TextStyle(
-              color: Color(0xFF42A5F5),
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            task.description,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-              height: 1.5,
-            ),
-          ),
-          
-          const SizedBox(height: 16),
-          
           // 任務要求
           if (task.requirements.isNotEmpty) ...[
             const Text(
