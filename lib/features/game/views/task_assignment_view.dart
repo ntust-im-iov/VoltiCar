@@ -66,7 +66,7 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                         '任務委託',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 10,
+                          fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -101,7 +101,7 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                             }
                           },
                           child: Container(
-                            height: 20,
+                            height: 25,
                             decoration: BoxDecoration(
                               color: !viewModel.isMainTask 
                                   ? const Color(0xFF42A5F5) 
@@ -117,7 +117,7 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                                   color: !viewModel.isMainTask 
                                       ? Colors.white 
                                       : const Color(0xFF42A5F5),
-                                  fontSize: 8,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -139,7 +139,7 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                             }
                           },
                           child: Container(
-                            height: 20,
+                            height: 25,
                             decoration: BoxDecoration(
                               color: viewModel.isMainTask 
                                   ? const Color(0xFF42A5F5) 
@@ -152,7 +152,7 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                                   color: viewModel.isMainTask 
                                       ? Colors.white 
                                       : const Color(0xFF42A5F5),
-                                  fontSize: 8,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -175,7 +175,7 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                           children: [
                             // 委託任務區域
                             Container(
-                              height: 40,
+                              height: 30,
                               color: const Color(0xFF2A2A2A),
                               child: const Center(
                                 child: Text(
@@ -193,39 +193,12 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                                 color: const Color(0xFF1A1A1A),
                                 child: ListView.builder(
                                   padding: const EdgeInsets.all(8),
-                                  itemCount: viewModel.availableTasks.length,
+                                  itemCount: _getAllTasks(viewModel).length,
                                   itemBuilder: (context, index) {
-                                    final task = viewModel.availableTasks[index];
-                                    return _buildTaskCard(task, viewModel, false);
-                                  },
-                                ),
-                              ),
-                            ),
-                            
-                            // 已接受任務區域
-                            Container(
-                              height: 40,
-                              color: const Color(0xFF2A2A2A),
-                              child: const Center(
-                                child: Text(
-                                  '已接受任務',
-                                  style: TextStyle(
-                                    color: Color(0xFF42A5F5), 
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: Container(
-                                color: const Color(0xFF1A1A1A),
-                                child: ListView.builder(
-                                  padding: const EdgeInsets.all(8),
-                                  itemCount: viewModel.acceptedTasks.length,
-                                  itemBuilder: (context, index) {
-                                    final task = viewModel.acceptedTasks[index];
-                                    return _buildTaskCard(task, viewModel, true);
+                                    final task = _getAllTasks(viewModel)[index];
+                                    final isAccepted = viewModel.acceptedTasks.any((acceptedTask) => 
+                                        acceptedTask.taskId == task.taskId);
+                                    return _buildTaskCard(task, viewModel, isAccepted);
                                   },
                                 ),
                               ),
@@ -272,54 +245,56 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                                     top: BorderSide(color: Color(0xFF42A5F5), width: 1),
                                   ),
                                 ),
-                                child: Column(
+                                child: Row(
                                   children: [
                                     // 接取任務按鈕
-                                    SizedBox(
-                                      width: double.infinity,
-                                      height: 45,
-                                      child: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(0xFF42A5F5),
-                                          foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(8),
+                                    Expanded(
+                                      child: SizedBox(
+                                        height: 45,
+                                        child: ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(0xFF42A5F5),
+                                            foregroundColor: Colors.white,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
                                           ),
+                                          onPressed: _canAcceptTask(viewModel)
+                                              ? () => _handleAcceptTask(context, viewModel)
+                                              : null,
+                                          child: viewModel.isTaskLoading
+                                              ? const SizedBox(
+                                                  width: 20,
+                                                  height: 20,
+                                                  child: CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                                  ),
+                                                )
+                                              : const Text('接取任務', style: TextStyle(fontSize: 14)),
                                         ),
-                                        onPressed: _canAcceptTask(viewModel)
-                                            ? () => _handleAcceptTask(context, viewModel)
-                                            : null,
-                                        child: viewModel.isTaskLoading
-                                            ? const SizedBox(
-                                                width: 20,
-                                                height: 20,
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                                ),
-                                              )
-                                            : const Text('接取任務', style: TextStyle(fontSize: 16)),
                                       ),
                                     ),
                                     
-                                    const SizedBox(height: 12),
+                                    const SizedBox(width: 12),
                                     
                                     // 放棄任務按鈕
-                                    SizedBox(
-                                      width: double.infinity,
-                                      height: 45,
-                                      child: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.red[700],
-                                          foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(8),
+                                    Expanded(
+                                      child: SizedBox(
+                                        height: 45,
+                                        child: ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.red[700],
+                                            foregroundColor: Colors.white,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
                                           ),
+                                          onPressed: _canAbandonTask(viewModel)
+                                              ? () => _handleAbandonTask(context, viewModel)
+                                              : null,
+                                          child: const Text('放棄任務', style: TextStyle(fontSize: 14)),
                                         ),
-                                        onPressed: _canAbandonTask(viewModel)
-                                            ? () => _handleAbandonTask(context, viewModel)
-                                            : null,
-                                        child: const Text('放棄任務', style: TextStyle(fontSize: 16)),
                                       ),
                                     ),
                                   ],
@@ -340,6 +315,21 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
     );
   }
 
+  List<dynamic> _getAllTasks(TaskAssignmentViewModel viewModel) {
+    // 將可用任務和已接受任務合併，並去除重複
+    List<dynamic> allTasks = List.from(viewModel.availableTasks);
+    
+    // 添加不在可用任務列表中的已接受任務
+    for (var acceptedTask in viewModel.acceptedTasks) {
+      bool alreadyExists = allTasks.any((task) => task.taskId == acceptedTask.taskId);
+      if (!alreadyExists) {
+        allTasks.add(acceptedTask);
+      }
+    }
+    
+    return allTasks;
+  }
+
   Widget _buildTaskCard(task, TaskAssignmentViewModel viewModel, bool isAccepted) {
     final isSelected = viewModel.selectedTask?.taskId == task.taskId;
     
@@ -358,62 +348,70 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
         borderRadius: BorderRadius.circular(8),
         child: Padding(
           padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              // 任務標題
-              Text(
-                task.title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              
-              const SizedBox(height: 8),
-              
-              // 任務描述
-              Text(
-                task.description,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-              
-              const SizedBox(height: 8),
-              
-              // 等級限制 (如果有的話)
-              if (task.requirements.containsKey('level'))
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF42A5F5).withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    '需要等級: ${task.requirements['level']}',
-                    style: const TextStyle(
-                      color: Color(0xFF42A5F5),
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+              // 左側任務內容
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 任務標題
+                    Text(
+                      task.title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
+                    
+                    const SizedBox(height: 8),
+                    
+                    // 任務描述
+                    Text(
+                      task.description,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    
+                    const SizedBox(height: 8),
+                    
+                    // 等級限制 (如果有的話)
+                    if (task.requirements.containsKey('level'))
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF42A5F5).withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '需要等級: ${task.requirements['level']}',
+                          style: const TextStyle(
+                            color: Color(0xFF42A5F5),
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
+              ),
               
-              // 任務狀態標籤
+              // 右側狀態標籤
               if (isAccepted)
                 Container(
-                  margin: const EdgeInsets.only(top: 4),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  margin: const EdgeInsets.only(left: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.green.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.green, width: 1),
                   ),
                   child: const Text(
                     '已接受',
