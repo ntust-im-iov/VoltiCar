@@ -35,6 +35,7 @@ class PlayerTask {
   DateTime? failedAt;
   DateTime? abandonedAt;
   DateTime lastUpdatedAt;
+  String? detail;
 
   PlayerTask({
     required this.id,
@@ -49,6 +50,7 @@ class PlayerTask {
     this.failedAt,
     this.abandonedAt,
     required this.lastUpdatedAt,
+    this.detail,
   });
 
   factory PlayerTask.fromJson(Map<String, dynamic> json) {
@@ -77,6 +79,7 @@ class PlayerTask {
       lastUpdatedAt: json['last_updated_at'] != null 
           ? DateTime.parse(json['last_updated_at']) 
           : DateTime.now(),
+      detail: json['detail']
     );
   }
 
