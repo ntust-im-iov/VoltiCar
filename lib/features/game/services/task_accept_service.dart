@@ -2,11 +2,15 @@ import 'package:dio/dio.dart';
 import 'package:volticar_app/features/game/models/player_task_model.dart';
 import 'package:volticar_app/core/constants/api_constants.dart';
 import 'package:volticar_app/core/network/api_client.dart';
+import 'package:volticar_app/core/exceptions/task_exceptions.dart';
+import 'package:logger/logger.dart';
 
 class TaskAcceptService {
     static final TaskAcceptService _instance =
       TaskAcceptService._internal();
   final ApiClient _apiClient = ApiClient();
+  final Logger _logger = Logger();
+
 
   factory TaskAcceptService() {
     return _instance;
@@ -16,6 +20,7 @@ class TaskAcceptService {
 
   Future<PlayerTask> acceptTask(String taskId) async {
     try {
+      _logger.i('Attempting to accept task: $taskId');
       final response = await _apiClient.post(
         ApiConstants.acceptTask,
         data: {
@@ -32,12 +37,27 @@ class TaskAcceptService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         // 將後端回傳的資料轉換為PlayerTask模型
         return PlayerTask.fromJson(response.data);
-      } else {
+      } 
+      else {
         throw Exception('接受任務失敗: ${response.statusMessage}');
       }
       
     } on DioException catch (e) {
-      // 處理網路錯誤
+      // 特別處理 403 - 等級不夠的情況
+      if (e.response?.statusCode == 403) {
+        _logger.w('Task accept blocked due to insufficient level--2');
+        _logger.w(e.response?.data);
+        
+        // 檢查回應是否包含等級限制訊息
+        if (e.response?.data is Map<String, dynamic> && 
+            e.response!.data.containsKey('detail')) {
+          throw LevelRequirementException(e.response!.data['detail']);
+        }
+        
+        return PlayerTask.fromJson(e.response?.data);
+      }
+      
+      // 處理其他網路錯誤
       if (e.response?.statusCode == 400) {
         throw Exception('請求參數錯誤: ${e.response?.data?['message'] ?? '未知錯誤'}');
       } else if (e.response?.statusCode == 401) {

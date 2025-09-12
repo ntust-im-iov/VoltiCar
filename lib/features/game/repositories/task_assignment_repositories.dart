@@ -5,8 +5,8 @@ class TaskAssignmentRepositories {
   final TaskAssignmentServices _taskAssignmentServices =
       TaskAssignmentServices();
 
-  Future<List<Task>> taskassignment(String type) async {
-    final tasks = await _taskAssignmentServices.taskassignment(type);
+  Future<List<Task>> taskassignment(String mode) async {
+    final tasks = await _taskAssignmentServices.taskassignment(mode);
     return tasks;
   }
 }
