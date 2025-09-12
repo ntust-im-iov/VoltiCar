@@ -32,7 +32,8 @@ class LoginService {
       final response = await _apiClient.post(
         ApiConstants.login,
         data: {
-          'email': email, // 改用 email 參數
+          'grant_type': 'password',
+          'username': email, // 改用 email 參數
           'password': password,
         },
         options: Options(
@@ -94,6 +95,18 @@ class LoginService {
               value: response.data['access_token'],
             );
             _logger.i('訪問令牌已保存');
+            
+            // 驗證token是否正確保存
+            final savedToken = await _secureStorage.read(key: 'access_token');
+            if (savedToken == response.data['access_token']) {
+              _logger.i('Token保存驗證成功');
+            } else {
+              _logger.e('Token保存驗證失敗: 保存的token與原始token不匹配');
+              _logger.e('原始token: ${response.data['access_token']}');
+              _logger.e('保存的token: $savedToken');
+            }
+          } else {
+            _logger.w('後端響應中沒有access_token');
           }
 
           // 保存登入狀態
@@ -328,6 +341,18 @@ class LoginService {
               await _secureStorage.write(
                   key: 'access_token', value: accessToken);
               _logger.i('已保存訪問令牌');
+              
+              // 驗證token是否正確保存
+              final savedToken = await _secureStorage.read(key: 'access_token');
+              if (savedToken == accessToken) {
+                _logger.i('Google登入Token保存驗證成功');
+              } else {
+                _logger.e('Google登入Token保存驗證失敗');
+                _logger.e('原始token: $accessToken');
+                _logger.e('保存的token: $savedToken');
+              }
+            } else {
+              _logger.w('Google登入響應中沒有access_token');
             }
             if (refreshToken != null) {
               await _secureStorage.write(
@@ -478,6 +503,18 @@ class LoginService {
         if (accessToken != null) {
           await _secureStorage.write(key: 'access_token', value: accessToken);
           _logger.i('已保存後端返回的訪問令牌');
+          
+          // 驗證token是否正確保存
+          final savedToken = await _secureStorage.read(key: 'access_token');
+          if (savedToken == accessToken) {
+            _logger.i('Google註冊Token保存驗證成功');
+          } else {
+            _logger.e('Google註冊Token保存驗證失敗');
+            _logger.e('原始token: $accessToken');
+            _logger.e('保存的token: $savedToken');
+          }
+        } else {
+          _logger.w('Google註冊響應中沒有access_token');
         }
         if (refreshToken != null) {
           await _secureStorage.write(key: 'refresh_token', value: refreshToken);
