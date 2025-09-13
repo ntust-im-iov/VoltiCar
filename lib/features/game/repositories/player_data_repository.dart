@@ -1,5 +1,5 @@
 import 'package:volticar_app/features/game/models/player_data_model.dart';
-import 'package:volticar_app/features/game/services/player_data_display_service.dart';
+import 'package:volticar_app/features/game/services/player_data_service.dart';
 
 class PlayerDataRepository {
   static final PlayerDataRepository _instance =

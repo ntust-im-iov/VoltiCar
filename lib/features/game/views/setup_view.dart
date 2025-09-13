@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart'; // 引入 Flutter Material UI 库
 import 'package:flutter/services.dart'; // 引入 Flutter Services 库，用于控制设备方向
-import 'package:provider/provider.dart'; // 引入 Provider
 import '../../../shared/widgets/adaptive_button.dart'; // 引入 AdaptiveButton
 import '../views/task_assignment_view.dart';
-import '../views/player_data_display_view.dart';
-import '../views/destination_fetch_view.dart'; // 引入 DestinationFetchView
-import '../viewmodels/destination_fetch_viewmodel.dart'; // 引入 DestinationFetchViewModel
 import '../views/player_data_display_view.dart';
 
 class SetupView extends StatefulWidget {
@@ -105,15 +101,6 @@ class _SetupViewState extends State<SetupView> {
 
   void _onRouteSelected() {
     print('路線選擇按鈕被點擊');
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return ChangeNotifierProvider(
-          create: (context) => DestinationFetchViewModel(),
-          child: const DestinationFetchView(),
-        );
-      },
-    );
   }
 
   void _onCargoChecked() {
