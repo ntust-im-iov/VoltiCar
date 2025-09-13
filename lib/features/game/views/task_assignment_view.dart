@@ -15,9 +15,10 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final viewModel = Provider.of<TaskAssignmentViewModel>(context, listen: false);
+      final viewModel =
+          Provider.of<TaskAssignmentViewModel>(context, listen: false);
       // 獲取當前應該載入的任務模式
-      final mode = viewModel.isMainTask ? 'daily' : 'story';
+      final mode = viewModel.isMainTask ? 'story' : 'daily';
       viewModel.fetchTasks(mode);
     });
   }
@@ -58,7 +59,11 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                     children: [
                       const SizedBox(width: 8),
                       IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.white, size: 10,),
+                        icon: const Icon(
+                          Icons.arrow_back,
+                          color: Colors.white,
+                          size: 10,
+                        ),
                         onPressed: () => Navigator.of(context).pop(),
                       ),
                       const SizedBox(width: 8),
@@ -75,7 +80,7 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                     ],
                   ),
                 ),
-                
+
                 // 任務分類標籤
                 Container(
                   height: 20,
@@ -95,7 +100,8 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                                 viewModel.toggleTaskType();
                               });
                               WidgetsBinding.instance.addPostFrameCallback((_) {
-                                final mode = viewModel.isMainTask ? 'story' : 'daily';
+                                final mode =
+                                    viewModel.isMainTask ? 'story' : 'daily';
                                 viewModel.fetchTasks(mode);
                               });
                             }
@@ -103,19 +109,20 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                           child: Container(
                             height: 25,
                             decoration: BoxDecoration(
-                              color: !viewModel.isMainTask 
-                                  ? const Color(0xFF42A5F5) 
+                              color: !viewModel.isMainTask
+                                  ? const Color(0xFF42A5F5)
                                   : Colors.transparent,
                               border: const Border(
-                                right: BorderSide(color: Color(0xFF42A5F5), width: 1),
+                                right: BorderSide(
+                                    color: Color(0xFF42A5F5), width: 1),
                               ),
                             ),
                             child: Center(
                               child: Text(
                                 '日常任務',
                                 style: TextStyle(
-                                  color: !viewModel.isMainTask 
-                                      ? Colors.white 
+                                  color: !viewModel.isMainTask
+                                      ? Colors.white
                                       : const Color(0xFF42A5F5),
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
@@ -133,7 +140,8 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                                 viewModel.toggleTaskType();
                               });
                               WidgetsBinding.instance.addPostFrameCallback((_) {
-                                final mode = viewModel.isMainTask ? 'story' : 'daily';
+                                final mode =
+                                    viewModel.isMainTask ? 'story' : 'daily';
                                 viewModel.fetchTasks(mode);
                               });
                             }
@@ -141,16 +149,16 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                           child: Container(
                             height: 25,
                             decoration: BoxDecoration(
-                              color: viewModel.isMainTask 
-                                  ? const Color(0xFF42A5F5) 
+                              color: viewModel.isMainTask
+                                  ? const Color(0xFF42A5F5)
                                   : Colors.transparent,
                             ),
                             child: Center(
                               child: Text(
                                 '主線任務',
                                 style: TextStyle(
-                                  color: viewModel.isMainTask 
-                                      ? Colors.white 
+                                  color: viewModel.isMainTask
+                                      ? Colors.white
                                       : const Color(0xFF42A5F5),
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
@@ -181,7 +189,7 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                                 child: Text(
                                   '委託任務',
                                   style: TextStyle(
-                                    color: Color(0xFF42A5F5), 
+                                    color: Color(0xFF42A5F5),
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -196,9 +204,11 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                                   itemCount: _getAllTasks(viewModel).length,
                                   itemBuilder: (context, index) {
                                     final task = _getAllTasks(viewModel)[index];
-                                    final isAccepted = viewModel.acceptedTasks.any((acceptedTask) => 
-                                        acceptedTask.taskId == task.taskId);
-                                    return _buildTaskCard(task, viewModel, isAccepted);
+                                    final isAccepted = viewModel.acceptedTasks
+                                        .any((acceptedTask) =>
+                                            acceptedTask.taskId == task.taskId);
+                                    return _buildTaskCard(
+                                        task, viewModel, isAccepted);
                                   },
                                 ),
                               ),
@@ -206,7 +216,7 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                           ],
                         ),
                       ),
-                      
+
                       // 右側任務詳情和操作按鈕
                       Expanded(
                         flex: 1,
@@ -214,7 +224,8 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                           decoration: const BoxDecoration(
                             color: Color(0xFF2A2A2A),
                             border: Border(
-                              left: BorderSide(color: Color(0xFF42A5F5), width: 1),
+                              left: BorderSide(
+                                  color: Color(0xFF42A5F5), width: 1),
                             ),
                           ),
                           child: Column(
@@ -224,7 +235,8 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                                 child: Container(
                                   padding: const EdgeInsets.all(16),
                                   child: viewModel.selectedTask != null
-                                      ? _buildTaskDetails(viewModel.selectedTask!)
+                                      ? _buildTaskDetails(
+                                          viewModel.selectedTask!)
                                       : const Center(
                                           child: Text(
                                             '選擇一個任務查看詳情',
@@ -236,13 +248,14 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                                         ),
                                 ),
                               ),
-                              
+
                               // 操作按鈕區域
                               Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: const BoxDecoration(
                                   border: Border(
-                                    top: BorderSide(color: Color(0xFF42A5F5), width: 1),
+                                    top: BorderSide(
+                                        color: Color(0xFF42A5F5), width: 1),
                                   ),
                                 ),
                                 child: Row(
@@ -253,31 +266,40 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                                         height: 45,
                                         child: ElevatedButton(
                                           style: ElevatedButton.styleFrom(
-                                            backgroundColor: const Color(0xFF42A5F5),
+                                            backgroundColor:
+                                                const Color(0xFF42A5F5),
                                             foregroundColor: Colors.white,
                                             shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(8),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                           ),
                                           onPressed: _canAcceptTask(viewModel)
-                                              ? () => _handleAcceptTask(context, viewModel)
+                                              ? () => _handleAcceptTask(
+                                                  context, viewModel)
                                               : null,
                                           child: viewModel.isTaskLoading
                                               ? const SizedBox(
                                                   width: 20,
                                                   height: 20,
-                                                  child: CircularProgressIndicator(
+                                                  child:
+                                                      CircularProgressIndicator(
                                                     strokeWidth: 2,
-                                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                                    valueColor:
+                                                        AlwaysStoppedAnimation<
+                                                                Color>(
+                                                            Colors.white),
                                                   ),
                                                 )
-                                              : const Text('接取任務', style: TextStyle(fontSize: 14)),
+                                              : const Text('接取任務',
+                                                  style:
+                                                      TextStyle(fontSize: 14)),
                                         ),
                                       ),
                                     ),
-                                    
+
                                     const SizedBox(width: 12),
-                                    
+
                                     // 放棄任務按鈕
                                     Expanded(
                                       child: SizedBox(
@@ -287,13 +309,16 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                                             backgroundColor: Colors.red[700],
                                             foregroundColor: Colors.white,
                                             shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(8),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                           ),
                                           onPressed: _canAbandonTask(viewModel)
-                                              ? () => _handleAbandonTask(context, viewModel)
+                                              ? () => _handleAbandonTask(
+                                                  context, viewModel)
                                               : null,
-                                          child: const Text('放棄任務', style: TextStyle(fontSize: 14)),
+                                          child: const Text('放棄任務',
+                                              style: TextStyle(fontSize: 14)),
                                         ),
                                       ),
                                     ),
@@ -318,32 +343,36 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
   List<dynamic> _getAllTasks(TaskAssignmentViewModel viewModel) {
     // 將可用任務和當前類型的已接受任務合併，並去除重複
     List<dynamic> allTasks = List.from(viewModel.availableTasks);
-    
+
     // 當前任務模式
     final currentMode = viewModel.isMainTask ? 'story' : 'daily';
-    
+
     // 添加不在可用任務列表中但屬於當前類型的已接受任務
     for (var acceptedTask in viewModel.acceptedTasks) {
-      bool alreadyExists = allTasks.any((task) => task.taskId == acceptedTask.taskId);
-      
+      bool alreadyExists =
+          allTasks.any((task) => task.taskId == acceptedTask.taskId);
+
       // 檢查任務類型是否匹配當前模式
       bool isCorrectType = acceptedTask.mode.toLowerCase() == currentMode;
-      
+
       if (!alreadyExists && isCorrectType) {
         allTasks.add(acceptedTask);
       }
     }
-    
+
     return allTasks;
   }
 
-  Widget _buildTaskCard(task, TaskAssignmentViewModel viewModel, bool isAccepted) {
+  Widget _buildTaskCard(
+      task, TaskAssignmentViewModel viewModel, bool isAccepted) {
     final isSelected = viewModel.selectedTask?.taskId == task.taskId;
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFF42A5F5).withValues(alpha: 0.3) : const Color(0xFF2A2A2A),
+        color: isSelected
+            ? const Color(0xFF42A5F5).withValues(alpha: 0.3)
+            : const Color(0xFF2A2A2A),
         border: Border.all(
           color: isSelected ? const Color(0xFF42A5F5) : Colors.transparent,
           width: 1,
@@ -373,9 +402,9 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    
+
                     const SizedBox(height: 8),
-                    
+
                     // 任務描述
                     Text(
                       task.description,
@@ -386,13 +415,14 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    
+
                     const SizedBox(height: 8),
-                    
+
                     // 等級限制 (如果有的話)
                     if (task.requirements.containsKey('level'))
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: const Color(0xFF42A5F5).withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(4),
@@ -409,12 +439,13 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
                   ],
                 ),
               ),
-              
+
               // 右側狀態標籤
               if (isAccepted)
                 Container(
                   margin: const EdgeInsets.only(left: 12),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.green.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
@@ -450,9 +481,9 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // 任務要求
           if (task.requirements.isNotEmpty) ...[
             const Text(
@@ -465,18 +496,18 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
             ),
             const SizedBox(height: 8),
             ...task.requirements.entries.map((entry) => Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Text(
-                '• ${_formatRequirement(entry.key, entry.value)}',
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                ),
-              ),
-            )),
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    '• ${_formatRequirement(entry.key, entry.value)}',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                )),
             const SizedBox(height: 16),
           ],
-          
+
           // 任務獎勵
           if (task.rewards.isNotEmpty) ...[
             const Text(
@@ -489,15 +520,15 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
             ),
             const SizedBox(height: 8),
             ...task.rewards.entries.map((entry) => Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Text(
-                '• ${_formatReward(entry.key, entry.value)}',
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                ),
-              ),
-            )),
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    '• ${_formatReward(entry.key, entry.value)}',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                )),
           ],
         ],
       ),
@@ -530,26 +561,27 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
 
   bool _canAcceptTask(TaskAssignmentViewModel viewModel) {
     return !viewModel.isTaskLoading &&
-           viewModel.selectedTask != null &&
-           !viewModel.acceptedTasks.any((task) => 
-               task.taskId == viewModel.selectedTask!.taskId);
+        viewModel.selectedTask != null &&
+        !viewModel.acceptedTasks
+            .any((task) => task.taskId == viewModel.selectedTask!.taskId);
   }
 
   bool _canAbandonTask(TaskAssignmentViewModel viewModel) {
     return !viewModel.isTaskLoading &&
-           viewModel.selectedTask != null &&
-           viewModel.acceptedTasks.any((task) => 
-               task.taskId == viewModel.selectedTask!.taskId) &&
-           viewModel.canAbandonTask(viewModel.selectedTask!);
+        viewModel.selectedTask != null &&
+        viewModel.acceptedTasks
+            .any((task) => task.taskId == viewModel.selectedTask!.taskId) &&
+        viewModel.canAbandonTask(viewModel.selectedTask!);
   }
 
-  Future<void> _handleAcceptTask(BuildContext context, TaskAssignmentViewModel viewModel) async {
+  Future<void> _handleAcceptTask(
+      BuildContext context, TaskAssignmentViewModel viewModel) async {
     await viewModel.acceptTask();
     if (!context.mounted) return;
-    
+
     if (viewModel.acceptTaskError != null) {
       bool isLevelError = viewModel.acceptTaskError!.contains('需要等級');
-      
+
       TopNotificationUtils.showTopNotification(
         context,
         message: viewModel.acceptTaskError!,
@@ -564,10 +596,11 @@ class _TaskAssignmentViewState extends State<TaskAssignmentView> {
     }
   }
 
-  Future<void> _handleAbandonTask(BuildContext context, TaskAssignmentViewModel viewModel) async {
+  Future<void> _handleAbandonTask(
+      BuildContext context, TaskAssignmentViewModel viewModel) async {
     await viewModel.abandonTask();
     if (!context.mounted) return;
-    
+
     if (viewModel.acceptTaskError != null) {
       TopNotificationUtils.showTopNotification(
         context,
