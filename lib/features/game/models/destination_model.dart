@@ -33,8 +33,11 @@ class Destination {
       coordinates:
           Coordinates.fromJson(json['coordinates'] as Map<String, dynamic>),
       isUnlockedByDefault: json['is_unlocked_by_default'] as bool,
-      unlockRequirements: UnlockRequirements.fromJson(
-          json['unlock_requirements'] as Map<String, dynamic>),
+      unlockRequirements: json['unlock_requirements'] == null
+          ? UnlockRequirements(
+              requiredPlayerLevel: 0, requiredCompletedTaskId: '')
+          : UnlockRequirements.fromJson(
+              json['unlock_requirements'] as Map<String, dynamic>),
       availableServices: List<String>.from(json['available_services'] as List),
       iconUrl: json['icon_url'] as String,
     );
@@ -94,7 +97,8 @@ class UnlockRequirements {
   factory UnlockRequirements.fromJson(Map<String, dynamic> json) {
     return UnlockRequirements(
       requiredPlayerLevel: json['required_player_level'] as int,
-      requiredCompletedTaskId: json['required_completed_task_id'] as String,
+      requiredCompletedTaskId:
+          json['required_completed_task_id']?.toString() ?? '',
     );
   }
 
