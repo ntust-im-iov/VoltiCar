@@ -11,16 +11,10 @@ import 'features/auth/viewmodels/reset_password_viewmodel.dart';
 import 'features/auth/views/login_view.dart';
 import 'features/auth/views/register_view.dart';
 import 'features/auth/views/reset_password_view.dart';
-import 'package:volticar_app/features/home/views/garage_view.dart'; // Import GarageView
-import 'package:volticar_app/features/home/views/charging_view.dart'; // Import ChargingView
-import 'package:volticar_app/features/home/views/my_car_view.dart'; // Import MyCarView
-import 'features/game/viewmodels/game_viewmodel.dart';
-import 'features/game/views/game_view.dart';
+import 'package:volticar_app/features/home/views/garage_view.dart';
+import 'package:volticar_app/features/home/views/charging_view.dart';
+import 'package:volticar_app/features/home/views/my_car_view.dart';
 import 'features/game/views/setup_view.dart';
-import 'package:volticar_app/features/game/viewmodels/task_assignment_viewmodel.dart';
-import 'package:volticar_app/features/game/viewmodels/task_accept_viewmodel.dart'; // Import TaskAcceptViewModel
-import 'features/home/services/station_service.dart'; // Import StationService
-import 'features/home/viewmodels/map_provider.dart'; // Import MapProvider
 
 void main() async {
   // 確保Flutter綁定初始化
@@ -65,11 +59,6 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => LoginViewModel()),
         ChangeNotifierProvider(create: (_) => RegisterViewModel()),
         ChangeNotifierProvider(create: (_) => ResetPasswordViewModel()),
-        ChangeNotifierProvider(create: (_) => GameViewModel()), // Added from feature/game
-        ChangeNotifierProvider(create: (_) => TaskAssignmentViewModel()),
-        ChangeNotifierProvider(create: (_) => TaskAcceptViewModel()), // Added Task Accept ViewModel
-        Provider(create: (_) => StationService()), // Provide StationService
-        ChangeNotifierProvider(create: (_) => MapProvider()), // Provide MapProvider
       ],
       child: MaterialApp(
         title: 'VoltiCar App',
@@ -92,8 +81,10 @@ class MyApp extends StatelessWidget {
             case '/login':
               return PageRouteBuilder(
                 settings: settings, // 傳遞路由設定
-                pageBuilder: (context, animation, secondaryAnimation) => const LoginView(),
-                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                pageBuilder: (context, animation, secondaryAnimation) =>
+                    const LoginView(),
+                transitionsBuilder:
+                    (context, animation, secondaryAnimation, child) {
                   return SharedAxisTransition(
                     animation: animation,
                     secondaryAnimation: secondaryAnimation,
@@ -109,8 +100,10 @@ class MyApp extends StatelessWidget {
             case '/register': // 自訂 /register 的過場動畫
               return PageRouteBuilder(
                 settings: settings, // 傳遞路由設定
-                pageBuilder: (context, animation, secondaryAnimation) => const RegisterView(),
-                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                pageBuilder: (context, animation, secondaryAnimation) =>
+                    const RegisterView(),
+                transitionsBuilder:
+                    (context, animation, secondaryAnimation, child) {
                   return SharedAxisTransition(
                     animation: animation,
                     secondaryAnimation: secondaryAnimation,
@@ -126,8 +119,10 @@ class MyApp extends StatelessWidget {
             case '/reset-password':
               return PageRouteBuilder(
                 settings: settings, // 傳遞路由設定
-                pageBuilder: (context, animation, secondaryAnimation) => const ResetPasswordView(),
-                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                pageBuilder: (context, animation, secondaryAnimation) =>
+                    const ResetPasswordView(),
+                transitionsBuilder:
+                    (context, animation, secondaryAnimation, child) {
                   return SharedAxisTransition(
                     animation: animation,
                     secondaryAnimation: secondaryAnimation,
@@ -153,9 +148,6 @@ class MyApp extends StatelessWidget {
               return MaterialPageRoute(builder: builder, settings: settings);
             case '/setup':
               builder = (BuildContext _) => const SetupView();
-              return MaterialPageRoute(builder: builder, settings: settings);
-            case '/game':
-              builder = (BuildContext _) => const GameView();
               return MaterialPageRoute(builder: builder, settings: settings);
 
             default:
