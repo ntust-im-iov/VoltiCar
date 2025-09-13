@@ -28,8 +28,12 @@ class ApiConstants {
   static const String abandonTask =
       '/api/v1/player/tasks/{player_task_uuid}'; //放棄任務
 
+  // Player Data endpoints
+  static const String playerData = '/api/v1/player'; // 玩家資料
+
   // Destination
-  static const String fetchDestinations = '/api/v1/player/destinations/'; // 獲取目的地列表
+  static const String fetchDestinations =
+      '/api/v1/player/destinations/'; // 獲取目的地列表
 
   // API version
   static const String apiVersion = '/api/v1';
