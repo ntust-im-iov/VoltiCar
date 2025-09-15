@@ -30,6 +30,8 @@ class ApiConstants {
 
   // Player Data endpoints
   static const String playerData = '/api/v1/player'; // 玩家資料
+  static const String playerWarehouse =
+      '/api/v1/player/warehouse/items'; // 玩家倉庫物品
 
   // Destination
   static const String fetchDestinations =
