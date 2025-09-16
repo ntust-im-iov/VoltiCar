@@ -6,6 +6,8 @@ import '../views/task_assignment_view.dart';
 import '../views/player_data_display_view.dart';
 import '../views/destination_fetch_view.dart'; // 引入 DestinationFetchView
 import '../viewmodels/destination_fetch_viewmodel.dart'; // 引入 DestinationFetchViewModel
+import '../views/warehouse_dialog_view.dart';
+import '../viewmodels/warehouse_viewmodel.dart';
 
 class SetupView extends StatefulWidget {
   // 设置页面，用于设置游戏参数
@@ -115,8 +117,17 @@ class _SetupViewState extends State<SetupView> {
     );
   }
 
-  void _onCargoChecked() {
-    print('貨物檢查按鈕被點擊');
+  void _onWarehouseCargoChecked() {
+    print('倉儲貨物檢查按鈕被點擊');
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return ChangeNotifierProvider(
+          create: (context) => WarehouseViewModel(),
+          child: const WarehouseDialogView(),
+        );
+      },
+    );
   }
 
   void _onPlayerAvatarTapped() {
@@ -230,8 +241,8 @@ class _SetupViewState extends State<SetupView> {
                   AdaptiveButton(
                     widthGain: 0.2,
                     heightGain: 0.15,
-                    backgroundColor: Colors.black.withValues(alpha: 0.5),
-                    borderColor: Colors.blue.withValues(alpha: 0.3),
+                    backgroundColor: Colors.black.withOpacity(0.5),
+                    borderColor: Colors.blue.withOpacity(0.3),
                     imagePath: "assets/images/volticar_logo.png",
                     text: '委託任務',
                     textColor: Colors.white,
@@ -242,8 +253,8 @@ class _SetupViewState extends State<SetupView> {
                   AdaptiveButton(
                     widthGain: 0.2,
                     heightGain: 0.15,
-                    backgroundColor: Colors.black.withValues(alpha: 0.5),
-                    borderColor: Colors.blue.withValues(alpha: 0.3),
+                    backgroundColor: Colors.black.withOpacity(0.5),
+                    borderColor: Colors.blue.withOpacity(0.3),
                     imagePath: "assets/images/volticar_logo.png",
                     text: '路線選擇',
                     textColor: Colors.white,
@@ -254,12 +265,12 @@ class _SetupViewState extends State<SetupView> {
                   AdaptiveButton(
                     widthGain: 0.2,
                     heightGain: 0.15,
-                    backgroundColor: Colors.black.withValues(alpha: 0.5),
-                    borderColor: Colors.blue.withValues(alpha: 0.3),
+                    backgroundColor: Colors.black.withOpacity(0.5),
+                    borderColor: Colors.blue.withOpacity(0.3),
                     imagePath: "assets/images/volticar_logo.png",
-                    text: '貨物檢查',
+                    text: '倉儲貨物',
                     textColor: Colors.white,
-                    onTap: _onCargoChecked,
+                    onTap: _onWarehouseCargoChecked,
                     showImage: false,
                   ),
                 ],
