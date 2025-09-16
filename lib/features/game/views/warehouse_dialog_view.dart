@@ -42,7 +42,7 @@ class _WarehouseDialogViewState extends State<WarehouseDialogView> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      '錯誤: {viewModel.error}',
+                      '錯誤: ${viewModel.error}',
                       style: const TextStyle(color: Colors.white),
                       textAlign: TextAlign.center,
                     ),
@@ -105,22 +105,39 @@ class _WarehouseDialogViewState extends State<WarehouseDialogView> {
                       itemCount: viewModel.items.length,
                       itemBuilder: (context, index) {
                         final GameItem item = viewModel.items[index];
+                        Widget leadingWidget;
+                        if (item.iconUrl.isNotEmpty &&
+                            (item.iconUrl.startsWith('http://') ||
+                                item.iconUrl.startsWith('https://'))) {
+                          leadingWidget = Image.network(
+                            item.iconUrl,
+                            width: 40,
+                            height: 40,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(Icons.inventory,
+                                    color: Colors.white),
+                          );
+                        } else {
+                          leadingWidget = Image.asset(
+                            item.iconUrl.isNotEmpty
+                                ? item.iconUrl
+                                : 'assets/images/volticar_logo.png',
+                            width: 40,
+                            height: 40,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(Icons.inventory,
+                                    color: Colors.white),
+                          );
+                        }
                         return Card(
                           color: const Color(0xFF232323),
                           child: ListTile(
-                            leading: Image.asset(
-                              item.iconUrl,
-                              width: 40,
-                              height: 40,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Icon(Icons.inventory,
-                                      color: Colors.white),
-                            ),
+                            leading: leadingWidget,
                             title: Text(item.name,
                                 style: const TextStyle(color: Colors.white)),
                             subtitle: Text(item.description,
                                 style: const TextStyle(color: Colors.white70)),
-                            trailing: Text('x1',
+                            trailing: Text('x${item.quantityInWarehouse}',
                                 style: const TextStyle(color: Colors.white)),
                           ),
                         );

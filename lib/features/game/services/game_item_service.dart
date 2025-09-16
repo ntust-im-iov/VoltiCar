@@ -32,8 +32,17 @@ class GameItemService {
         final List<dynamic> data = response.data is String
             ? json.decode(response.data)
             : response.data;
-        _logger.i('Found ${data.length} warehouse items');
-        return data.map((item) => GameItem.fromJson(item)).toList();
+        _logger.i('API warehouse items count: ${data.length}');
+        for (var i = 0; i < data.length; i++) {
+          _logger.i('Item[$i]: ${data[i]}');
+        }
+        final items = data.map((item) => GameItem.fromJson(item)).toList();
+        _logger.i('Parsed GameItem count: ${items.length}');
+        for (var i = 0; i < items.length; i++) {
+          _logger.i(
+              'GameItem[$i]: ${items[i].name}, qty: ${items[i].quantityInWarehouse}');
+        }
+        return items;
       } else {
         throw Exception('無法取得倉庫物品: ${response.statusMessage}');
       }

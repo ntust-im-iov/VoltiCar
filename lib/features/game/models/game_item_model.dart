@@ -1,5 +1,4 @@
 class GameItem {
-  final String id;
   final String itemId;
   final String name;
   final String description;
@@ -10,9 +9,9 @@ class GameItem {
   final bool isFragile;
   final bool isPerishable;
   final String iconUrl;
+  final int quantityInWarehouse;
 
   const GameItem({
-    required this.id,
     required this.itemId,
     required this.name,
     required this.description,
@@ -23,27 +22,31 @@ class GameItem {
     required this.isFragile,
     required this.isPerishable,
     required this.iconUrl,
+    required this.quantityInWarehouse,
   });
 
   factory GameItem.fromJson(Map<String, dynamic> json) {
     return GameItem(
-      id: json['_id'] as String,
       itemId: json['item_id'] as String,
       name: json['name'] as String,
       description: json['description'] as String,
       category: json['category'] as String,
-      weightPerUnit: json['weight_per_unit'] as int,
+      weightPerUnit: (json['weight_per_unit'] as num).toInt(),
       volumePerUnit: (json['volume_per_unit'] as num).toDouble(),
-      baseValuePerUnit: json['base_value_per_unit'] as int,
+      baseValuePerUnit: (json['base_value_per_unit'] as num).toInt(),
       isFragile: json['is_fragile'] as bool,
       isPerishable: json['is_perishable'] as bool,
-      iconUrl: json['icon_url'] as String,
+      iconUrl: (json['icon_url'] is String && json['icon_url'] != null)
+          ? json['icon_url'] as String
+          : 'assets/images/volticar_logo.png',
+      quantityInWarehouse: json['quantity_in_warehouse'] != null
+          ? (json['quantity_in_warehouse'] as num).toInt()
+          : 0,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      '_id': id,
       'item_id': itemId,
       'name': name,
       'description': description,
@@ -54,6 +57,7 @@ class GameItem {
       'is_fragile': isFragile,
       'is_perishable': isPerishable,
       'icon_url': iconUrl,
+      'quantity_in_warehouse': quantityInWarehouse,
     };
   }
 }
