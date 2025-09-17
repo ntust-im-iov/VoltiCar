@@ -33,8 +33,9 @@ class ApiConstants {
 
   // Destination
   static const String fetchDestinations =
-      '/api/v1/player/destinations/'; // 獲取目的地列表
-
+      '/api/v1/player/destinations'; // 獲取目的地列表
+  static const String chooseDestination =
+      '/api/v1/player/game_session/destination'; // 選擇目的地
   // API version
   static const String apiVersion = '/api/v1';
 
