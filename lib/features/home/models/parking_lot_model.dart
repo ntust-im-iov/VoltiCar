@@ -45,18 +45,38 @@ class ParkingLot {
       final String parkingID = json['CarParkID']?.toString() ?? '';
       final String parkingName = json['CarParkName']?.toString() ?? '未知停車場';
       
-      // 解析位置信息 - 從 CarParkPosition 對象中提取
+      // 解析位置信息 - 兼容多種可能的數據結構
       double latitude = 0.0;
       double longitude = 0.0;
-      
-      if (json['CarParkPosition'] != null) {
-        final position = json['CarParkPosition'] as Map<String, dynamic>;
-        latitude = _parseDouble(position['PositionLat']) ?? 0.0;
-        longitude = _parseDouble(position['PositionLon']) ?? 0.0;
+
+      try {
+        dynamic positionData;
+        if (json['CarParkPosition'] != null && json['CarParkPosition'] is Map) {
+          positionData = json['CarParkPosition'];
+        } else if (json['Position'] != null && json['Position'] is Map) {
+          positionData = json['Position'];
+        } else {
+          positionData = json; // 嘗試從頂層解析
+        }
+
+        latitude = _parseDouble(positionData['PositionLat']) ??
+                   _parseDouble(positionData['lat']) ??
+                   0.0;
+        longitude = _parseDouble(positionData['PositionLon']) ??
+                    _parseDouble(positionData['lon']) ??
+                    0.0;
+        
+        if (latitude == 0.0 && longitude == 0.0) {
+          logger.w('無法從數據中解析有效的經緯度: $json');
+        }
+      } catch (e) {
+        logger.e('解析經緯度時出錯: $e, 數據: $json');
+        latitude = 0.0;
+        longitude = 0.0;
       }
       
       // 解析其他信息 - 使用實際的 API 字段名
-      final String? address = json['Address']?.toString();
+      final String? address = _parseAddress(json['Address']);
       final String? description = json['FareDescription']?.toString(); // 使用費率描述作為描述
       final int? totalSpaces = _parseInt(json['TotalSpaces']);
       final int? availableSpaces = _parseInt(json['AvailableSpaces']);
@@ -116,6 +136,24 @@ class ParkingLot {
              '未知停車場';
     }
     return nameData?.toString() ?? '未知停車場';
+  }
+
+  // 輔助方法：解析地址
+  static String? _parseAddress(dynamic addressData) {
+    if (addressData == null) return null;
+    if (addressData is String) return addressData;
+    if (addressData is Map) {
+      final city = addressData['City'] ?? '';
+      final town = addressData['Town'] ?? '';
+      final road = addressData['Road'] ?? '';
+      final no = addressData['No'] ?? '';
+      
+      final parts = [city, town, road, no];
+      final fullAddress = parts.where((part) => part != null && part.toString().isNotEmpty).join('');
+      
+      return fullAddress.isNotEmpty ? fullAddress : null;
+    }
+    return addressData.toString();
   }
 
   // 輔助方法：解析雙精度浮點數
