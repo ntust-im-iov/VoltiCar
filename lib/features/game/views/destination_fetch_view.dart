@@ -280,7 +280,8 @@ class _DestinationFetchViewState extends State<DestinationFetchView> {
       DestinationFetchViewModel fetchViewModel,
       DestinationChooseViewModel chooseViewModel) {
     final isSelected = fetchViewModel.selectedDestination?.id == destination.id;
-    final isChosen = chooseViewModel.isDestinationChosen(destination.id);
+    final isChosen =
+        chooseViewModel.isDestinationChosen(destination.destinationId);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -372,52 +373,51 @@ class _DestinationFetchViewState extends State<DestinationFetchView> {
                 ),
               ),
 
-              // 右側狀態標籤
+              // 右側操作區域
               Column(
                 children: [
-                  // 已選取狀態
-                  if (isChosen)
-                    Container(
-                      margin: const EdgeInsets.only(left: 8, bottom: 4),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF42A5F5).withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                            color: const Color(0xFF42A5F5), width: 1),
-                      ),
-                      child: const Text(
-                        '已選取',
-                        style: TextStyle(
-                          color: Color(0xFF42A5F5),
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-
-                  // 解鎖狀態
+                  // 選擇按鈕或鎖定狀態
                   if (destination.isUnlockedByDefault)
+                    // 已解鎖：顯示選擇按鈕
                     Container(
                       margin: const EdgeInsets.only(left: 8),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.green, width: 1),
-                      ),
-                      child: const Text(
-                        '已解鎖',
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                      child: ElevatedButton(
+                        onPressed: chooseViewModel.isChoosing
+                            ? null
+                            : () => _handleChooseDestination(
+                                destination.destinationId, chooseViewModel),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              isChosen ? Colors.green : const Color(0xFF42A5F5),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          minimumSize: const Size(60, 28),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
                         ),
+                        child: chooseViewModel.isChoosing
+                            ? const SizedBox(
+                                height: 12,
+                                width: 12,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 1.5,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
+                                ),
+                              )
+                            : Text(
+                                isChosen ? '已選擇' : '選擇',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
                     )
                   else
+                    // 未解鎖：顯示鎖定狀態
                     Container(
                       margin: const EdgeInsets.only(left: 8),
                       padding: const EdgeInsets.symmetric(
@@ -647,84 +647,8 @@ class _DestinationFetchViewState extends State<DestinationFetchView> {
                   )
                   .toList(),
             ),
-
-          const SizedBox(height: 24),
-
-          // 選擇按鈕
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: chooseViewModel.isChoosing
-                  ? null
-                  : () => _handleChooseDestination(
-                      destination.destinationId, chooseViewModel),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: chooseViewModel
-                        .isDestinationChosen(destination.destinationId)
-                    ? Colors.green
-                    : const Color(0xFF42A5F5),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: chooseViewModel.isChoosing
-                  ? const SizedBox(
-                      height: 16,
-                      width: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : Text(
-                      chooseViewModel.isDestinationChosen(destination.id)
-                          ? '已選取此路線'
-                          : '選擇此路線',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-            ),
-          ),
-
-          // 錯誤訊息
-          if (chooseViewModel.error != null) ...[
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.red, width: 1),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.error, color: Colors.red, size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      chooseViewModel.error!,
-                      style: const TextStyle(
-                        color: Colors.red,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: chooseViewModel.clearError,
-                    icon: const Icon(Icons.close, color: Colors.red, size: 16),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ],
+        // 選擇按鈕區域
       ),
     );
   }
@@ -732,5 +656,10 @@ class _DestinationFetchViewState extends State<DestinationFetchView> {
   void _handleChooseDestination(
       String destinationId, DestinationChooseViewModel chooseViewModel) async {
     await chooseViewModel.chooseDestination(destinationId);
+
+    // 確保界面更新
+    if (mounted) {
+      setState(() {});
+    }
   }
 }
