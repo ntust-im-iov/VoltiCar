@@ -8,6 +8,7 @@ import '../views/destination_fetch_view.dart'; // 引入 DestinationFetchView
 import '../viewmodels/destination_fetch_viewmodel.dart'; // 引入 DestinationFetchViewModel
 import '../views/warehouse_dialog_view.dart';
 import '../viewmodels/warehouse_viewmodel.dart';
+import '../viewmodels/destination_choose_viewmodel.dart'; // 引入 DestinationChooseViewModel
 
 class SetupView extends StatefulWidget {
   // 设置页面，用于设置游戏参数
@@ -109,8 +110,15 @@ class _SetupViewState extends State<SetupView> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return ChangeNotifierProvider(
-          create: (context) => DestinationFetchViewModel(),
+        return MultiProvider(
+          providers: [
+            ChangeNotifierProvider(
+              create: (context) => DestinationFetchViewModel(),
+            ),
+            ChangeNotifierProvider(
+              create: (context) => DestinationChooseViewModel(),
+            ),
+          ],
           child: const DestinationFetchView(),
         );
       },

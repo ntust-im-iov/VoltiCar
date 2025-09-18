@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:volticar_app/features/game/viewmodels/destination_fetch_viewmodel.dart';
+import 'package:volticar_app/features/game/viewmodels/destination_choose_viewmodel.dart';
 
 class DestinationFetchView extends StatefulWidget {
   const DestinationFetchView({super.key});
@@ -33,25 +34,25 @@ class _DestinationFetchViewState extends State<DestinationFetchView> {
       child: SizedBox(
         width: MediaQuery.of(context).size.width * 0.95,
         height: MediaQuery.of(context).size.height * 0.95,
-        child: Consumer<DestinationFetchViewModel>(
-          builder: (context, viewModel, child) {
-            if (viewModel.isLoading) {
+        child: Consumer2<DestinationFetchViewModel, DestinationChooseViewModel>(
+          builder: (context, fetchViewModel, chooseViewModel, child) {
+            if (fetchViewModel.isLoading) {
               return const Center(child: CircularProgressIndicator());
             }
 
-            if (viewModel.error != null) {
+            if (fetchViewModel.error != null) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      '錯誤: ${viewModel.error}',
+                      '錯誤: ${fetchViewModel.error}',
                       style: const TextStyle(color: Colors.white),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
-                      onPressed: () => viewModel.refreshDestinations(),
+                      onPressed: () => fetchViewModel.refreshDestinations(),
                       child: const Text('重試'),
                     ),
                   ],
@@ -91,7 +92,7 @@ class _DestinationFetchViewState extends State<DestinationFetchView> {
                       IconButton(
                         icon: const Icon(Icons.refresh,
                             color: Colors.white, size: 10),
-                        onPressed: () => viewModel.refreshDestinations(),
+                        onPressed: () => fetchViewModel.refreshDestinations(),
                       ),
                       const SizedBox(width: 8),
                     ],
@@ -113,7 +114,7 @@ class _DestinationFetchViewState extends State<DestinationFetchView> {
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.start,
-                      children: _buildRegionTabs(viewModel),
+                      children: _buildRegionTabs(fetchViewModel),
                     ),
                   ),
                 ),
@@ -147,16 +148,18 @@ class _DestinationFetchViewState extends State<DestinationFetchView> {
                                 color: const Color(0xFF1A1A1A),
                                 child: ListView.builder(
                                   padding: const EdgeInsets.all(8),
-                                  itemCount: _getFilteredDestinations(viewModel)
-                                      .length,
+                                  itemCount:
+                                      _getFilteredDestinations(fetchViewModel)
+                                          .length,
                                   itemBuilder: (context, index) {
                                     final destination =
                                         _getFilteredDestinations(
-                                            viewModel)[index];
+                                            fetchViewModel)[index];
 
                                     return _buildDestinationCard(
                                       destination,
-                                      viewModel,
+                                      fetchViewModel,
+                                      chooseViewModel,
                                     );
                                   },
                                 ),
@@ -198,18 +201,21 @@ class _DestinationFetchViewState extends State<DestinationFetchView> {
                               child: Container(
                                 color: const Color(0xFF1A1A1A),
                                 padding: const EdgeInsets.all(16),
-                                child: viewModel.selectedDestination != null
-                                    ? _buildDestinationDetails(
-                                        viewModel.selectedDestination!)
-                                    : const Center(
-                                        child: Text(
-                                          '請選擇一個目的地查看詳情',
-                                          style: TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 16,
+                                child:
+                                    fetchViewModel.selectedDestination != null
+                                        ? _buildDestinationDetails(
+                                            fetchViewModel.selectedDestination!,
+                                            chooseViewModel,
+                                          )
+                                        : const Center(
+                                            child: Text(
+                                              '請選擇一個目的地查看詳情',
+                                              style: TextStyle(
+                                                color: Colors.white70,
+                                                fontSize: 16,
+                                              ),
+                                            ),
                                           ),
-                                        ),
-                                      ),
                               ),
                             ),
                           ],
@@ -270,8 +276,12 @@ class _DestinationFetchViewState extends State<DestinationFetchView> {
   }
 
   Widget _buildDestinationCard(
-      destination, DestinationFetchViewModel viewModel) {
-    final isSelected = viewModel.selectedDestination?.id == destination.id;
+      destination,
+      DestinationFetchViewModel fetchViewModel,
+      DestinationChooseViewModel chooseViewModel) {
+    final isSelected = fetchViewModel.selectedDestination?.id == destination.id;
+    final isChosen =
+        chooseViewModel.isDestinationChosen(destination.destinationId);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -286,7 +296,7 @@ class _DestinationFetchViewState extends State<DestinationFetchView> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: InkWell(
-        onTap: () => viewModel.selectDestination(destination),
+        onTap: () => fetchViewModel.selectDestination(destination),
         borderRadius: BorderRadius.circular(8),
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -363,45 +373,71 @@ class _DestinationFetchViewState extends State<DestinationFetchView> {
                 ),
               ),
 
-              // 右側狀態標籤
-              if (destination.isUnlockedByDefault)
-                Container(
-                  margin: const EdgeInsets.only(left: 8),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.green, width: 1),
-                  ),
-                  child: const Text(
-                    '已解鎖',
-                    style: TextStyle(
-                      color: Colors.green,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
+              // 右側操作區域
+              Column(
+                children: [
+                  // 選擇按鈕或鎖定狀態
+                  if (destination.isUnlockedByDefault)
+                    // 已解鎖：顯示選擇按鈕
+                    Container(
+                      margin: const EdgeInsets.only(left: 8),
+                      child: ElevatedButton(
+                        onPressed: chooseViewModel.isChoosing
+                            ? null
+                            : () => _handleChooseDestination(
+                                destination.destinationId, chooseViewModel),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              isChosen ? Colors.green : const Color(0xFF42A5F5),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          minimumSize: const Size(60, 28),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                        child: chooseViewModel.isChoosing
+                            ? const SizedBox(
+                                height: 12,
+                                width: 12,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 1.5,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
+                                ),
+                              )
+                            : Text(
+                                isChosen ? '已選擇' : '選擇',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                      ),
+                    )
+                  else
+                    // 未解鎖：顯示鎖定狀態
+                    Container(
+                      margin: const EdgeInsets.only(left: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.orange, width: 1),
+                      ),
+                      child: const Text(
+                        '鎖定',
+                        style: TextStyle(
+                          color: Colors.orange,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                  ),
-                )
-              else
-                Container(
-                  margin: const EdgeInsets.only(left: 8),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.orange, width: 1),
-                  ),
-                  child: const Text(
-                    '鎖定',
-                    style: TextStyle(
-                      color: Colors.orange,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+                ],
+              ),
             ],
           ),
         ),
@@ -409,7 +445,8 @@ class _DestinationFetchViewState extends State<DestinationFetchView> {
     );
   }
 
-  Widget _buildDestinationDetails(destination) {
+  Widget _buildDestinationDetails(
+      destination, DestinationChooseViewModel chooseViewModel) {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -611,7 +648,18 @@ class _DestinationFetchViewState extends State<DestinationFetchView> {
                   .toList(),
             ),
         ],
+        // 選擇按鈕區域
       ),
     );
+  }
+
+  void _handleChooseDestination(
+      String destinationId, DestinationChooseViewModel chooseViewModel) async {
+    await chooseViewModel.chooseDestination(destinationId);
+
+    // 確保界面更新
+    if (mounted) {
+      setState(() {});
+    }
   }
 }
