@@ -24,7 +24,6 @@ class TaskProgress {
 
 class PlayerTask {
   String id;
-  String playerTaskId;
   String userId;
   String taskId;
   String status;
@@ -39,7 +38,6 @@ class PlayerTask {
 
   PlayerTask({
     required this.id,
-    required this.playerTaskId,
     required this.userId,
     required this.taskId,
     required this.status,
@@ -55,38 +53,35 @@ class PlayerTask {
 
   factory PlayerTask.fromJson(Map<String, dynamic> json) {
     return PlayerTask(
-      id: json['_id'] ?? '',
-      playerTaskId: json['player_task_id'] ?? '',
-      userId: json['user_id'] ?? '',
-      taskId: json['task_id'] ?? '',
-      status: json['status'] ?? 'unknown',
-      acceptedAt: json['accepted_at'] != null 
-          ? DateTime.parse(json['accepted_at']) 
-          : DateTime.now(),
-      linkedGameSessionId: json['linked_game_session_id'],
-      progress: json['progress'] != null 
-          ? TaskProgress.fromJson(json['progress']) 
-          : TaskProgress(),
-      completedAt: json['completed_at'] != null 
-          ? DateTime.parse(json['completed_at']) 
-          : null,
-      failedAt: json['failed_at'] != null 
-          ? DateTime.parse(json['failed_at']) 
-          : null,
-      abandonedAt: json['abandoned_at'] != null 
-          ? DateTime.parse(json['abandoned_at']) 
-          : null,
-      lastUpdatedAt: json['last_updated_at'] != null 
-          ? DateTime.parse(json['last_updated_at']) 
-          : DateTime.now(),
-      detail: json['detail']
-    );
+        id: json['_id'] ?? '',
+        userId: json['user_id'] ?? '',
+        taskId: json['task_id'] ?? '',
+        status: json['status'] ?? 'unknown',
+        acceptedAt: json['accepted_at'] != null
+            ? DateTime.parse(json['accepted_at'])
+            : DateTime.now(),
+        linkedGameSessionId: json['linked_game_session_id'],
+        progress: json['progress'] != null
+            ? TaskProgress.fromJson(json['progress'])
+            : TaskProgress(),
+        completedAt: json['completed_at'] != null
+            ? DateTime.parse(json['completed_at'])
+            : null,
+        failedAt: json['failed_at'] != null
+            ? DateTime.parse(json['failed_at'])
+            : null,
+        abandonedAt: json['abandoned_at'] != null
+            ? DateTime.parse(json['abandoned_at'])
+            : null,
+        lastUpdatedAt: json['last_updated_at'] != null
+            ? DateTime.parse(json['last_updated_at'])
+            : DateTime.now(),
+        detail: json['detail']);
   }
 
   Map<String, dynamic> toJson() {
     return {
       '_id': id,
-      'player_task_id': playerTaskId,
       'user_id': userId,
       'task_id': taskId,
       'status': status,
