@@ -4,8 +4,7 @@ import 'package:volticar_app/core/constants/api_constants.dart';
 import 'package:volticar_app/core/network/api_client.dart';
 
 class TaskAbandonService {
-    static final TaskAbandonService _instance =
-      TaskAbandonService._internal();
+  static final TaskAbandonService _instance = TaskAbandonService._internal();
   final ApiClient _apiClient = ApiClient();
 
   factory TaskAbandonService() {
@@ -17,8 +16,9 @@ class TaskAbandonService {
   Future<String> abandonTask(String taskId) async {
     try {
       // 將路徑參數 {player_task_uuid} 替換為實際的 taskId
-      final endpoint = ApiConstants.abandonTask.replaceAll('{player_task_uuid}', taskId);
-      
+      final endpoint =
+          ApiConstants.abandonTask.replaceAll('{player_task_uuid}', taskId);
+
       final response = await _apiClient.delete(
         endpoint,
         // 移除 data 參數，因為我們已經將 taskId 放入 URL 中
@@ -37,7 +37,6 @@ class TaskAbandonService {
       } else {
         throw Exception('放棄任務失敗: ${response.statusMessage}');
       }
-      
     } on DioException catch (e) {
       // 處理網路錯誤
       if (e.response?.statusCode == 400) {
@@ -61,7 +60,6 @@ class TaskAbandonService {
     return {
       'taskInfo': {
         'id': playerTask.id,
-        'playerTaskId': playerTask.playerTaskId,
         'taskId': playerTask.taskId,
         'userId': playerTask.userId,
       },
@@ -90,24 +88,30 @@ class TaskAbandonService {
   // 檢查任務進度
   bool hasTaskProgress(PlayerTask playerTask) {
     return playerTask.progress.itemsDeliveredCount != null ||
-           playerTask.progress.distanceTraveledForTask != null;
+        playerTask.progress.distanceTraveledForTask != null;
   }
 
   // 獲取任務進度百分比（需要根據任務需求計算）
-  double calculateProgressPercentage(PlayerTask playerTask, {
+  double calculateProgressPercentage(
+    PlayerTask playerTask, {
     int? requiredItems,
     double? requiredDistance,
   }) {
     double progress = 0.0;
     int factors = 0;
 
-    if (requiredItems != null && playerTask.progress.itemsDeliveredCount != null) {
-      progress += (playerTask.progress.itemsDeliveredCount! / requiredItems).clamp(0.0, 1.0);
+    if (requiredItems != null &&
+        playerTask.progress.itemsDeliveredCount != null) {
+      progress += (playerTask.progress.itemsDeliveredCount! / requiredItems)
+          .clamp(0.0, 1.0);
       factors++;
     }
 
-    if (requiredDistance != null && playerTask.progress.distanceTraveledForTask != null) {
-      progress += (playerTask.progress.distanceTraveledForTask! / requiredDistance).clamp(0.0, 1.0);
+    if (requiredDistance != null &&
+        playerTask.progress.distanceTraveledForTask != null) {
+      progress +=
+          (playerTask.progress.distanceTraveledForTask! / requiredDistance)
+              .clamp(0.0, 1.0);
       factors++;
     }
 
