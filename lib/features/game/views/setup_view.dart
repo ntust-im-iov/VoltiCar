@@ -9,6 +9,7 @@ import '../viewmodels/destination_fetch_viewmodel.dart'; // 引入 DestinationFe
 import '../views/warehouse_dialog_view.dart';
 import '../viewmodels/warehouse_viewmodel.dart';
 import '../viewmodels/destination_choose_viewmodel.dart'; // 引入 DestinationChooseViewModel
+import '../views/main_game_view.dart'; // 引入 MainGameView
 
 class SetupView extends StatefulWidget {
   // 设置页面，用于设置游戏参数
@@ -138,6 +139,16 @@ class _SetupViewState extends State<SetupView> {
     );
   }
 
+  void _onStartGame() {
+    print('开始游戏按钮被点击');
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const MainGameView(),
+      ),
+    );
+  }
+
   void _onPlayerAvatarTapped() {
     PlayerDataDisplayView().showPlayerDataDialog(context);
   }
@@ -239,7 +250,7 @@ class _SetupViewState extends State<SetupView> {
                       0.2 /
                       2), // 距离左边 50% 屏幕宽度
               top: MediaQuery.of(context).size.height * 0.5 -
-                  ((MediaQuery.of(context).size.height * 0.15 * 3) +
+                  ((MediaQuery.of(context).size.height * 0.15 * 4) +
                           (MediaQuery.of(context).size.height * 0.05 * 2)) /
                       2, // 距离顶部 50% 屏幕高度
               child: Column(
@@ -279,6 +290,18 @@ class _SetupViewState extends State<SetupView> {
                     text: '倉儲貨物',
                     textColor: Colors.white,
                     onTap: _onWarehouseCargoChecked,
+                    showImage: false,
+                  ),
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.05),
+                  AdaptiveButton(
+                    widthGain: 0.2,
+                    heightGain: 0.15,
+                    backgroundColor: Colors.black.withOpacity(0.5),
+                    borderColor: Colors.blue.withOpacity(0.3),
+                    imagePath: "assets/images/volticar_logo.png",
+                    text: '開始遊戲',
+                    textColor: Colors.white,
+                    onTap: _onStartGame,
                     showImage: false,
                   ),
                 ],
