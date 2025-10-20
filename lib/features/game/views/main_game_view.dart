@@ -41,8 +41,8 @@ class _MainGameViewState extends State<MainGameView> {
           GameWidget(game: game),
           // 添加返回按钮
           Positioned(
-            top: 40,
-            left: 20,
+            top: 10,
+            left: 1,
             child: SafeArea(
               child: IconButton(
                 icon: const Icon(Icons.arrow_back),
@@ -65,7 +65,7 @@ class _MainGameViewState extends State<MainGameView> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Text(
-                  '游戏中...',
+                  'Gaming...',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 16,

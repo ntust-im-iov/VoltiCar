@@ -2,12 +2,12 @@ import 'package:flame/game.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'components/simple_scrolling_background.dart';
-import 'components/simple_car_component.dart';
+import 'components/car_component.dart';
 import 'components/effects_components.dart';
 
 class VoltiCarGame extends FlameGame with HasCollisionDetection {
   late SimpleScrollingBackground background;
-  late SimpleCarComponent car;
+  late CarComponent car;
   late RoadMarkings roadMarkings;
 
   @override
@@ -25,7 +25,7 @@ class VoltiCarGame extends FlameGame with HasCollisionDetection {
     add(roadMarkings);
 
     // 3. 添加汽车组件 (最前景)
-    car = SimpleCarComponent();
+    car = CarComponent();
     add(car);
   }
 

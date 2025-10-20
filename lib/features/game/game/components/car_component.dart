@@ -1,8 +1,9 @@
 import 'package:flame/components.dart';
-import 'package:flame/game.dart';
+import 'package:logger/logger.dart';
 import 'dart:math' as math;
 
 class CarComponent extends SpriteComponent with HasGameRef {
+  final Logger _logger = Logger();
   static const double carSpeed = 0.0; // 汽车不移动，只有动画效果
   static const double bounceAmplitude = 5.0; // 上下弹跳的幅度
   static const double bounceFrequency = 2.0; // 弹跳频率
@@ -16,7 +17,7 @@ class CarComponent extends SpriteComponent with HasGameRef {
 
     try {
       // 加载汽车精灵
-      sprite = await game.loadSprite('car.png');
+      sprite = await game.loadSprite('bus.png');
 
       // 设置汽车大小 (调整为合适的比例)
       size = Vector2(120, 60);
@@ -29,7 +30,7 @@ class CarComponent extends SpriteComponent with HasGameRef {
       // 设置锚点为中心
       anchor = Anchor.center;
     } catch (e) {
-      print('加载汽车精灵失败: $e');
+      _logger.e(e);
       // 如果加载失败，创建一个简单的彩色矩形作为汽车
       size = Vector2(120, 60);
       position = Vector2(game.size.x * 0.25, game.size.y * 0.5 - size.y * 0.5);
