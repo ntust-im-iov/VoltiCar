@@ -11,10 +11,10 @@ class SimpleScrollingBackground extends Component with HasGameRef {
   Future<void> onLoad() async {
     await super.onLoad();
 
-    // 计算背景宽度
+    // 計算背景寬度
     backgroundWidth = game.size.x;
 
-    // 创建三个背景矩形用于无缝滚动
+    // 建立三個背景矩形用於無縫滾動
     backgroundRects = [];
 
     for (int i = 0; i < 3; i++) {
@@ -26,8 +26,8 @@ class SimpleScrollingBackground extends Component with HasGameRef {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              const Color(0xFF87CEEB), // 天空蓝
-              const Color(0xFF98FB98), // 浅绿色 (地面)
+              const Color(0xFF87CEEB), // 天空藍
+              const Color(0xFF98FB98), // 淺綠色（地面）
             ],
             stops: const [0.6, 1.0],
           ).createShader(Rect.fromLTWH(0, 0, backgroundWidth, game.size.y)),
@@ -36,11 +36,11 @@ class SimpleScrollingBackground extends Component with HasGameRef {
       add(rect);
     }
 
-    // 添加地平线
+    // 加入地平線
     final horizon = RectangleComponent(
       size: Vector2(backgroundWidth * 3, 4),
-      position: Vector2(0, game.size.y * 0.6),
-      paint: Paint()..color = const Color(0xFF228B22), // 深绿色
+      position: Vector2(0, game.size.y * 0.65),
+      paint: Paint()..color = const Color(0xFF228B22), // 深綠色
     );
     add(horizon);
   }
@@ -49,13 +49,13 @@ class SimpleScrollingBackground extends Component with HasGameRef {
   void update(double dt) {
     super.update(dt);
 
-    // 移动背景
+    // 移動背景
     for (final rect in backgroundRects) {
       rect.position.x -= scrollSpeed * dt;
 
-      // 当背景完全移出屏幕左侧时，将其移动到最右侧
+      // 當背景完全移出螢幕左側時，將其移動到最右側
       if (rect.position.x <= -backgroundWidth) {
-        // 找到最右边的背景位置
+        // 找到最右邊的背景位置
         double rightmostX = backgroundRects
             .map((r) => r.position.x)
             .reduce((a, b) => a > b ? a : b);

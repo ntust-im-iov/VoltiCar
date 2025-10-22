@@ -9,7 +9,7 @@ class EnhancedCarComponent extends PositionComponent with HasGameRef {
 
   static const double bounceAmplitude = 3.0;
   static const double bounceFrequency = 3.0;
-  static const double wheelRotationSpeed = 8.0; // 轮子旋转速度
+  static const double wheelRotationSpeed = 8.0; // 輪子旋轉速度
 
   double _time = 0.0;
   late Vector2 _initialPosition;
@@ -18,11 +18,11 @@ class EnhancedCarComponent extends PositionComponent with HasGameRef {
   Future<void> onLoad() async {
     await super.onLoad();
 
-    // 设置汽车位置
+    // 設定汽車位置
     position = Vector2(game.size.x * 0.2, game.size.y * 0.6);
     _initialPosition = position.clone();
 
-    // 创建汽车车身
+    // 建立汽車車身
     final carSprite = await game.loadSprite('car.png');
     carBody = SpriteComponent(
       sprite: carSprite,
@@ -31,37 +31,37 @@ class EnhancedCarComponent extends PositionComponent with HasGameRef {
     );
     add(carBody);
 
-    // 创建轮子
+    // 建立車輪
     wheels = [];
 
-    // 前轮
+    // 前輪
     final frontWheel = CircleComponent(
       radius: 15,
-      position: Vector2(35, 25), // 相对于汽车车身的位置
+      position: Vector2(35, 25), // 相對於汽車車身的位置
       paint: Paint()..color = const Color(0xFF333333),
       anchor: Anchor.center,
     );
     wheels.add(frontWheel);
     add(frontWheel);
 
-    // 后轮
+    // 後輪
     final rearWheel = CircleComponent(
       radius: 15,
-      position: Vector2(-35, 25), // 相对于汽车车身的位置
+      position: Vector2(-35, 25), // 相對於汽車車身的位置
       paint: Paint()..color = const Color(0xFF333333),
       anchor: Anchor.center,
     );
     wheels.add(rearWheel);
     add(rearWheel);
 
-    // 为轮子添加轮辐效果
+    // 為車輪新增輪輻效果
     for (final wheel in wheels) {
       _addWheelSpokes(wheel);
     }
   }
 
   void _addWheelSpokes(CircleComponent wheel) {
-    // 添加轮辐
+    // 新增輪輻
     for (int i = 0; i < 4; i++) {
       final spoke = RectangleComponent(
         size: Vector2(2, wheel.radius * 1.5),
@@ -80,16 +80,16 @@ class EnhancedCarComponent extends PositionComponent with HasGameRef {
 
     _time += dt;
 
-    // 汽车整体的轻微弹跳
+    // 汽車整體的輕微彈跳
     final bounceOffset =
         math.sin(_time * bounceFrequency * 2 * math.pi) * bounceAmplitude;
     position.y = _initialPosition.y + bounceOffset;
 
-    // 轻微的水平摇摆
+    // 輕微的水平搖擺
     final swayOffset = math.sin(_time * bounceFrequency * math.pi * 0.5) * 1.5;
     position.x = _initialPosition.x + swayOffset;
 
-    // 轮子旋转
+    // 車輪旋轉
     for (final wheel in wheels) {
       wheel.angle += wheelRotationSpeed * dt;
     }

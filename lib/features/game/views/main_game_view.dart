@@ -52,7 +52,7 @@ class _MainGameViewState extends State<MainGameView> {
               ),
             ),
           ),
-          // 添加游戏信息显示
+          // 添加遊戲信息顯示
           Positioned(
             top: 40,
             right: 20,

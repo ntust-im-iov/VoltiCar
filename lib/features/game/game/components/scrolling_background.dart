@@ -10,13 +10,13 @@ class ScrollingBackground extends Component with HasGameRef {
   Future<void> onLoad() async {
     await super.onLoad();
 
-    // 加载背景精灵
+    // 載入背景精靈
     final backgroundSprite = await game.loadSprite('ready_pg_bg.png');
 
-    // 计算背景宽度，稍微加大一些以确保无缝衔接
+    // 計算背景寬度，稍微加大一些以確保無縫銜接
     backgroundWidth = game.size.x * 1.1;
 
-    // 创建三个背景精灵用于更平滑的无缝滚动
+    // 建立三個背景精靈用於更平滑的無縫滾動
     backgroundSprites = [];
 
     for (int i = 0; i < 3; i++) {
@@ -34,13 +34,13 @@ class ScrollingBackground extends Component with HasGameRef {
   void update(double dt) {
     super.update(dt);
 
-    // 移动背景
+    // 移動背景
     for (final sprite in backgroundSprites) {
       sprite.position.x -= scrollSpeed * dt;
 
-      // 当背景完全移出屏幕左侧时，将其移动到最右侧
+      // 當背景完全移出螢幕左側時，將其移動到最右側
       if (sprite.position.x <= -backgroundWidth) {
-        // 找到最右边的背景位置
+        // 找到最右邊的背景位置
         double rightmostX = backgroundSprites
             .map((s) => s.position.x)
             .reduce((a, b) => a > b ? a : b);

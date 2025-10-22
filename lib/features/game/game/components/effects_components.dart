@@ -3,10 +3,10 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
-/// 道路标线组件 - 增加道路感
+/// 道路標線元件－增加道路感
 class RoadMarkings extends Component with HasGameRef {
   final List<RectangleComponent> markings = [];
-  final double markingSpeed = 150.0; // 比背景稍快，营造层次感
+  final double markingSpeed = 150.0; // 比背景稍快，營造層次感
   final double markingWidth = 8.0;
   final double markingHeight = 40.0;
   final double markingSpacing = 80.0;
@@ -15,7 +15,7 @@ class RoadMarkings extends Component with HasGameRef {
   Future<void> onLoad() async {
     await super.onLoad();
 
-    // 创建道路标线
+    // 建立道路標線
     final int markingCount = (game.size.x / markingSpacing).ceil() + 2;
 
     for (int i = 0; i < markingCount; i++) {
@@ -37,7 +37,7 @@ class RoadMarkings extends Component with HasGameRef {
     for (final marking in markings) {
       marking.position.x -= markingSpeed * dt;
 
-      // 重置标线位置
+      // 重設標線位置
       if (marking.position.x <= -markingWidth) {
         marking.position.x += markingSpacing * markings.length;
       }
@@ -45,7 +45,7 @@ class RoadMarkings extends Component with HasGameRef {
   }
 }
 
-/// 云朵组件 - 增加背景层次
+/// 雲朵元件－增加背景層次
 class CloudComponent extends SpriteComponent with HasGameRef {
   final double speed;
   final double initialX;
@@ -61,7 +61,7 @@ class CloudComponent extends SpriteComponent with HasGameRef {
   Future<void> onLoad() async {
     await super.onLoad();
 
-    // 如果有云朵图片可以加载，否则用简单的白色矩形
+    // 若有雲朵圖片可載入，否則使用簡單的白色矩形
     paint = Paint()..color = const Color(0x88FFFFFF);
   }
 
@@ -71,14 +71,14 @@ class CloudComponent extends SpriteComponent with HasGameRef {
 
     position.x -= speed * dt;
 
-    // 重置云朵位置
+    // 重設雲朵位置
     if (position.x <= -size.x) {
       position.x = game.size.x + size.x;
     }
   }
 }
 
-/// 云朵管理器
+/// 雲朵管理器
 class CloudManager extends Component with HasGameRef {
   final List<CloudComponent> clouds = [];
 
@@ -86,17 +86,17 @@ class CloudManager extends Component with HasGameRef {
   Future<void> onLoad() async {
     await super.onLoad();
 
-    // 创建几朵云
+    // 建立幾朵雲
     for (int i = 0; i < 3; i++) {
       final cloud = CloudComponent(
-        speed: 20.0 + math.Random().nextDouble() * 30.0, // 随机速度
+        speed: 20.0 + math.Random().nextDouble() * 30.0, // 隨機速度
         initialX: math.Random().nextDouble() * game.size.x,
         position: Vector2(
           math.Random().nextDouble() * game.size.x,
           math.Random().nextDouble() * game.size.y * 0.3, // 上半部分
         ),
         size: Vector2(
-          60 + math.Random().nextDouble() * 40, // 随机大小
+          60 + math.Random().nextDouble() * 40, // 隨機大小
           30 + math.Random().nextDouble() * 20,
         ),
       );

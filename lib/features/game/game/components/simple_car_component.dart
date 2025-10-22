@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
 class SimpleCarComponent extends RectangleComponent with HasGameRef {
-  static const double bounceAmplitude = 5.0; // 上下弹跳的幅度
-  static const double bounceFrequency = 2.0; // 弹跳频率
+  static const double bounceAmplitude = 5.0; // 上下彈跳的幅度
+  static const double bounceFrequency = 2.0; // 彈跳頻率
 
   double _time = 0.0;
   late Vector2 _initialPosition;
@@ -14,19 +14,19 @@ class SimpleCarComponent extends RectangleComponent with HasGameRef {
   Future<void> onLoad() async {
     await super.onLoad();
 
-    // 设置汽车大小和颜色
+    // 設定汽車大小和顏色
     size = Vector2(120, 60);
     paint = Paint()..color = Colors.red;
 
-    // 设置汽车位置 (左侧1/4处，垂直居中)
+    // 設定汽車位置（左側 1/4 處，垂直置中）
     position = Vector2(game.size.x * 0.25, game.size.y * 0.5 - size.y * 0.5);
 
     _initialPosition = position.clone();
 
-    // 设置锚点为中心
+    // 設定錨點為中心
     anchor = Anchor.center;
 
-    // 添加车窗
+    // 新增車窗
     final window = RectangleComponent(
       size: Vector2(80, 30),
       position: Vector2(0, -10),
@@ -35,7 +35,7 @@ class SimpleCarComponent extends RectangleComponent with HasGameRef {
     );
     add(window);
 
-    // 添加车轮
+    // 新增車輪
     final frontWheel = CircleComponent(
       radius: 12,
       position: Vector2(30, 25),
@@ -59,12 +59,12 @@ class SimpleCarComponent extends RectangleComponent with HasGameRef {
 
     _time += dt;
 
-    // 实现轻微的上下弹跳效果，模拟汽车行驶
+    // 實現輕微的上下彈跳效果，模擬汽車行駛
     final bounceOffset =
         math.sin(_time * bounceFrequency * 2 * math.pi) * bounceAmplitude;
     position.y = _initialPosition.y + bounceOffset;
 
-    // 添加轻微的左右摇摆效果
+    // 加入輕微的左右搖擺效果
     final swayOffset = math.sin(_time * bounceFrequency * math.pi) * 2.0;
     position.x = _initialPosition.x + swayOffset;
   }

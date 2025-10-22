@@ -14,17 +14,17 @@ class VoltiCarGame extends FlameGame with HasCollisionDetection {
   Future<void> onLoad() async {
     await super.onLoad();
 
-    // 层次顺序很重要 - 从后往前添加
+    // 層次順序很重要－從後往前加入
 
-    // 1. 添加滚动背景
+    // 1. 加入滾動背景
     background = SimpleScrollingBackground();
     add(background);
 
-    // 2. 添加道路标线
+    // 2. 加入道路標線
     roadMarkings = RoadMarkings();
     add(roadMarkings);
 
-    // 3. 添加汽车组件 (最前景)
+    // 3. 加入汽車元件（最前景）
     car = CarComponent();
     add(car);
   }
@@ -35,5 +35,5 @@ class VoltiCarGame extends FlameGame with HasCollisionDetection {
   }
 
   @override
-  Color backgroundColor() => const Color(0xFF87CEEB); // 天空蓝色作为默认背景
+  Color backgroundColor() => const Color(0xFF87CEEB); // 以天空藍作為預設背景
 }
