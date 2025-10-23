@@ -1,8 +1,10 @@
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+import '../volti_car_game.dart';
+import 'event_block.dart';
 
-class SimpleScrollingBackground extends Component with HasGameRef {
+class SimpleScrollingBackground extends Component with HasGameRef<VoltiCarGame> {
   late List<RectangleComponent> backgroundRects;
   final double scrollSpeed = 120.0; // 像素每秒
   late double backgroundWidth;
@@ -48,6 +50,9 @@ class SimpleScrollingBackground extends Component with HasGameRef {
   @override
   void update(double dt) {
     super.update(dt);
+
+    // 檢查遊戲狀態，如果暫停則不更新
+    if (game.gameState == GameState.paused) return;
 
     // 移動背景
     for (final rect in backgroundRects) {

@@ -1,8 +1,12 @@
 import 'package:flame/components.dart';
+import 'package:flame/collisions.dart';
 import 'package:logger/logger.dart';
 import 'dart:math' as math;
+import '../volti_car_game.dart';
+import 'event_block.dart';
 
-class CarComponent extends SpriteComponent with HasGameRef {
+class CarComponent extends SpriteComponent
+    with HasGameRef<VoltiCarGame>, CollisionCallbacks {
   final Logger _logger = Logger();
   static const double carSpeed = 0.0; // 汽車不移動，只有動畫效果
   static const double bounceAmplitude = 2.0; // 上下彈跳的幅度
@@ -29,6 +33,9 @@ class CarComponent extends SpriteComponent with HasGameRef {
 
       // 設定錨點為中心
       anchor = Anchor.center;
+
+      // 添加碰撞形狀
+      add(RectangleHitbox());
     } catch (e) {
       _logger.e(e);
       // 若載入失敗，建立一個簡單的彩色矩形作為汽車
@@ -42,6 +49,9 @@ class CarComponent extends SpriteComponent with HasGameRef {
   @override
   void update(double dt) {
     super.update(dt);
+
+    // 檢查遊戲狀態，如果暫停則不更新動畫
+    if (game.gameState == GameState.paused) return;
 
     _time += dt;
 

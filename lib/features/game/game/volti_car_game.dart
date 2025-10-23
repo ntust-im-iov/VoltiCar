@@ -4,11 +4,20 @@ import 'package:flutter/material.dart';
 import 'components/simple_scrolling_background.dart';
 import 'components/car_component.dart';
 import 'components/effects_components.dart';
+import 'components/event_block.dart';
+import 'components/event_manager.dart';
 
 class VoltiCarGame extends FlameGame with HasCollisionDetection {
   late SimpleScrollingBackground background;
   late CarComponent car;
   late RoadMarkings roadMarkings;
+  late EventManager eventManager;
+
+  // 遊戲狀態
+  GameState gameState = GameState.playing;
+
+  // 事件觸發回調（供 MainGameView 使用）
+  Function()? onEventTriggered;
 
   @override
   Future<void> onLoad() async {
@@ -27,6 +36,28 @@ class VoltiCarGame extends FlameGame with HasCollisionDetection {
     // 3. 加入汽車元件（最前景）
     car = CarComponent();
     add(car);
+
+    // 4. 加入事件管理器
+    eventManager = EventManager(onEventTriggered: _handleEventTriggered);
+    add(eventManager);
+  }
+
+  /// 處理事件觸發
+  void _handleEventTriggered() {
+    pauseGame();
+    onEventTriggered?.call();
+  }
+
+  /// 暫停遊戲
+  void pauseGame() {
+    gameState = GameState.paused;
+    eventManager.pause();
+  }
+
+  /// 繼續遊戲
+  void resumeGame() {
+    gameState = GameState.playing;
+    eventManager.resume();
   }
 
   @override

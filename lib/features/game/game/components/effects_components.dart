@@ -2,9 +2,11 @@ import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import '../volti_car_game.dart';
+import 'event_block.dart';
 
 /// 道路標線元件－增加道路感
-class RoadMarkings extends Component with HasGameRef {
+class RoadMarkings extends Component with HasGameRef<VoltiCarGame> {
   final List<RectangleComponent> markings = [];
   final double markingSpeed = 150.0; // 比背景稍快，營造層次感
   final double markingWidth = 8.0;
@@ -33,6 +35,9 @@ class RoadMarkings extends Component with HasGameRef {
   @override
   void update(double dt) {
     super.update(dt);
+
+    // 檢查遊戲狀態，如果暫停則不更新
+    if (game.gameState == GameState.paused) return;
 
     for (final marking in markings) {
       marking.position.x -= markingSpeed * dt;
