@@ -211,38 +211,53 @@ class _MainGameViewState extends State<MainGameView> {
             top: 40,
             right: 20,
             child: SafeArea(
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.7),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // 分數顯示
-                    Text(
-                      '分數: ${game.scoreManager.currentScore}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    // 連擊顯示
-                    if (game.scoreManager.comboCount > 1)
-                      Text(
-                        'COMBO x${game.scoreManager.comboCount}',
-                        style: TextStyle(
-                          color: Colors.orange.shade300,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+              child: StreamBuilder<int>(
+                stream: game.scoreManager.scoreStream,
+                initialData: game.scoreManager.currentScore,
+                builder: (context, scoreSnapshot) {
+                  return StreamBuilder<int>(
+                    stream: game.scoreManager.comboStream,
+                    initialData: game.scoreManager.comboCount,
+                    builder: (context, comboSnapshot) {
+                      final score = scoreSnapshot.data ?? 0;
+                      final combo = comboSnapshot.data ?? 0;
+
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                      ),
-                  ],
-                ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // 分數顯示
+                            Text(
+                              '分數: $score',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            // 連擊顯示
+                            if (combo > 1)
+                              Text(
+                                'COMBO x$combo',
+                                style: TextStyle(
+                                  color: Colors.orange.shade300,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
             ),
           ),
