@@ -212,6 +212,9 @@ class EventDatabase {
     return List.from(_allEvents);
   }
 
+  /// 獲取事件總數
+  static int get totalEventCount => _allEvents.length;
+
   /// 根據類型獲取事件
   static List<GameEvent> getEventsByType(EventType type) {
     return _allEvents.where((event) => event.type == type).toList();
@@ -234,5 +237,45 @@ class EventDatabase {
     final eventsOfType = getEventsByType(selectedType);
     final index = DateTime.now().microsecondsSinceEpoch % eventsOfType.length;
     return eventsOfType[index];
+  }
+
+  /// 隨機獲取一個未使用的事件（根據權重）
+  /// 如果某類型的事件都已使用，則從其他類型中選擇
+  static GameEvent? getRandomUnusedEvent(List<String> usedEventIds) {
+    // 過濾出未使用的事件
+    final unusedEvents =
+        _allEvents.where((event) => !usedEventIds.contains(event.id)).toList();
+
+    // 如果沒有未使用的事件，返回 null
+    if (unusedEvents.isEmpty) {
+      return null;
+    }
+
+    // 依權重分類未使用的事件
+    final unusedPositive =
+        unusedEvents.where((e) => e.type == EventType.positive).toList();
+    final unusedNeutral =
+        unusedEvents.where((e) => e.type == EventType.neutral).toList();
+    final unusedNegative =
+        unusedEvents.where((e) => e.type == EventType.negative).toList();
+
+    // 根據權重選擇類型
+    final random = DateTime.now().millisecondsSinceEpoch % 100;
+    List<GameEvent> selectedPool;
+
+    if (random < 30 && unusedPositive.isNotEmpty) {
+      selectedPool = unusedPositive;
+    } else if (random < 80 && unusedNeutral.isNotEmpty) {
+      selectedPool = unusedNeutral;
+    } else if (unusedNegative.isNotEmpty) {
+      selectedPool = unusedNegative;
+    } else {
+      // 如果首選類型已用完，隨機從其他可用的選
+      selectedPool = unusedEvents;
+    }
+
+    // 從選定的池中隨機選擇一個
+    final index = DateTime.now().microsecondsSinceEpoch % selectedPool.length;
+    return selectedPool[index];
   }
 }

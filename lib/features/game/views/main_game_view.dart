@@ -24,6 +24,8 @@ class _MainGameViewState extends State<MainGameView> {
     game = VoltiCarGame();
     // 設定事件觸發回調
     game.onEventTriggered = _showEventDialog;
+    // 設定遊戲結束回調
+    game.onGameEnd = _handleGameEnd;
   }
 
   @override
@@ -48,6 +50,110 @@ class _MainGameViewState extends State<MainGameView> {
         );
       },
     );
+  }
+
+  /// 處理遊戲結束（所有題目回答完成）
+  Future<void> _handleGameEnd() async {
+    if (!mounted) return;
+
+    // 使用 SchedulerBinding 在下一幀顯示對話框，避免與遊戲更新循環衝突
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      
+      // 顯示結果對話框
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          final summary = game.scoreManager.getGameSummary();
+          return AlertDialog(
+            title: const Text(
+              '🎉 遊戲完成！',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '恭喜！您已完成所有 15 道環保題目！',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildResultRow('總分數', '${summary['score']} 分', Icons.star),
+                  _buildResultRow(
+                      '答對題數',
+                      '${summary['correctAnswers']}/${summary['totalEvents']}',
+                      Icons.check_circle),
+                  _buildResultRow(
+                      '最高連擊', 'x${summary['bestCombo']}', Icons.whatshot),
+                  _buildResultRow(
+                      '遊戲時間',
+                      '${(summary['gameTime'] as double).toStringAsFixed(0)} 秒',
+                      Icons.timer),
+                  const SizedBox(height: 8),
+                  Text(
+                    _getEnvironmentalRating(summary['correctAnswers'] as int),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.green.shade700,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // 關閉對話框
+                  Navigator.of(context).pop(); // 返回設置畫面
+                },
+                child: const Text('返回主選單', style: TextStyle(fontSize: 16)),
+              ),
+            ],
+          );
+        },
+      );
+    });
+  }
+
+  /// 構建結果行
+  Widget _buildResultRow(String label, String value, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.blue.shade700),
+          const SizedBox(width: 8),
+          Text('$label: ', style: const TextStyle(fontSize: 14)),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 根據答對題數給予環保評價
+  String _getEnvironmentalRating(int correctAnswers) {
+    if (correctAnswers >= 14) {
+      return '🌟 環保大師！您對環保知識瞭如指掌！';
+    } else if (correctAnswers >= 12) {
+      return '🌿 環保達人！繼續保持！';
+    } else if (correctAnswers >= 10) {
+      return '♻️ 環保新秀！還有進步空間！';
+    } else if (correctAnswers >= 7) {
+      return '🌱 環保學習者！加油！';
+    } else {
+      return '🌍 讓我們一起學習環保知識！';
+    }
   }
 
   /// 處理返回（結束遊戲）

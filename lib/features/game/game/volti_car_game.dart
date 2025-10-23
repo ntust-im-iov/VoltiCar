@@ -28,8 +28,8 @@ class VoltiCarGame extends FlameGame with HasCollisionDetection {
   // 事件觸發回調（供 MainGameView 使用）
   Function(GameEvent)? onEventTriggered;
 
-  // 遊戲結束回調
-  Function()? onGameEnd;
+  // 遊戲結束回調（異步，確保 UI 處理完成）
+  Future<void> Function()? onGameEnd;
 
   @override
   Future<void> onLoad() async {
@@ -50,7 +50,10 @@ class VoltiCarGame extends FlameGame with HasCollisionDetection {
     add(car);
 
     // 4. 加入事件管理器
-    eventManager = EventManager(onEventTriggered: _handleEventTriggered);
+    eventManager = EventManager(
+      onEventTriggered: _handleEventTriggered,
+      onAllEventsCompleted: _handleAllEventsCompleted,
+    );
     add(eventManager);
   }
 
@@ -58,6 +61,12 @@ class VoltiCarGame extends FlameGame with HasCollisionDetection {
   void _handleEventTriggered(GameEvent event) {
     pauseGame();
     onEventTriggered?.call(event);
+  }
+
+  /// 處理所有事件完成（所有題目都已回答）
+  Future<void> _handleAllEventsCompleted() async {
+    // 自動結束遊戲 - 等待保存完成
+    await endGame();
   }
 
   /// 暫停遊戲
@@ -87,8 +96,8 @@ class VoltiCarGame extends FlameGame with HasCollisionDetection {
       playTime: summary['gameTime'] as double,
     );
 
-    // 觸發遊戲結束回調
-    onGameEnd?.call();
+    // 觸發遊戲結束回調（異步）
+    await onGameEnd?.call();
   }
 
   @override
