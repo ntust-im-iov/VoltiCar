@@ -2,6 +2,7 @@ import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import '../volti_car_game.dart';
+import '../../models/game_event.dart';
 
 /// 遊戲狀態枚舉
 enum GameState {
@@ -13,16 +14,18 @@ enum GameState {
 class EventBlock extends RectangleComponent
     with HasGameRef<VoltiCarGame>, CollisionCallbacks {
   final double speed = 150.0; // 移動速度
-  final VoidCallback onBlockCollision; // 碰撞回調
+  final GameEvent event; // 關聯的事件
+  final Function(GameEvent) onBlockCollision; // 碰撞回調
 
   EventBlock({
     required Vector2 position,
+    required this.event,
     required this.onBlockCollision,
   }) : super(
           position: position,
-          size: Vector2(40, 40), // 方塊大小
+          size: Vector2(50, 50), // 方塊大小
           paint: Paint()
-            ..color = Colors.orange
+            ..color = event.getColor()
             ..style = PaintingStyle.fill,
         ) {
     anchor = Anchor.center;
@@ -59,8 +62,8 @@ class EventBlock extends RectangleComponent
   ) {
     super.onCollisionStart(intersectionPoints, other);
 
-    // 觸發碰撞回調
-    onBlockCollision();
+    // 觸發碰撞回調，傳遞事件資料
+    onBlockCollision(event);
 
     // 從遊戲中移除此方塊
     removeFromParent();

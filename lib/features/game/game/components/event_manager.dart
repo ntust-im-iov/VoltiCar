@@ -1,18 +1,20 @@
 import 'package:flame/components.dart';
 import 'dart:math' as math;
 import 'event_block.dart';
+import '../../data/event_database.dart';
+import '../../models/game_event.dart';
 
 /// 事件管理器 - 負責隨機生成事件方塊
 class EventManager extends Component with HasGameRef {
   final math.Random _random = math.Random();
-  final Function() onEventTriggered; // 事件觸發回調
+  final Function(GameEvent) onEventTriggered; // 事件觸發回調（傳遞事件資料）
 
   double _timeSinceLastEvent = 0.0;
   double _nextEventDelay = 0.0;
 
-  // 生成間隔設定（秒）
-  static const double minEventDelay = 3.0;
-  static const double maxEventDelay = 8.0;
+  // 生成間隔設定（秒）- 固定難度
+  static const double minEventDelay = 4.0;
+  static const double maxEventDelay = 7.0;
 
   bool isActive = true; // 是否繼續生成事件
 
@@ -42,12 +44,16 @@ class EventManager extends Component with HasGameRef {
   }
 
   void _spawnEvent() {
+    // 從資料庫隨機選取一個事件
+    final GameEvent event = EventDatabase.getRandomEvent();
+
     // 在螢幕右側隨機高度生成事件方塊
     final double randomY = game.size.y * 0.3 +
         _random.nextDouble() * (game.size.y * 0.4); // 在中間範圍內隨機
 
     final eventBlock = EventBlock(
       position: Vector2(game.size.x + 20, randomY),
+      event: event,
       onBlockCollision: onEventTriggered,
     );
 
