@@ -44,6 +44,9 @@ class ApiConstants {
   static const String chooseVehicle =
       '/api/v1/player/game_session/vehicle'; // 選擇車輛
 
+  // Shop
+  static const String shopItems = '/api/v1/game/shop/items'; // 商店物品列表
+
   // API version
   static const String apiVersion = '/api/v1';
 
