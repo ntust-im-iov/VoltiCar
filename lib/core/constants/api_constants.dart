@@ -47,6 +47,10 @@ class ApiConstants {
   // Shop
   static const String shopItems = '/api/v1/game/shop/items'; // 商店物品列表
 
+  // Game Session
+  static const String gameSessionSummary =
+      '/api/v1/player/game_session/summary'; // 遊戲會話摘要
+
   // API version
   static const String apiVersion = '/api/v1';
 
