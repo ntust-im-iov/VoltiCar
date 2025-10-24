@@ -32,6 +32,7 @@ class ApiConstants {
   static const String playerData = '/api/v1/player'; // 玩家資料
   static const String playerWarehouse =
       '/api/v1/player/warehouse/items'; // 玩家倉庫物品
+  static const String playerVehicles = '/api/v1/player/vehicles'; // 玩家車輛
 
   // Destination
   static const String fetchDestinations =
