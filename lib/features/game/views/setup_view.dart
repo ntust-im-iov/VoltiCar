@@ -14,6 +14,8 @@ import '../viewmodels/vehicle_viewmodel.dart'; // 引入 VehicleViewModel
 import '../viewmodels/vehicle_choose_viewmodel.dart'; // 引入 VehicleChooseViewModel
 import '../views/shop_dialog_view.dart'; // 引入 ShopDialogView
 import '../viewmodels/shop_viewmodel.dart'; // 引入 ShopViewModel
+import '../views/game_start_confirm_dialog_view.dart'; // 引入 GameStartConfirmDialogView
+import '../viewmodels/game_session_viewmodel.dart'; // 引入 GameSessionViewModel
 import '../views/main_game_view.dart'; // 引入 MainGameView
 
 class SetupView extends StatefulWidget {
@@ -179,11 +181,14 @@ class _SetupViewState extends State<SetupView> {
 
   void _onStartGame() {
     print('开始游戏按钮被点击');
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const MainGameView(),
-      ),
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return ChangeNotifierProvider(
+          create: (context) => GameSessionViewModel(),
+          child: const GameStartConfirmDialogView(),
+        );
+      },
     );
   }
 
