@@ -59,7 +59,7 @@ class _MainGameViewState extends State<MainGameView> {
     // 使用 SchedulerBinding 在下一幀顯示對話框，避免與遊戲更新循環衝突
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      
+
       // 顯示結果對話框
       showDialog(
         context: context,
@@ -108,7 +108,7 @@ class _MainGameViewState extends State<MainGameView> {
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop(); // 關閉對話框
-                  Navigator.of(context).pop(); // 返回設置畫面
+                  // Navigator.of(context).pop(); // 返回設置畫面
                 },
                 child: const Text('返回主選單', style: TextStyle(fontSize: 16)),
               ),
