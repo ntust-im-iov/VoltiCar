@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/vehicle_viewmodel.dart';
+import '../viewmodels/vehicle_choose_viewmodel.dart';
 import '../models/vehicle_model.dart';
 
 class VehicleDialogView extends StatefulWidget {
@@ -50,6 +51,33 @@ class _VehicleDialogViewState extends State<VehicleDialogView> {
     }
   }
 
+  void _handleChooseVehicle(
+      String vehicleId, VehicleChooseViewModel chooseViewModel) async {
+    await chooseViewModel.chooseVehicle(vehicleId);
+
+    // 顯示結果訊息
+    if (mounted) {
+      if (chooseViewModel.error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('錯誤: ${chooseViewModel.error}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      } else if (chooseViewModel.isChooseSuccess) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(chooseViewModel.chosenVehicle?.message ?? '車輛選擇成功'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+      setState(() {});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -61,8 +89,8 @@ class _VehicleDialogViewState extends State<VehicleDialogView> {
       child: SizedBox(
         width: MediaQuery.of(context).size.width * 0.7,
         height: MediaQuery.of(context).size.height * 0.7,
-        child: Consumer<VehicleViewModel>(
-          builder: (context, viewModel, child) {
+        child: Consumer2<VehicleViewModel, VehicleChooseViewModel>(
+          builder: (context, viewModel, chooseViewModel, child) {
             if (viewModel.isLoading) {
               return const Center(child: CircularProgressIndicator());
             }
@@ -135,6 +163,9 @@ class _VehicleDialogViewState extends State<VehicleDialogView> {
                       itemCount: viewModel.vehicles.length,
                       itemBuilder: (context, index) {
                         final Vehicle vehicle = viewModel.vehicles[index];
+                        final isChosen =
+                            chooseViewModel.isVehicleChosen(vehicle.vehicleId);
+
                         return Card(
                           color: const Color(0xFF232323),
                           margin: const EdgeInsets.symmetric(vertical: 4),
@@ -144,7 +175,8 @@ class _VehicleDialogViewState extends State<VehicleDialogView> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(
                                       child: Text(
@@ -163,7 +195,8 @@ class _VehicleDialogViewState extends State<VehicleDialogView> {
                                         color: _getStatusColor(vehicle.status)
                                             .withOpacity(0.2),
                                         border: Border.all(
-                                          color: _getStatusColor(vehicle.status),
+                                          color:
+                                              _getStatusColor(vehicle.status),
                                           width: 1,
                                         ),
                                         borderRadius: BorderRadius.circular(4),
@@ -171,7 +204,8 @@ class _VehicleDialogViewState extends State<VehicleDialogView> {
                                       child: Text(
                                         _getStatusText(vehicle.status),
                                         style: TextStyle(
-                                          color: _getStatusColor(vehicle.status),
+                                          color:
+                                              _getStatusColor(vehicle.status),
                                           fontSize: 12,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -217,6 +251,64 @@ class _VehicleDialogViewState extends State<VehicleDialogView> {
                                           color: Colors.white70, fontSize: 14),
                                     ),
                                   ],
+                                ),
+                                const SizedBox(height: 12),
+                                // 選擇按鈕
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed: (chooseViewModel.isChoosing ||
+                                            isChosen)
+                                        ? null
+                                        : () => _handleChooseVehicle(
+                                            vehicle.vehicleId, chooseViewModel),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: isChosen
+                                          ? Colors.green
+                                          : const Color(0xFF42A5F5),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      disabledBackgroundColor: isChosen
+                                          ? Colors.green.withOpacity(0.6)
+                                          : Colors.grey,
+                                    ),
+                                    child: chooseViewModel.isChoosing &&
+                                            !isChosen
+                                        ? const SizedBox(
+                                            height: 16,
+                                            width: 16,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                      Colors.white),
+                                            ),
+                                          )
+                                        : Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                isChosen
+                                                    ? Icons.check_circle
+                                                    : Icons.directions_car,
+                                                size: 16,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                isChosen ? '已選擇' : '選擇此車輛',
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                  ),
                                 ),
                               ],
                             ),

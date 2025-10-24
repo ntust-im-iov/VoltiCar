@@ -11,6 +11,7 @@ import '../viewmodels/warehouse_viewmodel.dart';
 import '../viewmodels/destination_choose_viewmodel.dart'; // 引入 DestinationChooseViewModel
 import '../views/vehicle_dialog_view.dart'; // 引入 VehicleDialogView
 import '../viewmodels/vehicle_viewmodel.dart'; // 引入 VehicleViewModel
+import '../viewmodels/vehicle_choose_viewmodel.dart'; // 引入 VehicleChooseViewModel
 import '../views/main_game_view.dart'; // 引入 MainGameView
 
 class SetupView extends StatefulWidget {
@@ -146,8 +147,15 @@ class _SetupViewState extends State<SetupView> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return ChangeNotifierProvider(
-          create: (context) => VehicleViewModel(),
+        return MultiProvider(
+          providers: [
+            ChangeNotifierProvider(
+              create: (context) => VehicleViewModel(),
+            ),
+            ChangeNotifierProvider(
+              create: (context) => VehicleChooseViewModel(),
+            ),
+          ],
           child: const VehicleDialogView(),
         );
       },
