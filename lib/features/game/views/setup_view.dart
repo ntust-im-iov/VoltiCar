@@ -12,6 +12,8 @@ import '../viewmodels/destination_choose_viewmodel.dart'; // 引入 DestinationC
 import '../views/vehicle_dialog_view.dart'; // 引入 VehicleDialogView
 import '../viewmodels/vehicle_viewmodel.dart'; // 引入 VehicleViewModel
 import '../viewmodels/vehicle_choose_viewmodel.dart'; // 引入 VehicleChooseViewModel
+import '../views/shop_dialog_view.dart'; // 引入 ShopDialogView
+import '../viewmodels/shop_viewmodel.dart'; // 引入 ShopViewModel
 import '../views/main_game_view.dart'; // 引入 MainGameView
 
 class SetupView extends StatefulWidget {
@@ -162,6 +164,19 @@ class _SetupViewState extends State<SetupView> {
     );
   }
 
+  void _onShopOpened() {
+    print('商店按鈕被點擊');
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return ChangeNotifierProvider(
+          create: (context) => ShopViewModel(),
+          child: const ShopDialogView(),
+        );
+      },
+    );
+  }
+
   void _onStartGame() {
     print('开始游戏按钮被点击');
     Navigator.push(
@@ -277,7 +292,7 @@ class _SetupViewState extends State<SetupView> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // 左側：2x2 網格
+                  // 左側：3x2 網格
                   Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -307,6 +322,19 @@ class _SetupViewState extends State<SetupView> {
                             onTap: _onRouteSelected,
                             showImage: false,
                           ),
+                          SizedBox(
+                              width: MediaQuery.of(context).size.width * 0.02),
+                          AdaptiveButton(
+                            widthGain: 0.15,
+                            heightGain: 0.18,
+                            backgroundColor: Colors.black.withOpacity(0.5),
+                            borderColor: Colors.blue.withOpacity(0.3),
+                            imagePath: "assets/images/volticar_logo.png",
+                            text: '倉儲貨物',
+                            textColor: Colors.white,
+                            onTap: _onWarehouseCargoChecked,
+                            showImage: false,
+                          ),
                         ],
                       ),
                       SizedBox(
@@ -319,9 +347,9 @@ class _SetupViewState extends State<SetupView> {
                             backgroundColor: Colors.black.withOpacity(0.5),
                             borderColor: Colors.blue.withOpacity(0.3),
                             imagePath: "assets/images/volticar_logo.png",
-                            text: '倉儲貨物',
+                            text: '顯示車輛',
                             textColor: Colors.white,
-                            onTap: _onWarehouseCargoChecked,
+                            onTap: _onShowVehicles,
                             showImage: false,
                           ),
                           SizedBox(
@@ -330,30 +358,29 @@ class _SetupViewState extends State<SetupView> {
                             widthGain: 0.15,
                             heightGain: 0.18,
                             backgroundColor: Colors.black.withOpacity(0.5),
-                            borderColor: Colors.blue.withOpacity(0.3),
+                            borderColor: Colors.orange.withOpacity(0.3),
                             imagePath: "assets/images/volticar_logo.png",
-                            text: '顯示車輛',
+                            text: '商店',
                             textColor: Colors.white,
-                            onTap: _onShowVehicles,
+                            onTap: _onShopOpened,
+                            showImage: false,
+                          ),
+                          SizedBox(
+                              width: MediaQuery.of(context).size.width * 0.02),
+                          AdaptiveButton(
+                            widthGain: 0.15,
+                            heightGain: 0.18,
+                            backgroundColor: Colors.black.withOpacity(0.5),
+                            borderColor: Colors.green.withOpacity(0.5),
+                            imagePath: "assets/images/volticar_logo.png",
+                            text: '開始遊戲',
+                            textColor: Colors.white,
+                            onTap: _onStartGame,
                             showImage: false,
                           ),
                         ],
                       ),
                     ],
-                  ),
-                  // 間距
-                  SizedBox(width: MediaQuery.of(context).size.width * 0.04),
-                  // 右側：開始遊戲按鈕
-                  AdaptiveButton(
-                    widthGain: 0.18,
-                    heightGain: 0.39,
-                    backgroundColor: Colors.black.withOpacity(0.5),
-                    borderColor: Colors.green.withOpacity(0.5),
-                    imagePath: "assets/images/volticar_logo.png",
-                    text: '開始遊戲',
-                    textColor: Colors.white,
-                    onTap: _onStartGame,
-                    showImage: false,
                   ),
                 ],
               ),
