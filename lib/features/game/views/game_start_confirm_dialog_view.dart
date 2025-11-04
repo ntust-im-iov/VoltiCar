@@ -80,7 +80,7 @@ class _GameStartConfirmDialogViewState
               children: [
                 // 頂部標題列
                 Container(
-                  height: 40,
+                  height: 30,
                   decoration: const BoxDecoration(
                     color: Color(0xFF1A1A1A),
                     border: Border(
@@ -89,22 +89,20 @@ class _GameStartConfirmDialogViewState
                   ),
                   child: Row(
                     children: [
-                      const SizedBox(width: 16),
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back,
+                            color: Colors.white, size: 16),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                      const SizedBox(width: 2),
                       const Text(
                         '遊戲開始確認',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 16,
+                          fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.close,
-                            color: Colors.white, size: 20),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                      const SizedBox(width: 8),
                     ],
                   ),
                 ),
@@ -117,21 +115,38 @@ class _GameStartConfirmDialogViewState
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // 車輛資訊
-                          _buildVehicleCard(
-                              summary.sessionSummary.selectedVehicle),
+                          // 第一行：車輛 + 貨物
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: _buildVehicleCard(
+                                    summary.sessionSummary.selectedVehicle),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildCargoCard(
+                                    summary.sessionSummary.selectedCargo),
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 12),
-                          // 貨物資訊
-                          _buildCargoCard(summary.sessionSummary.selectedCargo),
+                          // 第二行：目的地 + 相關任務
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: _buildDestinationCard(
+                                    summary.sessionSummary.selectedDestination),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildTasksCard(summary.relatedTasks),
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 12),
-                          // 目的地資訊
-                          _buildDestinationCard(
-                              summary.sessionSummary.selectedDestination),
-                          const SizedBox(height: 12),
-                          // 相關任務
-                          _buildTasksCard(summary.relatedTasks),
-                          const SizedBox(height: 12),
-                          // 警告訊息（條件顯示）
+                          // 警告訊息（條件顯示，單獨一列）
                           if (summary.startGameWarnings.isNotEmpty)
                             _buildWarningsCard(summary.startGameWarnings),
                         ],
@@ -141,6 +156,7 @@ class _GameStartConfirmDialogViewState
                 ),
                 // 底部按鈕區域
                 Container(
+                  height: 40,
                   padding: const EdgeInsets.all(5),
                   decoration: const BoxDecoration(
                     color: Color(0xFF1A1A1A),

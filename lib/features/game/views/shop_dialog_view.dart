@@ -86,13 +86,12 @@ class _ShopDialogViewState extends State<ShopDialogView> {
                   ),
                   child: Row(
                     children: [
-                      const SizedBox(width: 8),
                       IconButton(
                         icon: const Icon(Icons.arrow_back,
                             color: Colors.white, size: 16),
                         onPressed: () => Navigator.of(context).pop(),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 2),
                       const Text(
                         '商店',
                         style: TextStyle(

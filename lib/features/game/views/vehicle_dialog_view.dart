@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../viewmodels/vehicle_viewmodel.dart';
 import '../viewmodels/vehicle_choose_viewmodel.dart';
 import '../models/vehicle_model.dart';
+import '../../../shared/widgets/adaptive_button.dart';
 
 class VehicleDialogView extends StatefulWidget {
   const VehicleDialogView({Key? key}) : super(key: key);
@@ -130,13 +131,12 @@ class _VehicleDialogViewState extends State<VehicleDialogView> {
                   ),
                   child: Row(
                     children: [
-                      const SizedBox(width: 8),
                       IconButton(
                         icon: const Icon(Icons.arrow_back,
                             color: Colors.white, size: 16),
                         onPressed: () => Navigator.of(context).pop(),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 2),
                       const Text(
                         '車輛列表',
                         style: TextStyle(
@@ -253,63 +253,51 @@ class _VehicleDialogViewState extends State<VehicleDialogView> {
                                   ],
                                 ),
                                 const SizedBox(height: 12),
-                                // 選擇按鈕
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton(
-                                    onPressed: (chooseViewModel.isChoosing ||
+                                // 選擇按鈕（像素風格）
+                                if (chooseViewModel.isChoosing && !isChosen)
+                                  const Center(
+                                    child: SizedBox(
+                                      height: 50,
+                                      width: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                Colors.white),
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  AdaptiveButton(
+                                    widthGain: 0.15,
+                                    heightGain: 0.18,
+                                    backgroundColor: isChosen
+                                        ? const Color(0xFF1E5F3A)
+                                        : const Color(0xFF1E3A5F),
+                                    borderColor: isChosen
+                                        ? const Color(0xFF4AE290)
+                                        : const Color(0xFF4A90E2),
+                                    highlightColor: isChosen
+                                        ? const Color(0xFF7CF5B3)
+                                        : const Color(0xFF7CB3F5),
+                                    shadowColor: isChosen
+                                        ? const Color(0xFF0D3A1F)
+                                        : const Color(0xFF0D1F3A),
+                                    imagePath: "",
+                                    iconPath: isChosen
+                                        ? "assets/icons/play.png"
+                                        : "assets/icons/car.png",
+                                    text: isChosen ? '已選擇' : '選擇此車輛',
+                                    textColor: Colors.white,
+                                    fixedFontSize: 14.0,
+                                    fixedIconSize: 24.0,
+                                    onTap: (chooseViewModel.isChoosing ||
                                             isChosen)
-                                        ? null
+                                        ? () {}
                                         : () => _handleChooseVehicle(
                                             vehicle.vehicleId, chooseViewModel),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: isChosen
-                                          ? Colors.green
-                                          : const Color(0xFF42A5F5),
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 12),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      disabledBackgroundColor: isChosen
-                                          ? Colors.green.withOpacity(0.6)
-                                          : Colors.grey,
-                                    ),
-                                    child: chooseViewModel.isChoosing &&
-                                            !isChosen
-                                        ? const SizedBox(
-                                            height: 16,
-                                            width: 16,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              valueColor:
-                                                  AlwaysStoppedAnimation<Color>(
-                                                      Colors.white),
-                                            ),
-                                          )
-                                        : Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Icon(
-                                                isChosen
-                                                    ? Icons.check_circle
-                                                    : Icons.directions_car,
-                                                size: 16,
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                isChosen ? '已選擇' : '選擇此車輛',
-                                                style: const TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
+                                    showImage: true,
                                   ),
-                                ),
                               ],
                             ),
                           ),
