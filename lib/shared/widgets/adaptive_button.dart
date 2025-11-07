@@ -141,8 +141,11 @@ class _AdaptiveButtonState extends State<AdaptiveButton> {
                   Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (widget.showImage && widget.iconPath != null)
+                        if (widget.showImage &&
+                            widget.iconPath != null &&
+                            widget.iconPath!.isNotEmpty)
                           Padding(
                             padding: EdgeInsets.only(
                               bottom: screenHeight * widget.heightGain * 0.08,
@@ -154,24 +157,35 @@ class _AdaptiveButtonState extends State<AdaptiveButton> {
                               height: widget.fixedIconSize ??
                                   (screenHeight * widget.heightGain * 0.35),
                               fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const SizedBox.shrink();
+                              },
                             ),
                           ),
-                        Text(
-                          widget.text,
-                          style: TextStyle(
-                            color: widget.textColor,
-                            fontSize: widget.fixedFontSize ??
-                                (screenWidth * widget.widthGain * 0.09),
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.0,
-                            shadows: [
-                              Shadow(
-                                offset: const Offset(2, 2),
-                                color: Colors.black.withOpacity(0.5),
+                        Flexible(
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: Text(
+                              widget.text,
+                              style: TextStyle(
+                                color: widget.textColor,
+                                fontSize: widget.fixedFontSize ??
+                                    (screenWidth * widget.widthGain * 0.09),
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.0,
+                                shadows: [
+                                  Shadow(
+                                    offset: const Offset(2, 2),
+                                    color: Colors.black.withOpacity(0.5),
+                                  ),
+                                ],
                               ),
-                            ],
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
+                            ),
                           ),
-                          textAlign: TextAlign.center,
                         ),
                       ],
                     ),

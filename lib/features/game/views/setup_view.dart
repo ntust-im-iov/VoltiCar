@@ -1,95 +1,35 @@
-import 'package:flutter/material.dart'; // 引入 Flutter Material UI 库
-import 'package:flutter/services.dart'; // 引入 Flutter Services 库，用于控制设备方向
-import 'package:provider/provider.dart'; // 引入 Provider
-import '../../../shared/widgets/adaptive_button.dart'; // 引入 AdaptiveButton
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../../../shared/widgets/adaptive_button.dart';
 import '../views/task_assignment_view.dart';
 import '../views/player_data_display_view.dart';
-import '../views/destination_fetch_view.dart'; // 引入 DestinationFetchView
-import '../viewmodels/destination_fetch_viewmodel.dart'; // 引入 DestinationFetchViewModel
+import '../views/destination_fetch_view.dart';
+import '../viewmodels/destination_fetch_viewmodel.dart';
 import '../views/warehouse_dialog_view.dart';
 import '../viewmodels/warehouse_viewmodel.dart';
-import '../viewmodels/destination_choose_viewmodel.dart'; // 引入 DestinationChooseViewModel
-import '../views/vehicle_dialog_view.dart'; // 引入 VehicleDialogView
-import '../viewmodels/vehicle_viewmodel.dart'; // 引入 VehicleViewModel
-import '../viewmodels/vehicle_choose_viewmodel.dart'; // 引入 VehicleChooseViewModel
-import '../views/shop_dialog_view.dart'; // 引入 ShopDialogView
-import '../viewmodels/shop_viewmodel.dart'; // 引入 ShopViewModel
-import '../views/game_start_confirm_dialog_view.dart'; // 引入 GameStartConfirmDialogView
-import '../viewmodels/game_session_viewmodel.dart'; // 引入 GameSessionViewModel
-import '../views/main_game_view.dart'; // 引入 MainGameView
+import '../viewmodels/destination_choose_viewmodel.dart';
+import '../views/vehicle_dialog_view.dart';
+import '../viewmodels/vehicle_viewmodel.dart';
+import '../viewmodels/vehicle_choose_viewmodel.dart';
+import '../views/shop_dialog_view.dart';
+import '../viewmodels/shop_viewmodel.dart';
+import '../views/game_start_confirm_dialog_view.dart';
+import '../viewmodels/game_session_viewmodel.dart';
+import '../viewmodels/player_data_viewmodel.dart';
 
 class SetupView extends StatefulWidget {
-  // 设置页面，用于设置游戏参数
   const SetupView({super.key});
 
   @override
-  State<SetupView> createState() => _SetupViewState(); // 创建 SetupView 的状态
+  State<SetupView> createState() => _SetupViewState();
 }
 
 class _SetupViewState extends State<SetupView> {
-  // SetupView 的状态
-  // List<Cargo> warehouseCargo = [
-  //   // 仓库货物列表
-  //   Cargo(
-  //     itemId: '708d1d5c-bd49-495e-916a-5ef219b315a6',
-  //     name: '鐵礦石 (v4)',
-  //     description: '未加工的鐵礦石，用於工業生產。',
-  //     category: '原材料',
-  //     weightPerUnit: 100,
-  //     volumePerUnit: 0.05,
-  //     baseValuePerUnit: 20,
-  //     isFragile: false,
-  //     isPerishable: false,
-  //     iconUrl: '/icons/iron_ore_v4.png',
-  //   ),
-  //   Cargo(
-  //     itemId: '708d1d5c-bd49-495e-916a-5ef219b315a7',
-  //     name: '鐵礦石 (v5)',
-  //     description: '未加工的鐵礦石，用於工業生產。',
-  //     category: '原材料',
-  //     weightPerUnit: 100,
-  //     volumePerUnit: 0.05,
-  //     baseValuePerUnit: 20,
-  //     isFragile: false,
-  //     isPerishable: false,
-  //     iconUrl: '/icons/iron_ore_v4.png',
-  //   ),
-  // ];
-
-  // List<Cargo> trunkCargo = [
-  //   // 后备箱货物列表
-  //   Cargo(
-  //     itemId: '708d1d5c-bd49-495e-916a-5ef219b315a8',
-  //     name: '鐵礦石 (v6)',
-  //     description: '未加工的鐵礦石，用於工業生產。',
-  //     category: '原材料',
-  //     weightPerUnit: 100,
-  //     volumePerUnit: 0.05,
-  //     baseValuePerUnit: 20,
-  //     isFragile: false,
-  //     isPerishable: false,
-  //     iconUrl: '/icons/iron_ore_v4.png',
-  //   ),
-  //   Cargo(
-  //     itemId: '708d1d5c-bd49-495e-916a-5ef219b315a9',
-  //     name: '鐵礦石 (v7)',
-  //     description: '未加工的鐵礦石，用於工業生產。',
-  //     category: '原材料',
-  //     weightPerUnit: 100,
-  //     volumePerUnit: 0.05,
-  //     baseValuePerUnit: 20,
-  //     isFragile: false,
-  //     isPerishable: false,
-  //     iconUrl: '/icons/iron_ore_v4.png',
-  //   ),
-  // ];
-
   @override
   void initState() {
-    // 初始化状态
     super.initState();
     SystemChrome.setPreferredOrientations([
-      // 设置屏幕方向为横向
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
@@ -97,14 +37,11 @@ class _SetupViewState extends State<SetupView> {
 
   @override
   void dispose() {
-    // 销毁状态
-    SystemChrome.setPreferredOrientations(
-        [DeviceOrientation.portraitUp]); // 设置屏幕方向为纵向
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     super.dispose();
   }
 
   void _onTaskAssigned() {
-    print('委託任務按鈕被點擊');
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -114,7 +51,6 @@ class _SetupViewState extends State<SetupView> {
   }
 
   void _onRouteSelected() {
-    print('路線選擇按鈕被點擊');
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -134,7 +70,6 @@ class _SetupViewState extends State<SetupView> {
   }
 
   void _onWarehouseCargoChecked() {
-    print('倉儲貨物檢查按鈕被點擊');
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -147,7 +82,6 @@ class _SetupViewState extends State<SetupView> {
   }
 
   void _onShowVehicles() {
-    print('顯示車輛按鈕被點擊');
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -167,7 +101,6 @@ class _SetupViewState extends State<SetupView> {
   }
 
   void _onShopOpened() {
-    print('商店按鈕被點擊');
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -180,7 +113,6 @@ class _SetupViewState extends State<SetupView> {
   }
 
   void _onStartGame() {
-    print('开始游戏按钮被点击');
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -199,6 +131,13 @@ class _SetupViewState extends State<SetupView> {
   @override
   Widget build(BuildContext context) {
     // 构建 Widget
+    return ChangeNotifierProvider(
+      create: (context) => PlayerDataViewModel()..fetchPlayerData(),
+      child: _buildContent(context),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
     return Container(
       // 使用 Container 作为背景
       decoration: BoxDecoration(
@@ -216,7 +155,6 @@ class _SetupViewState extends State<SetupView> {
           // 使用 Stack 布局，允许 Widget 重叠
           children: [
             Positioned(
-              top: MediaQuery.of(context).size.height * 0.07,
               right: MediaQuery.of(context).size.width * 0.04,
               child: SafeArea(
                 child: IconButton(
@@ -254,33 +192,39 @@ class _SetupViewState extends State<SetupView> {
                     ),
                   ),
                   SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '玩家名稱',
-                        style: TextStyle(color: Colors.white, fontSize: 18),
-                      ),
-                      SizedBox(height: 5),
-                      Container(
-                        width: 100,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[800],
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: FractionallySizedBox(
-                          alignment: Alignment.centerLeft,
-                          widthFactor: 0.7,
-                          child: Container(
+                  Consumer<PlayerDataViewModel>(
+                    builder: (context, viewModel, child) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            viewModel.isLoading
+                                ? '載入中...'
+                                : (viewModel.playerData?.displayName ?? '玩家名稱'),
+                            style: TextStyle(color: Colors.white, fontSize: 18),
+                          ),
+                          SizedBox(height: 5),
+                          Container(
+                            width: 100,
+                            height: 5,
                             decoration: BoxDecoration(
-                              color: Colors.lightGreenAccent,
+                              color: Colors.grey[800],
                               borderRadius: BorderRadius.circular(5),
                             ),
+                            child: FractionallySizedBox(
+                              alignment: Alignment.centerLeft,
+                              widthFactor: 0.7,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: const Color.fromRGBO(178, 255, 89, 1),
+                                  borderRadius: BorderRadius.circular(5),
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    ],
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
@@ -288,9 +232,9 @@ class _SetupViewState extends State<SetupView> {
             Container(), // 空 Container，用于占位
             Positioned(
               // 使用 Positioned Widget 定位按鈕區域
-              left: MediaQuery.of(context).size.width * 0.5 -
+              left: MediaQuery.of(context).size.width * 0.4 -
                   (MediaQuery.of(context).size.width * 0.6 / 2), // 置中
-              top: MediaQuery.of(context).size.height * 0.5 -
+              top: MediaQuery.of(context).size.height * 0.55 -
                   (MediaQuery.of(context).size.height * 0.5 / 2), // 垂直置中
               child: Row(
                 // 使用 Row 水平排列

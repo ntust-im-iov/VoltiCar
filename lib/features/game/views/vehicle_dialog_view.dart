@@ -269,7 +269,7 @@ class _VehicleDialogViewState extends State<VehicleDialogView> {
                                   )
                                 else
                                   AdaptiveButton(
-                                    widthGain: 0.15,
+                                    widthGain: 1,
                                     heightGain: 0.18,
                                     backgroundColor: isChosen
                                         ? const Color(0xFF1E5F3A)
@@ -290,7 +290,7 @@ class _VehicleDialogViewState extends State<VehicleDialogView> {
                                     text: isChosen ? '已選擇' : '選擇此車輛',
                                     textColor: Colors.white,
                                     fixedFontSize: 14.0,
-                                    fixedIconSize: 24.0,
+                                    fixedIconSize: 20.0,
                                     onTap: (chooseViewModel.isChoosing ||
                                             isChosen)
                                         ? () {}

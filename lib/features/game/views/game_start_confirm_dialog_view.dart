@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/game_session_viewmodel.dart';
 import '../views/main_game_view.dart';
+import '../../../shared/widgets/adaptive_button.dart';
 
 class GameStartConfirmDialogView extends StatefulWidget {
   const GameStartConfirmDialogView({Key? key}) : super(key: key);
@@ -156,8 +157,8 @@ class _GameStartConfirmDialogViewState
                 ),
                 // 底部按鈕區域
                 Container(
-                  height: 40,
-                  padding: const EdgeInsets.all(5),
+                  height: 50,
+                  padding: const EdgeInsets.all(8),
                   decoration: const BoxDecoration(
                     color: Color(0xFF1A1A1A),
                     border: Border(
@@ -168,30 +169,45 @@ class _GameStartConfirmDialogViewState
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       // 取消按鈕
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        style: TextButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: Text('取消', style: const TextStyle(fontSize: 10)),
+                      AdaptiveButton(
+                        widthGain: 0.08,
+                        heightGain: 0.08,
+                        backgroundColor: const Color(0xFF5F1E1E),
+                        borderColor: const Color(0xFFE24A4A),
+                        highlightColor: const Color(0xFFF57C7C),
+                        shadowColor: const Color(0xFF3A0D0D),
+                        imagePath: "",
+                        iconPath: null,
+                        text: '取消',
+                        textColor: Colors.white,
+                        fixedFontSize: 10.0,
+                        onTap: () => Navigator.of(context).pop(),
+                        showImage: false,
                       ),
                       const SizedBox(width: 8),
                       // 開始遊戲按鈕
-                      ElevatedButton(
-                        onPressed: viewModel.canStartGame ? _startGame : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          disabledBackgroundColor: Colors.grey,
-                        ),
-                        child: Text(
-                          viewModel.canStartGame ? '開始遊戲' : '無法開始遊戲',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                      AdaptiveButton(
+                        widthGain: 0.12,
+                        heightGain: 0.08,
+                        backgroundColor: viewModel.canStartGame
+                            ? const Color(0xFF1E5F3A)
+                            : const Color(0xFF3A3A3A),
+                        borderColor: viewModel.canStartGame
+                            ? const Color(0xFF4AE290)
+                            : const Color(0xFF666666),
+                        highlightColor: viewModel.canStartGame
+                            ? const Color(0xFF7CF5B3)
+                            : const Color(0xFF888888),
+                        shadowColor: viewModel.canStartGame
+                            ? const Color(0xFF0D3A1F)
+                            : const Color(0xFF1A1A1A),
+                        imagePath: "",
+                        iconPath: null,
+                        text: viewModel.canStartGame ? '開始遊戲' : '無法開始',
+                        textColor: Colors.white,
+                        fixedFontSize: 10.0,
+                        onTap: viewModel.canStartGame ? _startGame : () {},
+                        showImage: false,
                       ),
                     ],
                   ),
