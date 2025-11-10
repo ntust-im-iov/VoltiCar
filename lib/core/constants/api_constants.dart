@@ -18,6 +18,17 @@ class ApiConstants {
   static const String stationsByCity = '/stations/city'; // 按城市搜尋充電站
   static const String stationDetail = '/stations/id'; // 充電站詳細信息
 
+  // Charging log endpoints
+  static const String chargeCanlogMonitorStream =
+      'api/can/charge-monitor'; // 充電紀錄
+  static const String saveCarbonReduction =
+      'api/can/carbon-reduction/save'; // 減碳量儲存
+  static const String carbonReduction = 'api/can/carbon-reduction'; // 減碳量查詢
+  static const String saveCarbonRewardPoint =
+      'api/can/carbon-reward-point/save'; // 減碳獎勵儲存
+  static const String carbonRewardPoint =
+      'api/can/carbon-reward-point'; // 減碳獎勵查詢
+
   // Parking endpoints
   static const String parkingOverview = '/parkings/overview'; // 停車場概覽
   static const String parkingDetail = '/parkings/id'; // 停車場詳細信息

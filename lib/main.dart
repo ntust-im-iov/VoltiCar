@@ -1,3 +1,6 @@
+import 'features/home/viewmodels/carbon_reduction_viewmodel.dart';
+import 'features/home/viewmodels/carbon_reward_point_viewmodel.dart';
+import 'features/home/viewmodels/charge_canlog_monitor_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:animations/animations.dart';
@@ -64,12 +67,14 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => RegisterViewModel()),
         ChangeNotifierProvider(create: (_) => ResetPasswordViewModel()),
         ChangeNotifierProvider(create: (_) => TaskAssignmentViewModel()),
-        ChangeNotifierProvider(
-            create: (_) =>
-                TaskAcceptViewModel()), // Added Task Accept ViewModel
-        Provider(create: (_) => StationService()), // Provide StationService
-        ChangeNotifierProvider(
-            create: (_) => MapProvider()), // Provide MapProvider
+        ChangeNotifierProvider(create: (_) => TaskAcceptViewModel()),
+        Provider(create: (_) => StationService()),
+        ChangeNotifierProvider(create: (_) => MapProvider()),
+        // 新增碳減量與碳點數 provider
+        ChangeNotifierProvider(create: (_) => CarbonReductionViewModel()),
+        ChangeNotifierProvider(create: (_) => CarbonRewardPointViewModel()),
+        // 新增充電 CAN log 監控 provider
+        ChangeNotifierProvider(create: (_) => ChargeCanlogMonitorViewModel()),
       ],
       child: MaterialApp(
         title: 'VoltiCar App',
