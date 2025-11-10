@@ -32,12 +32,25 @@ class ApiConstants {
   static const String playerData = '/api/v1/player'; // 玩家資料
   static const String playerWarehouse =
       '/api/v1/player/warehouse/items'; // 玩家倉庫物品
+  static const String playerVehicles = '/api/v1/player/vehicles'; // 玩家車輛
 
   // Destination
   static const String fetchDestinations =
       '/api/v1/player/destinations'; // 獲取目的地列表
   static const String chooseDestination =
       '/api/v1/player/game_session/destination'; // 選擇目的地
+
+  // Vehicle
+  static const String chooseVehicle =
+      '/api/v1/player/game_session/vehicle'; // 選擇車輛
+
+  // Shop
+  static const String shopItems = '/api/v1/game/shop/items'; // 商店物品列表
+
+  // Game Session
+  static const String gameSessionSummary =
+      '/api/v1/player/game_session/summary'; // 遊戲會話摘要
+
   // API version
   static const String apiVersion = '/api/v1';
 

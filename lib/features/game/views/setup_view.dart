@@ -1,87 +1,35 @@
-import 'package:flutter/material.dart'; // 引入 Flutter Material UI 库
-import 'package:flutter/services.dart'; // 引入 Flutter Services 库，用于控制设备方向
-import 'package:provider/provider.dart'; // 引入 Provider
-import '../../../shared/widgets/adaptive_button.dart'; // 引入 AdaptiveButton
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../../../shared/widgets/adaptive_button.dart';
 import '../views/task_assignment_view.dart';
 import '../views/player_data_display_view.dart';
-import '../views/destination_fetch_view.dart'; // 引入 DestinationFetchView
-import '../viewmodels/destination_fetch_viewmodel.dart'; // 引入 DestinationFetchViewModel
+import '../views/destination_fetch_view.dart';
+import '../viewmodels/destination_fetch_viewmodel.dart';
 import '../views/warehouse_dialog_view.dart';
 import '../viewmodels/warehouse_viewmodel.dart';
-import '../viewmodels/destination_choose_viewmodel.dart'; // 引入 DestinationChooseViewModel
+import '../viewmodels/destination_choose_viewmodel.dart';
+import '../views/vehicle_dialog_view.dart';
+import '../viewmodels/vehicle_viewmodel.dart';
+import '../viewmodels/vehicle_choose_viewmodel.dart';
+import '../views/shop_dialog_view.dart';
+import '../viewmodels/shop_viewmodel.dart';
+import '../views/game_start_confirm_dialog_view.dart';
+import '../viewmodels/game_session_viewmodel.dart';
+import '../viewmodels/player_data_viewmodel.dart';
 
 class SetupView extends StatefulWidget {
-  // 设置页面，用于设置游戏参数
   const SetupView({super.key});
 
   @override
-  State<SetupView> createState() => _SetupViewState(); // 创建 SetupView 的状态
+  State<SetupView> createState() => _SetupViewState();
 }
 
 class _SetupViewState extends State<SetupView> {
-  // SetupView 的状态
-  // List<Cargo> warehouseCargo = [
-  //   // 仓库货物列表
-  //   Cargo(
-  //     itemId: '708d1d5c-bd49-495e-916a-5ef219b315a6',
-  //     name: '鐵礦石 (v4)',
-  //     description: '未加工的鐵礦石，用於工業生產。',
-  //     category: '原材料',
-  //     weightPerUnit: 100,
-  //     volumePerUnit: 0.05,
-  //     baseValuePerUnit: 20,
-  //     isFragile: false,
-  //     isPerishable: false,
-  //     iconUrl: '/icons/iron_ore_v4.png',
-  //   ),
-  //   Cargo(
-  //     itemId: '708d1d5c-bd49-495e-916a-5ef219b315a7',
-  //     name: '鐵礦石 (v5)',
-  //     description: '未加工的鐵礦石，用於工業生產。',
-  //     category: '原材料',
-  //     weightPerUnit: 100,
-  //     volumePerUnit: 0.05,
-  //     baseValuePerUnit: 20,
-  //     isFragile: false,
-  //     isPerishable: false,
-  //     iconUrl: '/icons/iron_ore_v4.png',
-  //   ),
-  // ];
-
-  // List<Cargo> trunkCargo = [
-  //   // 后备箱货物列表
-  //   Cargo(
-  //     itemId: '708d1d5c-bd49-495e-916a-5ef219b315a8',
-  //     name: '鐵礦石 (v6)',
-  //     description: '未加工的鐵礦石，用於工業生產。',
-  //     category: '原材料',
-  //     weightPerUnit: 100,
-  //     volumePerUnit: 0.05,
-  //     baseValuePerUnit: 20,
-  //     isFragile: false,
-  //     isPerishable: false,
-  //     iconUrl: '/icons/iron_ore_v4.png',
-  //   ),
-  //   Cargo(
-  //     itemId: '708d1d5c-bd49-495e-916a-5ef219b315a9',
-  //     name: '鐵礦石 (v7)',
-  //     description: '未加工的鐵礦石，用於工業生產。',
-  //     category: '原材料',
-  //     weightPerUnit: 100,
-  //     volumePerUnit: 0.05,
-  //     baseValuePerUnit: 20,
-  //     isFragile: false,
-  //     isPerishable: false,
-  //     iconUrl: '/icons/iron_ore_v4.png',
-  //   ),
-  // ];
-
   @override
   void initState() {
-    // 初始化状态
     super.initState();
     SystemChrome.setPreferredOrientations([
-      // 设置屏幕方向为横向
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
@@ -89,14 +37,11 @@ class _SetupViewState extends State<SetupView> {
 
   @override
   void dispose() {
-    // 销毁状态
-    SystemChrome.setPreferredOrientations(
-        [DeviceOrientation.portraitUp]); // 设置屏幕方向为纵向
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     super.dispose();
   }
 
   void _onTaskAssigned() {
-    print('委託任務按鈕被點擊');
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -106,7 +51,6 @@ class _SetupViewState extends State<SetupView> {
   }
 
   void _onRouteSelected() {
-    print('路線選擇按鈕被點擊');
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -126,13 +70,55 @@ class _SetupViewState extends State<SetupView> {
   }
 
   void _onWarehouseCargoChecked() {
-    print('倉儲貨物檢查按鈕被點擊');
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return ChangeNotifierProvider(
           create: (context) => WarehouseViewModel(),
           child: const WarehouseDialogView(),
+        );
+      },
+    );
+  }
+
+  void _onShowVehicles() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return MultiProvider(
+          providers: [
+            ChangeNotifierProvider(
+              create: (context) => VehicleViewModel(),
+            ),
+            ChangeNotifierProvider(
+              create: (context) => VehicleChooseViewModel(),
+            ),
+          ],
+          child: const VehicleDialogView(),
+        );
+      },
+    );
+  }
+
+  void _onShopOpened() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return ChangeNotifierProvider(
+          create: (context) => ShopViewModel(),
+          child: const ShopDialogView(),
+        );
+      },
+    );
+  }
+
+  void _onStartGame() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return ChangeNotifierProvider(
+          create: (context) => GameSessionViewModel(),
+          child: const GameStartConfirmDialogView(),
         );
       },
     );
@@ -145,6 +131,13 @@ class _SetupViewState extends State<SetupView> {
   @override
   Widget build(BuildContext context) {
     // 构建 Widget
+    return ChangeNotifierProvider(
+      create: (context) => PlayerDataViewModel()..fetchPlayerData(),
+      child: _buildContent(context),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
     return Container(
       // 使用 Container 作为背景
       decoration: BoxDecoration(
@@ -162,7 +155,6 @@ class _SetupViewState extends State<SetupView> {
           // 使用 Stack 布局，允许 Widget 重叠
           children: [
             Positioned(
-              top: MediaQuery.of(context).size.height * 0.07,
               right: MediaQuery.of(context).size.width * 0.04,
               child: SafeArea(
                 child: IconButton(
@@ -200,86 +192,163 @@ class _SetupViewState extends State<SetupView> {
                     ),
                   ),
                   SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '玩家名稱',
-                        style: TextStyle(color: Colors.white, fontSize: 18),
-                      ),
-                      SizedBox(height: 5),
-                      Container(
-                        width: 100,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[800],
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: FractionallySizedBox(
-                          alignment: Alignment.centerLeft,
-                          widthFactor: 0.7,
-                          child: Container(
+                  Consumer<PlayerDataViewModel>(
+                    builder: (context, viewModel, child) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            viewModel.isLoading
+                                ? '載入中...'
+                                : (viewModel.playerData?.displayName ?? '玩家名稱'),
+                            style: TextStyle(color: Colors.white, fontSize: 18),
+                          ),
+                          SizedBox(height: 5),
+                          Container(
+                            width: 100,
+                            height: 5,
                             decoration: BoxDecoration(
-                              color: Colors.lightGreenAccent,
+                              color: Colors.grey[800],
                               borderRadius: BorderRadius.circular(5),
                             ),
+                            child: FractionallySizedBox(
+                              alignment: Alignment.centerLeft,
+                              widthFactor: 0.7,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: const Color.fromRGBO(178, 255, 89, 1),
+                                  borderRadius: BorderRadius.circular(5),
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    ],
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
             ),
             Container(), // 空 Container，用于占位
             Positioned(
-              // 使用 Positioned Widget 定位
-              left: MediaQuery.of(context).size.width * 0.5 -
-                  (MediaQuery.of(context).size.width *
-                      0.2 /
-                      2), // 距离左边 50% 屏幕宽度
-              top: MediaQuery.of(context).size.height * 0.5 -
-                  ((MediaQuery.of(context).size.height * 0.15 * 3) +
-                          (MediaQuery.of(context).size.height * 0.05 * 2)) /
-                      2, // 距离顶部 50% 屏幕高度
-              child: Column(
-                // 使用 Column 垂直排列 Widget
-                mainAxisAlignment: MainAxisAlignment.start, // 顶部对齐
+              // 使用 Positioned Widget 定位按鈕區域
+              left: MediaQuery.of(context).size.width * 0.4 -
+                  (MediaQuery.of(context).size.width * 0.6 / 2), // 置中
+              top: MediaQuery.of(context).size.height * 0.55 -
+                  (MediaQuery.of(context).size.height * 0.5 / 2), // 垂直置中
+              child: Row(
+                // 使用 Row 水平排列
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  AdaptiveButton(
-                    widthGain: 0.2,
-                    heightGain: 0.15,
-                    backgroundColor: Colors.black.withOpacity(0.5),
-                    borderColor: Colors.blue.withOpacity(0.3),
-                    imagePath: "assets/images/volticar_logo.png",
-                    text: '委託任務',
-                    textColor: Colors.white,
-                    onTap: _onTaskAssigned,
-                    showImage: false,
-                  ),
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.05),
-                  AdaptiveButton(
-                    widthGain: 0.2,
-                    heightGain: 0.15,
-                    backgroundColor: Colors.black.withOpacity(0.5),
-                    borderColor: Colors.blue.withOpacity(0.3),
-                    imagePath: "assets/images/volticar_logo.png",
-                    text: '路線選擇',
-                    textColor: Colors.white,
-                    onTap: _onRouteSelected,
-                    showImage: false,
-                  ),
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.05),
-                  AdaptiveButton(
-                    widthGain: 0.2,
-                    heightGain: 0.15,
-                    backgroundColor: Colors.black.withOpacity(0.5),
-                    borderColor: Colors.blue.withOpacity(0.3),
-                    imagePath: "assets/images/volticar_logo.png",
-                    text: '倉儲貨物',
-                    textColor: Colors.white,
-                    onTap: _onWarehouseCargoChecked,
-                    showImage: false,
+                  // 左側：3x2 網格
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        children: [
+                          AdaptiveButton(
+                            widthGain: 0.15,
+                            heightGain: 0.18,
+                            backgroundColor: const Color(0xFF1E3A5F),
+                            borderColor: const Color(0xFF4A90E2),
+                            highlightColor: const Color(0xFF7CB3F5),
+                            shadowColor: const Color(0xFF0D1F3A),
+                            imagePath: "assets/images/volticar_logo.png",
+                            iconPath: "assets/icons/list.png",
+                            text: '委託任務',
+                            textColor: Colors.white,
+                            onTap: _onTaskAssigned,
+                            showImage: true,
+                          ),
+                          SizedBox(
+                              width: MediaQuery.of(context).size.width * 0.02),
+                          AdaptiveButton(
+                            widthGain: 0.15,
+                            heightGain: 0.18,
+                            backgroundColor: const Color(0xFF1E3A5F),
+                            borderColor: const Color(0xFF4A90E2),
+                            highlightColor: const Color(0xFF7CB3F5),
+                            shadowColor: const Color(0xFF0D1F3A),
+                            imagePath: "assets/images/volticar_logo.png",
+                            iconPath: "assets/icons/maps-and-flags.png",
+                            text: '路線選擇',
+                            textColor: Colors.white,
+                            onTap: _onRouteSelected,
+                            showImage: true,
+                          ),
+                          SizedBox(
+                              width: MediaQuery.of(context).size.width * 0.02),
+                          AdaptiveButton(
+                            widthGain: 0.15,
+                            heightGain: 0.18,
+                            backgroundColor: const Color(0xFF1E3A5F),
+                            borderColor: const Color(0xFF4A90E2),
+                            highlightColor: const Color(0xFF7CB3F5),
+                            shadowColor: const Color(0xFF0D1F3A),
+                            imagePath: "assets/images/volticar_logo.png",
+                            iconPath:
+                                "assets/icons/closed-cardboard-box-with-packing-tape.png",
+                            text: '倉儲貨物',
+                            textColor: Colors.white,
+                            onTap: _onWarehouseCargoChecked,
+                            showImage: true,
+                          ),
+                        ],
+                      ),
+                      SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.03),
+                      Row(
+                        children: [
+                          AdaptiveButton(
+                            widthGain: 0.15,
+                            heightGain: 0.18,
+                            backgroundColor: const Color(0xFF1E3A5F),
+                            borderColor: const Color(0xFF4A90E2),
+                            highlightColor: const Color(0xFF7CB3F5),
+                            shadowColor: const Color(0xFF0D1F3A),
+                            imagePath: "assets/images/volticar_logo.png",
+                            iconPath: "assets/icons/car.png",
+                            text: '顯示車輛',
+                            textColor: Colors.white,
+                            onTap: _onShowVehicles,
+                            showImage: true,
+                          ),
+                          SizedBox(
+                              width: MediaQuery.of(context).size.width * 0.02),
+                          AdaptiveButton(
+                            widthGain: 0.15,
+                            heightGain: 0.18,
+                            backgroundColor: const Color(0xFF5F3A1E),
+                            borderColor: const Color(0xFFE2904A),
+                            highlightColor: const Color(0xFFF5B37C),
+                            shadowColor: const Color(0xFF3A1F0D),
+                            imagePath: "assets/images/volticar_logo.png",
+                            iconPath: "assets/icons/shopping-cart.png",
+                            text: '商店',
+                            textColor: Colors.white,
+                            onTap: _onShopOpened,
+                            showImage: true,
+                          ),
+                          SizedBox(
+                              width: MediaQuery.of(context).size.width * 0.02),
+                          AdaptiveButton(
+                            widthGain: 0.15,
+                            heightGain: 0.18,
+                            backgroundColor: const Color(0xFF1E5F3A),
+                            borderColor: const Color(0xFF4AE290),
+                            highlightColor: const Color(0xFF7CF5B3),
+                            shadowColor: const Color(0xFF0D3A1F),
+                            imagePath: "assets/images/volticar_logo.png",
+                            iconPath: "assets/icons/play.png",
+                            text: '開始遊戲',
+                            textColor: Colors.white,
+                            onTap: _onStartGame,
+                            showImage: true,
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ],
               ),
