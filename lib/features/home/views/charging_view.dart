@@ -234,7 +234,7 @@ class _ChargingViewState extends State<ChargingView> {
         side: const BorderSide(color: Color(0xFF63588A), width: 2),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: modes.map((mode) {

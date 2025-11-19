@@ -1,7 +1,9 @@
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
+import '../volti_car_game.dart';
+import 'event_block.dart';
 
-class ScrollingBackground extends Component with HasGameRef {
+class ScrollingBackground extends Component with HasGameRef<VoltiCarGame> {
   late List<SpriteComponent> backgroundSprites;
   final double scrollSpeed = 120.0; // 像素每秒
   late double backgroundWidth;
@@ -11,7 +13,7 @@ class ScrollingBackground extends Component with HasGameRef {
     await super.onLoad();
 
     // 載入背景精靈
-    final backgroundSprite = await game.loadSprite('ready_pg_bg.png');
+    final backgroundSprite = await game.loadSprite('main_game_background.png');
 
     // 計算背景寬度，稍微加大一些以確保無縫銜接
     backgroundWidth = game.size.x * 1.1;
@@ -33,6 +35,9 @@ class ScrollingBackground extends Component with HasGameRef {
   @override
   void update(double dt) {
     super.update(dt);
+
+    // 檢查遊戲狀態，如果暫停則不更新
+    if (game.gameState == GameState.paused) return;
 
     // 移動背景
     for (final sprite in backgroundSprites) {

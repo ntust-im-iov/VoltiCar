@@ -64,12 +64,11 @@ class EventManager extends Component with HasGameRef {
     // 記錄已使用的事件 ID
     _usedEventIds.add(event.id);
 
-    // 在螢幕右側隨機高度生成事件方塊
-    final double randomY = game.size.y * 0.3 +
-        _random.nextDouble() * (game.size.y * 0.4); // 在中間範圍內隨機
+    // 在螢幕右側固定高度生成事件方塊（與汽車高度一致）
+    final double fixedY = game.size.y * 0.9;
 
     final eventBlock = EventBlock(
-      position: Vector2(game.size.x + 20, randomY),
+      position: Vector2(game.size.x + 20, fixedY),
       event: event,
       onBlockCollision: onEventTriggered,
     );

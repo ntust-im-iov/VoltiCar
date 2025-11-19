@@ -24,10 +24,10 @@ class CarComponent extends SpriteComponent
       sprite = await game.loadSprite('bus.png');
 
       // 設定汽車大小（調整為合適的比例）
-      size = Vector2(300, 180);
+      size = Vector2(440, 320);
 
-      // 設定汽車位置（左側 1/4 處，垂直置中）
-      position = Vector2(game.size.x * 0.25, game.size.y * 0.8 - size.y * 0.5);
+      // 設定汽車位置（左側 1/4 處，固定高度）
+      position = Vector2(game.size.x * 0.25, game.size.y * 0.88);
 
       _initialPosition = position.clone();
 

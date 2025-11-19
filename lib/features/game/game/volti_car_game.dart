@@ -1,7 +1,7 @@
 import 'package:flame/game.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
-import 'components/simple_scrolling_background.dart';
+import 'components/scrolling_background.dart';
 import 'components/car_component.dart';
 import 'components/effects_components.dart';
 import 'components/event_block.dart';
@@ -11,7 +11,7 @@ import '../managers/score_manager.dart';
 import '../managers/game_storage_manager.dart';
 
 class VoltiCarGame extends FlameGame with HasCollisionDetection {
-  late SimpleScrollingBackground background;
+  late ScrollingBackground background;
   late CarComponent car;
   late RoadMarkings roadMarkings;
   late EventManager eventManager;
@@ -38,18 +38,14 @@ class VoltiCarGame extends FlameGame with HasCollisionDetection {
     // 層次順序很重要－從後往前加入
 
     // 1. 加入滾動背景
-    background = SimpleScrollingBackground();
+    background = ScrollingBackground();
     add(background);
 
-    // 2. 加入道路標線
-    roadMarkings = RoadMarkings();
-    add(roadMarkings);
-
-    // 3. 加入汽車元件（最前景）
+    // 2. 加入汽車元件（最前景）
     car = CarComponent();
     add(car);
 
-    // 4. 加入事件管理器
+    // 3. 加入事件管理器
     eventManager = EventManager(
       onEventTriggered: _handleEventTriggered,
       onAllEventsCompleted: _handleAllEventsCompleted,
