@@ -178,9 +178,11 @@ class _ChargingViewState extends State<ChargingView> {
           Provider.of<CarbonReductionViewModel>(context, listen: false);
       final crpVM =
           Provider.of<CarbonRewardPointViewModel>(context, listen: false);
-      // 非同步呼叫但不 await（讓畫面先渲染）
-      crVM.fetchCarbonReduction();
-      crpVM.fetchCarbonRewardPoint();
+      // 將初始 fetch 延後到畫面渲染完成後執行，避免在 build 期間呼叫 notifyListeners
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        crVM.fetchCarbonReduction();
+        crpVM.fetchCarbonRewardPoint();
+      });
     }
   }
 
