@@ -17,12 +17,14 @@ class ChargingView extends StatefulWidget {
 class _ChargingViewState extends State<ChargingView> {
   final _logger = Logger();
   ChargeCanlogMonitorViewModel? _canlogMonitorVM;
+  bool _initialized = false;
   // 參數控制
   String _chargeMode = "TYPE1"; // 預設 TYPE1
   bool _skipIdle = false;
   int _duration = 2000;
   bool _isCharging = false;
-  late VoidCallback _vmListener;
+  bool _isHandlingFinish = false;
+  // 使用實體方法作為 listener，避免 hot-reload/closure 引起的私有欄位 lookup 問題
 
   // 啟動模擬充電（按下按鈕才啟動流式監聽）
   void _startSimulation() {
@@ -38,79 +40,121 @@ class _ChargingViewState extends State<ChargingView> {
         skipIdle: _skipIdle,
         duration: _duration,
       );
+
       _logger.i('[startSimulation] Called vm.startListening');
-    } catch (e) {
-      _logger.e('API error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('API 取得資料失敗: $e')),
-      );
-      setState(() {
-        _isCharging = false;
-      });
+    } catch (e, st) {
+      _logger.e('[startSimulation] error: $e\n$st');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('啟動監聽失敗: $e')),
+        );
+      }
     }
-  }
-
-  /// 充電結束時呼叫，依據最後一筆流式資料進行減碳量與點數 API 流程
-  Future<void> handleChargingFinishAndCarbon() async {
-    final canlogVM = context.read<ChargeCanlogMonitorViewModel>();
-    final crVM = context.read<CarbonReductionViewModel>();
-    final crpVM = context.read<CarbonRewardPointViewModel>();
-
-    final lastData = canlogVM.lastData;
-    _logger.i('[handleChargingFinishAndCarbon] lastData: '
-        '${lastData != null ? lastData.toString() : 'null'}');
-    if (lastData == null) {
-      _logger.w('[handleChargingFinishAndCarbon] lastData is null, abort.');
-      return;
-    }
-
-    final double totalKwh = lastData.totalKwhCharged ?? 0.0;
-    final double oldReduction =
-        crVM.carbonReduction?.totalCarbonReductionKg ?? 0.0;
-    _logger.i(
-        '[handleChargingFinishAndCarbon] totalKwh=$totalKwh, oldReduction=$oldReduction');
-
-    _logger.i(
-        '[handleChargingFinishAndCarbon] call saveCarbonReduction($totalKwh)');
-    await crVM.saveCarbonReduction(totalKwh);
-    _logger.i(
-        '[handleChargingFinishAndCarbon] saveCarbonReduction done, new carbonReduction=${crVM.carbonReduction?.totalCarbonReductionKg}');
-
-    final double updatedReduction =
-        crVM.carbonReduction?.totalCarbonReductionKg ?? oldReduction;
-    _logger.i(
-        '[handleChargingFinishAndCarbon] updatedReduction=$updatedReduction');
-
-    final double carbonKg = updatedReduction - oldReduction;
-    _logger.i('[handleChargingFinishAndCarbon] carbonKg=$carbonKg');
-    if (carbonKg > 0) {
-      _logger.i(
-          '[handleChargingFinishAndCarbon] call saveCarbonRewardPoint($carbonKg)');
-      await crpVM.saveCarbonRewardPoint(carbonKg);
-      _logger.i('[handleChargingFinishAndCarbon] saveCarbonRewardPoint done');
-    } else {
-      _logger.i(
-          '[handleChargingFinishAndCarbon] carbonKg <= 0, skip saveCarbonRewardPoint');
-    }
-    setState(() {});
   }
 
   @override
   void initState() {
     super.initState();
     _logger.i('ChargingView initialized');
-    // 設定監聽 ViewModel 狀態
-    _vmListener = () async {
-      final vm = context.read<ChargeCanlogMonitorViewModel>();
-      if (_isCharging && vm.isFinished) {
-        setState(() {
-          _isCharging = false;
-        });
-        _logger.i(
-            '[vmListener] isFinished, trigger handleChargingFinishAndCarbon');
-        await handleChargingFinishAndCarbon();
+    // 設定監聽 ViewModel 狀態（listener 觸發非同步處理，並使用防重入 flag）
+    // listener 由實體方法 `_onCanlogMonitorChanged` 提供，在 didChangeDependencies 註冊。
+  }
+
+  void _onCanlogMonitorChanged() {
+    final vm = context.read<ChargeCanlogMonitorViewModel>();
+    if (_isCharging && vm.isFinished && !_isHandlingFinish) {
+      setState(() {
+        _isCharging = false;
+      });
+      _logger.i('[onCanlogMonitorChanged] isFinished, trigger async handler');
+      _handleFinishAsync();
+    }
+  }
+
+  // 非同步處理呼叫，避免在 listener 中直接 await
+  Future<void> _handleFinishAsync() async {
+    if (_isHandlingFinish) return;
+    setState(() {
+      _isHandlingFinish = true;
+    });
+    try {
+      await handleChargingFinishAndCarbon();
+    } catch (e, st) {
+      _logger.e('[handleFinishAsync] error: $e\n$st');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('處理充電結束資料時發生錯誤: $e')),
+        );
       }
-    };
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isHandlingFinish = false;
+        });
+      } else {
+        _isHandlingFinish = false;
+      }
+    }
+  }
+
+  /// 實際處理儲存減碳與減碳點數的工作
+  Future<void> handleChargingFinishAndCarbon() async {
+    final chargeVM =
+        Provider.of<ChargeCanlogMonitorViewModel>(context, listen: false);
+    final double? thisSessionKwh = chargeVM.lastData?.totalKwhCharged;
+    if (thisSessionKwh == null) {
+      _logger.w('[handleChargingFinishAndCarbon] missing kWh data');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('找不到本次充電資料，無法處理減碳')),
+        );
+      }
+      return;
+    }
+
+    final crVM = Provider.of<CarbonReductionViewModel>(context, listen: false);
+    final crpVM =
+        Provider.of<CarbonRewardPointViewModel>(context, listen: false);
+
+    try {
+      // 先從後端取得目前的總減碳量，確保 previousTotal 與 server 同步
+      double previousTotal = 0.0;
+      try {
+        await crVM.fetchCarbonReduction();
+        previousTotal = crVM.carbonReduction?.totalCarbonReductionKg ?? 0.0;
+      } catch (e) {
+        _logger.w(
+            '[handleChargingFinishAndCarbon] fetch previous total failed: $e — defaulting to 0.0');
+        previousTotal = 0.0;
+      }
+
+      // 儲存減碳量（後端會回傳計算後的減碳資料）
+      await crVM.saveCarbonReduction(thisSessionKwh);
+
+      // 從 viewmodel 取得更新後的總減碳量
+      final newTotal = crVM.carbonReduction?.totalCarbonReductionKg ?? 0.0;
+
+      // 計算本次充電的減碳差額（避免負數，最少為 0）
+      final double deltaCarbonKg =
+          (newTotal - previousTotal) > 0 ? (newTotal - previousTotal) : 0.0;
+
+      // 使用本次的減碳差額來儲存減碳點數（後端期望的是本次減碳量）
+      await crpVM.saveCarbonRewardPoint(deltaCarbonKg);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('減碳與點數已儲存')),
+        );
+      }
+    } catch (e, st) {
+      _logger.e('[handleChargingFinishAndCarbon] error: $e\n$st');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('儲存減碳或點數發生錯誤: $e')),
+        );
+      }
+      rethrow;
+    }
   }
 
   @override
@@ -120,16 +164,30 @@ class _ChargingViewState extends State<ChargingView> {
     final vm =
         Provider.of<ChargeCanlogMonitorViewModel>(context, listen: false);
     if (_canlogMonitorVM != vm) {
-      _canlogMonitorVM?.removeListener(_vmListener);
+      // 移除舊的監聽（如果有），並註冊新的實體方法監聽
+      _canlogMonitorVM?.removeListener(_onCanlogMonitorChanged);
       _canlogMonitorVM = vm;
-      _canlogMonitorVM?.addListener(_vmListener);
+      _canlogMonitorVM?.addListener(_onCanlogMonitorChanged);
+    }
+
+    // 第一次載入時抓取目前的減碳量與減碳點數，確保 UI 有初始值
+    if (!_initialized) {
+      _initialized = true;
+      // 透過 provider 呼叫 viewmodels 的 fetch 方法
+      final crVM =
+          Provider.of<CarbonReductionViewModel>(context, listen: false);
+      final crpVM =
+          Provider.of<CarbonRewardPointViewModel>(context, listen: false);
+      // 非同步呼叫但不 await（讓畫面先渲染）
+      crVM.fetchCarbonReduction();
+      crpVM.fetchCarbonRewardPoint();
     }
   }
 
   @override
   void dispose() {
     // 只移除 State 儲存的 ViewModel 監聽
-    _canlogMonitorVM?.removeListener(_vmListener);
+    _canlogMonitorVM?.removeListener(_onCanlogMonitorChanged);
     super.dispose();
   }
 
@@ -421,6 +479,9 @@ class _ChargingViewState extends State<ChargingView> {
         final points = crpVM.carbonRewardPoint?.carbonRewardPoints ?? 0;
         // points 以 int 顯示
         final isLoading = crVM.isLoading || crpVM.isLoading;
+        // 取得本次充電的 kWh（從 ChargeCanlogMonitorViewModel.lastData）
+        final chargeVM = Provider.of<ChargeCanlogMonitorViewModel>(context);
+        final double? thisSessionKwh = chargeVM.lastData?.totalKwhCharged;
         _logger.i(
             '[buildChargingStats] reduction=$reduction, points=$points, isLoading=$isLoading');
         return Card(
@@ -452,8 +513,12 @@ class _ChargingViewState extends State<ChargingView> {
                   children: [
                     const Text('本次充電',
                         style: TextStyle(color: Colors.white70, fontSize: 16)),
-                    Text('0.0 kWh',
-                        style: TextStyle(color: Colors.white, fontSize: 16)),
+                    Text(
+                        thisSessionKwh != null
+                            ? '${thisSessionKwh.toStringAsFixed(2)} kWh'
+                            : '-- kWh',
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 16)),
                   ],
                 ),
                 const SizedBox(height: 12),

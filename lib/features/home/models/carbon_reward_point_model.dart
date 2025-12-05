@@ -1,12 +1,23 @@
-class CarbonRewardPoint {
-  final int carbonRewardPoints;
+class CarbonRewardPointModel {
+  int carbonRewardPoints;
 
-  CarbonRewardPoint({required this.carbonRewardPoints});
+  CarbonRewardPointModel({required this.carbonRewardPoints});
 
-  factory CarbonRewardPoint.fromJson(Map<String, dynamic> json) {
-    return CarbonRewardPoint(
-      carbonRewardPoints: json['carbon_reward_points'] as int? ?? 0,
-    );
+  factory CarbonRewardPointModel.fromJson(Map<String, dynamic> json) {
+    final raw = json['carbon_reward_points'];
+    int value;
+    if (raw is int) {
+      value = raw;
+    } else if (raw is double) {
+      value = raw.toInt();
+    } else if (raw is String) {
+      // Try parsing as int first, then as double and convert to int.
+      value = int.tryParse(raw) ?? (double.tryParse(raw)?.toInt() ?? 0);
+    } else {
+      value = 0;
+    }
+
+    return CarbonRewardPointModel(carbonRewardPoints: value);
   }
 
   Map<String, dynamic> toJson() {

@@ -1,17 +1,19 @@
-import 'package:volticar_app/features/home/models/carbon_reduction_model.dart';
-import 'package:volticar_app/features/home/services/carbon_reduction_service.dart';
+import '../models/carbon_reduction_model.dart';
+import '../services/carbon_reduction_service.dart';
 
 class CarbonReductionRepository {
-  final CarbonReductionService _carbonReductionService =
-      CarbonReductionService();
+  final CarbonReductionService _service;
 
-  Future<CarbonReduction> fetchCarbonReduction() async {
-    final result = await _carbonReductionService.fetchCarbonReduction();
-    return result;
+  CarbonReductionRepository({CarbonReductionService? service})
+      : _service = service ?? CarbonReductionService();
+
+  /// 取得減碳量資料
+  Future<CarbonReductionModel> fetchCarbonReduction() async {
+    return await _service.fetchCarbonReduction();
   }
 
-  Future<CarbonReduction> saveCarbonReduction(double totalKwh) async {
-    final result = await _carbonReductionService.saveCarbonReduction(totalKwh);
-    return result;
+  /// 儲存減碳量資料
+  Future<CarbonReductionModel> saveCarbonReduction(double totalKwh) async {
+    return await _service.saveCarbonReduction(totalKwh);
   }
 }

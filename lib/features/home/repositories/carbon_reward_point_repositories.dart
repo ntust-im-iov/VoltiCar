@@ -1,18 +1,20 @@
-import 'package:volticar_app/features/home/models/carbon_reward_point_model.dart';
-import 'package:volticar_app/features/home/services/carbon_reward_point_service.dart';
+import '../models/carbon_reward_point_model.dart';
+import '../services/carbon_reward_point_service.dart';
 
 class CarbonRewardPointRepository {
-  final CarbonRewardPointService _carbonRewardPointService =
-      CarbonRewardPointService();
+  final CarbonRewardPointService _service;
 
-  Future<CarbonRewardPoint> fetchCarbonRewardPoint() async {
-    final result = await _carbonRewardPointService.fetchCarbonRewardPoint();
-    return result;
+  CarbonRewardPointRepository({CarbonRewardPointService? service})
+      : _service = service ?? CarbonRewardPointService();
+
+  /// 取得減碳獎勵資料
+  Future<CarbonRewardPointModel> fetchCarbonRewardPoint() async {
+    return await _service.fetchCarbonRewardPoint();
   }
 
-  Future<CarbonRewardPoint> saveCarbonRewardPoint(double carbonKg) async {
-    final result =
-        await _carbonRewardPointService.saveCarbonRewardPoint(carbonKg);
-    return result;
+  /// 儲存減碳量（kg），回傳對應的減碳點數資料
+  Future<CarbonRewardPointModel> saveCarbonRewardPoint(
+      double totalCarbonReductionKg) async {
+    return await _service.saveCarbonRewardPoint(totalCarbonReductionKg);
   }
 }

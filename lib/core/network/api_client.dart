@@ -46,7 +46,7 @@ class ApiClient {
           final token = await _getToken();
           _logger.i('發送請求到: ${options.path}');
           _logger.i('獲取到的token: ${token != null ? "已獲取token" : "未獲取到token"}');
-          
+
           if (token != null) {
             options.headers[ApiConstants.authHeader] =
                 '${ApiConstants.bearerPrefix}$token';
@@ -63,6 +63,8 @@ class ApiClient {
         },
         onError: (DioException e, handler) async {
           _logger.e('API請求失敗: ${e.message}');
+          _logger.e(
+              'API error status: ${e.response?.statusCode}, body: ${e.response?.data}');
 
           // 處理401未授權錯誤
           if (e.response?.statusCode == 401) {
@@ -119,15 +121,16 @@ class ApiClient {
       _logger.i('正在讀取access_token...');
       final token = await _secureStorage.read(key: 'access_token');
       if (token != null) {
-        _logger.i('成功讀取到access_token: ${token.substring(0, math.min(10, token.length))}...');
+        _logger.i(
+            '成功讀取到access_token: ${token.substring(0, math.min(10, token.length))}...');
       } else {
         _logger.w('未找到access_token在secure storage中');
-        
+
         // 嘗試讀取所有存儲的鍵值來調試
         try {
           final allKeys = await _secureStorage.readAll();
           _logger.i('Secure Storage中的所有鍵值: ${allKeys.keys.toList()}');
-          
+
           // 檢查是否有其他相關的token鍵值
           for (String key in allKeys.keys) {
             if (key.contains('token') || key.contains('access')) {

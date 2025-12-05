@@ -1,24 +1,30 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/carbon_reduction_model.dart';
 import '../repositories/carbon_reduction_repositories.dart';
 
 class CarbonReductionViewModel extends ChangeNotifier {
-  final CarbonReductionRepository _repository = CarbonReductionRepository();
+  final CarbonReductionRepository _repository;
 
-  CarbonReduction? _carbonReduction;
+  CarbonReductionModel? _carbonReduction;
   bool _isLoading = false;
   String? _error;
 
-  CarbonReduction? get carbonReduction => _carbonReduction;
+  CarbonReductionModel? get carbonReduction => _carbonReduction;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+  CarbonReductionViewModel({CarbonReductionRepository? repository})
+      : _repository = repository ?? CarbonReductionRepository();
+
+  /// 取得減碳量資料
   Future<void> fetchCarbonReduction() async {
     _isLoading = true;
     _error = null;
     notifyListeners();
     try {
-      _carbonReduction = await _repository.fetchCarbonReduction();
+      final data = await _repository.fetchCarbonReduction();
+      _carbonReduction = data;
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -27,13 +33,15 @@ class CarbonReductionViewModel extends ChangeNotifier {
     }
   }
 
+  /// 儲存減碳量資料
   Future<void> saveCarbonReduction(double totalKwh) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
     try {
-      final result = await _repository.saveCarbonReduction(totalKwh);
-      _carbonReduction = result;
+      final data = await _repository.saveCarbonReduction(totalKwh);
+      // 更新本地狀態為後端回傳的減碳量資料
+      _carbonReduction = data;
     } catch (e) {
       _error = e.toString();
     } finally {

@@ -1,24 +1,30 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/carbon_reward_point_model.dart';
 import '../repositories/carbon_reward_point_repositories.dart';
 
 class CarbonRewardPointViewModel extends ChangeNotifier {
-  final CarbonRewardPointRepository _repository = CarbonRewardPointRepository();
+  final CarbonRewardPointRepository _repository;
 
-  CarbonRewardPoint? _carbonRewardPoint;
+  CarbonRewardPointModel? _carbonRewardPoint;
   bool _isLoading = false;
   String? _error;
 
-  CarbonRewardPoint? get carbonRewardPoint => _carbonRewardPoint;
+  CarbonRewardPointModel? get carbonRewardPoint => _carbonRewardPoint;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+  CarbonRewardPointViewModel({CarbonRewardPointRepository? repository})
+      : _repository = repository ?? CarbonRewardPointRepository();
+
+  /// 取得減碳獎勵資料
   Future<void> fetchCarbonRewardPoint() async {
     _isLoading = true;
     _error = null;
     notifyListeners();
     try {
-      _carbonRewardPoint = await _repository.fetchCarbonRewardPoint();
+      final data = await _repository.fetchCarbonRewardPoint();
+      _carbonRewardPoint = data;
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -27,13 +33,16 @@ class CarbonRewardPointViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> saveCarbonRewardPoint(double carbonKg) async {
+  /// 儲存減碳量（kg），回傳對應的減碳點數資料
+  Future<void> saveCarbonRewardPoint(double totalCarbonReductionKg) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
     try {
-      final result = await _repository.saveCarbonRewardPoint(carbonKg);
-      _carbonRewardPoint = result;
+      final data =
+          await _repository.saveCarbonRewardPoint(totalCarbonReductionKg);
+      // 更新本地狀態為後端回傳的減碳獎勵資料
+      _carbonRewardPoint = data;
     } catch (e) {
       _error = e.toString();
     } finally {

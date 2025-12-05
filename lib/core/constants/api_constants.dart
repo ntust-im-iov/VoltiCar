@@ -25,9 +25,8 @@ class ApiConstants {
       'api/can/carbon-reduction/save'; // 減碳量儲存
   static const String carbonReduction = 'api/can/carbon-reduction'; // 減碳量查詢
   static const String saveCarbonRewardPoint =
-      'api/can/carbon-reward-point/save'; // 減碳獎勵儲存
-  static const String carbonRewardPoint =
-      'api/can/carbon-reward-point'; // 減碳獎勵查詢
+      'api/can/carbon-points/save'; // 減碳獎勵儲存
+  static const String carbonRewardPoint = 'api/can/carbon-points'; // 減碳獎勵查詢
 
   // Parking endpoints
   static const String parkingOverview = '/parkings/overview'; // 停車場概覽
