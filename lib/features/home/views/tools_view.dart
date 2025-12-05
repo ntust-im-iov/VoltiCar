@@ -109,7 +109,7 @@ class _ToolsViewState extends State<ToolsView> {
         color: const Color(0xFF1A1426),
         border: Border(
           bottom: BorderSide(
-            color: const Color(0xFF63588A).withOpacity(0.5),
+            color: const Color(0xFF63588A).withValues(alpha: 0.5),
             width: 1,
           ),
         ),
@@ -145,7 +145,7 @@ class _ToolsViewState extends State<ToolsView> {
                 boxShadow: [
                   if (isSelected)
                     BoxShadow(
-                      color: const Color(0xFFFFD166).withOpacity(0.3),
+                      color: const Color(0xFFFFD166).withValues(alpha: 0.3),
                       blurRadius: 10,
                       spreadRadius: 0,
                     ),
@@ -299,7 +299,7 @@ class _ToolsViewState extends State<ToolsView> {
             color:
                 index < level
                     ? const Color(0xFFFFD166)
-                    : const Color(0xFF63588A).withOpacity(0.3),
+                    : const Color(0xFF63588A).withValues(alpha: 0.3),
           ),
         );
       }),

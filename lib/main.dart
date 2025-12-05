@@ -1,3 +1,6 @@
+import 'features/home/viewmodels/carbon_reduction_viewmodel.dart';
+import 'features/home/viewmodels/carbon_reward_point_viewmodel.dart';
+import 'features/home/viewmodels/charge_canlog_monitor_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:animations/animations.dart';
@@ -14,9 +17,9 @@ import 'features/auth/views/reset_password_view.dart';
 import 'package:volticar_app/features/home/views/garage_view.dart'; // Import GarageView
 import 'package:volticar_app/features/home/views/charging_view.dart'; // Import ChargingView
 import 'package:volticar_app/features/home/views/my_car_view.dart'; // Import MyCarView
-import 'features/game/viewmodels/game_viewmodel.dart';
-import 'features/game/views/game_view.dart';
 import 'features/game/views/setup_view.dart';
+import 'package:volticar_app/features/game/viewmodels/task_assignment_viewmodel.dart';
+import 'package:volticar_app/features/game/viewmodels/task_accept_viewmodel.dart'; // Import TaskAcceptViewModel
 import 'features/home/services/station_service.dart'; // Import StationService
 import 'features/home/viewmodels/map_provider.dart'; // Import MapProvider
 
@@ -63,9 +66,15 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => LoginViewModel()),
         ChangeNotifierProvider(create: (_) => RegisterViewModel()),
         ChangeNotifierProvider(create: (_) => ResetPasswordViewModel()),
-        ChangeNotifierProvider(create: (_) => GameViewModel()), // Added from feature/game
-        Provider(create: (_) => StationService()), // Provide StationService
-        ChangeNotifierProvider(create: (_) => MapProvider()), // Provide MapProvider
+        ChangeNotifierProvider(create: (_) => TaskAssignmentViewModel()),
+        ChangeNotifierProvider(create: (_) => TaskAcceptViewModel()),
+        Provider(create: (_) => StationService()),
+        ChangeNotifierProvider(create: (_) => MapProvider()),
+        // 新增碳減量與碳點數 provider
+        ChangeNotifierProvider(create: (_) => CarbonReductionViewModel()),
+        ChangeNotifierProvider(create: (_) => CarbonRewardPointViewModel()),
+        // 新增充電 CAN log 監控 provider
+        ChangeNotifierProvider(create: (_) => ChargeCanlogMonitorViewModel()),
       ],
       child: MaterialApp(
         title: 'VoltiCar App',
@@ -80,7 +89,7 @@ class MyApp extends StatelessWidget {
         ),
         initialRoute: '/login',
         onGenerateRoute: (RouteSettings settings) {
-          print('Generating route: ${settings.name}'); // 方便調試
+          debugPrint('Generating route: ${settings.name}'); // 方便調試
 
           WidgetBuilder builder; // 用於構建頁面的 Widget
 
@@ -88,8 +97,10 @@ class MyApp extends StatelessWidget {
             case '/login':
               return PageRouteBuilder(
                 settings: settings, // 傳遞路由設定
-                pageBuilder: (context, animation, secondaryAnimation) => const LoginView(),
-                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                pageBuilder: (context, animation, secondaryAnimation) =>
+                    const LoginView(),
+                transitionsBuilder:
+                    (context, animation, secondaryAnimation, child) {
                   return SharedAxisTransition(
                     animation: animation,
                     secondaryAnimation: secondaryAnimation,
@@ -105,8 +116,10 @@ class MyApp extends StatelessWidget {
             case '/register': // 自訂 /register 的過場動畫
               return PageRouteBuilder(
                 settings: settings, // 傳遞路由設定
-                pageBuilder: (context, animation, secondaryAnimation) => const RegisterView(),
-                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                pageBuilder: (context, animation, secondaryAnimation) =>
+                    const RegisterView(),
+                transitionsBuilder:
+                    (context, animation, secondaryAnimation, child) {
                   return SharedAxisTransition(
                     animation: animation,
                     secondaryAnimation: secondaryAnimation,
@@ -122,8 +135,10 @@ class MyApp extends StatelessWidget {
             case '/reset-password':
               return PageRouteBuilder(
                 settings: settings, // 傳遞路由設定
-                pageBuilder: (context, animation, secondaryAnimation) => const ResetPasswordView(),
-                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                pageBuilder: (context, animation, secondaryAnimation) =>
+                    const ResetPasswordView(),
+                transitionsBuilder:
+                    (context, animation, secondaryAnimation, child) {
                   return SharedAxisTransition(
                     animation: animation,
                     secondaryAnimation: secondaryAnimation,
@@ -149,9 +164,6 @@ class MyApp extends StatelessWidget {
               return MaterialPageRoute(builder: builder, settings: settings);
             case '/setup':
               builder = (BuildContext _) => const SetupView();
-              return MaterialPageRoute(builder: builder, settings: settings);
-            case '/game':
-              builder = (BuildContext _) => const GameView();
               return MaterialPageRoute(builder: builder, settings: settings);
 
             default:

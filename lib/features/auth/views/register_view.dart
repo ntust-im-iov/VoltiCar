@@ -86,7 +86,9 @@ class _RegisterViewState extends State<RegisterView> {
           registerViewModel.markRegisterSuccessAsHandled();
 
           Future.delayed(const Duration(seconds: 1), () {
-            Navigator.of(context).pushReplacementNamed('/garage');
+            if (mounted) {
+              Navigator.of(context).pushReplacementNamed('/garage');
+            }
           });
         });
       }

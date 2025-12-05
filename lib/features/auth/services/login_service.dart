@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -31,7 +32,8 @@ class LoginService {
       final response = await _apiClient.post(
         ApiConstants.login,
         data: {
-          'email': email, // 改用 email 參數
+          'grant_type': 'password',
+          'username': email, // 改用 email 參數
           'password': password,
         },
         options: Options(
@@ -93,6 +95,18 @@ class LoginService {
               value: response.data['access_token'],
             );
             _logger.i('訪問令牌已保存');
+            
+            // 驗證token是否正確保存
+            final savedToken = await _secureStorage.read(key: 'access_token');
+            if (savedToken == response.data['access_token']) {
+              _logger.i('Token保存驗證成功');
+            } else {
+              _logger.e('Token保存驗證失敗: 保存的token與原始token不匹配');
+              _logger.e('原始token: ${response.data['access_token']}');
+              _logger.e('保存的token: $savedToken');
+            }
+          } else {
+            _logger.w('後端響應中沒有access_token');
           }
 
           // 保存登入狀態
@@ -215,12 +229,10 @@ class LoginService {
     try {
       _logger.i('開始 Google 登入流程');
 
-      // 初始化 GoogleSignIn
       final GoogleSignIn googleSignIn = GoogleSignIn(
         scopes: ['email', 'profile'],
       );
 
-      _logger.i('嘗試 Google 登入...');
       GoogleSignInAccount? googleUser;
       try {
         googleUser = await googleSignIn.signIn();
@@ -234,48 +246,79 @@ class LoginService {
         return null;
       }
 
-      _logger.i('取得 Google 認證...');
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
 
-      _logger.i('創建 Firebase 憑證...');
       final credential = firebase_auth.GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      _logger.i('使用 Firebase 進行身份驗證...');
       final userCredential =
           await _firebaseAuth.signInWithCredential(credential);
 
       if (userCredential.user != null) {
-        _logger.i('Firebase 認證成功，用戶 ID: ${userCredential.user!.uid}');
         final firebaseUser = userCredential.user!;
         _logger.i('Firebase Google 驗證成功，UID: ${firebaseUser.uid}');
 
-        // 準備發送到後端 /users/google-login 的數據
-        String emailPrefix = firebaseUser.email?.split('@')[0] ?? 'google_user';
-        String displayName = firebaseUser.displayName ?? '';
-        String name = displayName.isNotEmpty ? displayName : emailPrefix;
-        String email = firebaseUser.email ?? '';
-        String googleId = firebaseUser.uid; // 使用 Firebase UID 作為 google_id
+        // 取 ID Token
+        String? idToken = googleAuth.idToken;
+        if (idToken == null) {
+          throw Exception('Google 認證失敗：無法獲取 ID Token');
+        }
 
+        // ✅ 從 ID Token payload 抓取 sub 作為 google_id
+        String? googleId;
+        try {
+          final parts = idToken.split('.');
+          if (parts.length == 3) {
+            String payload = parts[1];
+            switch (payload.length % 4) {
+              case 1:
+                payload += '===';
+                break;
+              case 2:
+                payload += '==';
+                break;
+              case 3:
+                payload += '=';
+                break;
+            }
+            final decoded = utf8.decode(base64Url.decode(payload));
+            final Map<String, dynamic> tokenData = json.decode(decoded);
+            googleId = tokenData['sub'] as String?;
+            _logger.i('從 ID Token 解析出的 Google ID (sub): $googleId');
+          }
+        } catch (e) {
+          _logger.w('解析 ID Token sub 失敗: $e，改用 Firebase UID');
+        }
+        googleId ??= firebaseUser.uid; // fallback
+
+        // 組合送後端的資料
         final Map<String, dynamic> googleLoginData = {
           'google_id': googleId,
-          'email': email,
-          'name': name,
-          // 如果後端需要其他來自 Google 的資訊 (如 photoUrl)，可以在這裡添加
-          // 'photo_url': firebaseUser.photoURL,
+          'email': firebaseUser.email ?? '',
+          'name': firebaseUser.displayName ??
+              firebaseUser.email?.split('@')[0] ??
+              'google_user',
+          'id_token': idToken,
         };
 
         _logger.i('準備呼叫後端 Google 登入 API: ${ApiConstants.googleLogin}');
         _logger.i('傳送數據: $googleLoginData');
 
+        // ... 後面呼叫 _apiClient.post 的部分不動，保留原本註冊 fallback 流程 ...
         try {
           // 呼叫後端 /users/google-login 端點
           final response = await _apiClient.post(
             ApiConstants.googleLogin, // 使用定義好的 googleLogin 常數
             data: googleLoginData,
+            options: Options(
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+              },
+            ),
           );
 
           _logger.i('後端 Google 登入 API 響應狀態碼: ${response.statusCode}');
@@ -298,6 +341,18 @@ class LoginService {
               await _secureStorage.write(
                   key: 'access_token', value: accessToken);
               _logger.i('已保存訪問令牌');
+              
+              // 驗證token是否正確保存
+              final savedToken = await _secureStorage.read(key: 'access_token');
+              if (savedToken == accessToken) {
+                _logger.i('Google登入Token保存驗證成功');
+              } else {
+                _logger.e('Google登入Token保存驗證失敗');
+                _logger.e('原始token: $accessToken');
+                _logger.e('保存的token: $savedToken');
+              }
+            } else {
+              _logger.w('Google登入響應中沒有access_token');
             }
             if (refreshToken != null) {
               await _secureStorage.write(
@@ -314,9 +369,14 @@ class LoginService {
             final user = User(
               id: backendUserId, // 使用後端返回的 ID 或 googleId
               username: backendData?['username'] as String? ??
-                  name, // 優先使用後端 username
-              email: email,
-              name: backendData?['name'] as String? ?? name, // 優先使用後端 name
+                  firebaseUser.displayName ??
+                  firebaseUser.email?.split('@')[0] ??
+                  'google_user', // 優先使用後端 username
+              email: firebaseUser.email ?? '',
+              name: backendData?['name'] as String? ??
+                  firebaseUser.displayName ??
+                  firebaseUser.email?.split('@')[0] ??
+                  'google_user', // 優先使用後端 name
               userUuid: googleId, // 保留原始的 Firebase UID
               token: accessToken ?? '', // 使用後端返回的 token
               isGoogleUser: true, // 標記為 Google 用戶
@@ -337,7 +397,45 @@ class LoginService {
           _logger.e('呼叫後端 Google 登入 API 時發生 DIO 錯誤: ${e.type}');
           _logger.e('錯誤響應: ${e.response?.data}');
           _logger.e('錯誤消息: ${e.message}');
-          throw Exception(e.response?.data['detail'] ?? 'Google 登入處理失敗');
+          _logger.e('請求 URL: ${e.requestOptions.uri}');
+          _logger.e('請求數據: ${e.requestOptions.data}');
+
+          // 如果是 404 或用戶不存在的錯誤，或者是無效的Google ID錯誤，嘗試自動註冊
+          if (e.response?.statusCode == 404 ||
+              (e.response?.statusCode == 400 &&
+                  e.response?.data != null &&
+                  (e.response!.data
+                          .toString()
+                          .toLowerCase()
+                          .contains('not found') ||
+                      e.response!.data.toString().contains('無效的Google ID') ||
+                      e.response!.data
+                          .toString()
+                          .toLowerCase()
+                          .contains('invalid google id')))) {
+            _logger.i('用戶不存在，嘗試自動註冊 Google 用戶...');
+
+            try {
+              // 嘗試自動註冊新的 Google 用戶
+              return await _registerGoogleUser(googleLoginData, firebaseUser);
+            } catch (registerError) {
+              _logger.e('自動註冊 Google 用戶失敗: $registerError');
+              throw Exception('Google 用戶註冊失敗: $registerError');
+            }
+          }
+
+          // 提供更具體的錯誤訊息
+          String errorMessage = 'Google 登入處理失敗';
+          if (e.response?.data != null) {
+            if (e.response!.data is Map) {
+              errorMessage = e.response!.data['detail'] ??
+                  e.response!.data['message'] ??
+                  errorMessage;
+            } else {
+              errorMessage = e.response!.data.toString();
+            }
+          }
+          throw Exception(errorMessage);
         } catch (e) {
           _logger.e('處理後端 Google 登入 API 響應時發生錯誤: $e');
           throw Exception('Google 登入處理失敗: $e');
@@ -353,6 +451,121 @@ class LoginService {
         throw Exception('Firebase 認證錯誤: ${_getFirebaseErrorMessage(e.code)}');
       }
       throw Exception('Google 登入失敗: $e');
+    }
+  }
+
+  // 使用 /users/login/google API 進行 Google 用戶註冊
+  Future<User> _registerGoogleUser(Map<String, dynamic> googleLoginData,
+      firebase_auth.User firebaseUser) async {
+    try {
+      _logger.i('使用 /users/login/google API 註冊新的 Google 用戶...');
+
+      // 準備發送到 /users/login/google 的註冊數據
+      final registerData = {
+        'google_id': googleLoginData['google_id'],
+        'email': googleLoginData['email'],
+        'name': googleLoginData['name'],
+        'id_token': googleLoginData['id_token'],
+        'username': googleLoginData['name']
+            .toString()
+            .replaceAll(' ', '_')
+            .toLowerCase(),
+        'photo_url': firebaseUser.photoURL,
+        'is_email_verified': firebaseUser.emailVerified,
+      };
+
+      _logger.i('Google 註冊數據: $registerData');
+
+      // 嘗試使用 form-urlencoded 格式，可能後端期望這種格式
+      final response = await _apiClient.post(
+        ApiConstants.googleLogin, // 使用 /users/login/google
+        data: registerData,
+        options: Options(
+          contentType: 'application/x-www-form-urlencoded',
+          headers: {
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      _logger.i('Google 註冊 API 響應: ${response.statusCode}');
+      _logger.i('響應數據: ${response.data}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // 註冊成功，處理後端響應
+        final backendData = response.data;
+        final accessToken = backendData?['access_token'] as String?;
+        final refreshToken = backendData?['refresh_token'] as String?;
+        final backendUserId =
+            backendData?['user_id'] as String? ?? googleLoginData['google_id'];
+
+        // 保存 token
+        if (accessToken != null) {
+          await _secureStorage.write(key: 'access_token', value: accessToken);
+          _logger.i('已保存後端返回的訪問令牌');
+          
+          // 驗證token是否正確保存
+          final savedToken = await _secureStorage.read(key: 'access_token');
+          if (savedToken == accessToken) {
+            _logger.i('Google註冊Token保存驗證成功');
+          } else {
+            _logger.e('Google註冊Token保存驗證失敗');
+            _logger.e('原始token: $accessToken');
+            _logger.e('保存的token: $savedToken');
+          }
+        } else {
+          _logger.w('Google註冊響應中沒有access_token');
+        }
+        if (refreshToken != null) {
+          await _secureStorage.write(key: 'refresh_token', value: refreshToken);
+          _logger.i('已保存後端返回的刷新令牌');
+        }
+
+        // 保存登入狀態
+        await _saveAuthState(backendUserId);
+        _logger.i('已更新認證狀態，用戶標識: $backendUserId');
+
+        // 創建並返回用戶對象
+        final user = User(
+          id: backendUserId,
+          username:
+              backendData?['username'] as String? ?? registerData['username'],
+          email: googleLoginData['email'],
+          name: googleLoginData['name'],
+          userUuid: googleLoginData['google_id'],
+          token: accessToken ?? '',
+          isGoogleUser: true,
+          photoUrl: firebaseUser.photoURL,
+          isEmailVerified: firebaseUser.emailVerified,
+        );
+
+        _logger.i('Google 用戶註冊成功: ${user.toJson()}');
+        return user;
+      } else {
+        throw Exception('Google 註冊失敗: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      _logger.e('Google 用戶註冊 API 錯誤: ${e.type}');
+      _logger.e('錯誤響應: ${e.response?.data}');
+      _logger.e('錯誤消息: ${e.message}');
+      _logger.e('請求 URL: ${e.requestOptions.uri}');
+      _logger.e('請求數據: ${e.requestOptions.data}');
+
+      // 提供更具體的錯誤訊息
+      String errorMessage = 'Google 註冊處理失敗';
+      if (e.response?.data != null) {
+        if (e.response!.data is Map) {
+          errorMessage = e.response!.data['detail'] ??
+              e.response!.data['message'] ??
+              errorMessage;
+        } else {
+          errorMessage = e.response!.data.toString();
+        }
+      }
+      throw Exception('Google 用戶註冊失敗: $errorMessage');
+    } catch (e) {
+      _logger.e('Google 用戶註冊過程中發生錯誤: $e');
+      throw Exception('Google 用戶註冊失敗: $e');
     }
   }
 }

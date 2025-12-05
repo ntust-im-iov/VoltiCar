@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'dart:async';
+import 'package:provider/provider.dart';
+import '../viewmodels/carbon_reduction_viewmodel.dart';
+import '../viewmodels/carbon_reward_point_viewmodel.dart';
+import '../viewmodels/charge_canlog_monitor_viewmodel.dart';
+// 已移除未使用的 import
 
 class ChargingView extends StatefulWidget {
   const ChargingView({super.key});
@@ -10,17 +16,179 @@ class ChargingView extends StatefulWidget {
 
 class _ChargingViewState extends State<ChargingView> {
   final _logger = Logger();
+  ChargeCanlogMonitorViewModel? _canlogMonitorVM;
+  bool _initialized = false;
+  // 參數控制
+  String _chargeMode = "TYPE1"; // 預設 TYPE1
+  bool _skipIdle = false;
+  int _duration = 2000;
+  bool _isCharging = false;
+  bool _isHandlingFinish = false;
+  // 使用實體方法作為 listener，避免 hot-reload/closure 引起的私有欄位 lookup 問題
 
-  // 充電狀態變量
-  double _batteryLevel = 0.45; // 初始電池電量
-  bool _isCharging = false; // 充電狀態
-  int _chargingSpeed = 0; // 充電速度 (kW)
-  int _estimatedTimeRemaining = 0; // 剩餘充電時間 (分鐘)
+  // 啟動模擬充電（按下按鈕才啟動流式監聽）
+  void _startSimulation() {
+    setState(() {
+      _isCharging = true;
+    });
+    final vm = context.read<ChargeCanlogMonitorViewModel>();
+    _logger.i(
+        '[startSimulation] mode=$_chargeMode, skipIdle=$_skipIdle, duration=$_duration');
+    try {
+      vm.startListening(
+        log: _chargeMode == 'TYPE1' ? 'supercharge' : 'supercharge_end',
+        skipIdle: _skipIdle,
+        duration: _duration,
+      );
+
+      _logger.i('[startSimulation] Called vm.startListening');
+    } catch (e, st) {
+      _logger.e('[startSimulation] error: $e\n$st');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('啟動監聽失敗: $e')),
+        );
+      }
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     _logger.i('ChargingView initialized');
+    // 設定監聽 ViewModel 狀態（listener 觸發非同步處理，並使用防重入 flag）
+    // listener 由實體方法 `_onCanlogMonitorChanged` 提供，在 didChangeDependencies 註冊。
+  }
+
+  void _onCanlogMonitorChanged() {
+    final vm = context.read<ChargeCanlogMonitorViewModel>();
+    if (_isCharging && vm.isFinished && !_isHandlingFinish) {
+      setState(() {
+        _isCharging = false;
+      });
+      _logger.i('[onCanlogMonitorChanged] isFinished, trigger async handler');
+      _handleFinishAsync();
+    }
+  }
+
+  // 非同步處理呼叫，避免在 listener 中直接 await
+  Future<void> _handleFinishAsync() async {
+    if (_isHandlingFinish) return;
+    setState(() {
+      _isHandlingFinish = true;
+    });
+    try {
+      await handleChargingFinishAndCarbon();
+    } catch (e, st) {
+      _logger.e('[handleFinishAsync] error: $e\n$st');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('處理充電結束資料時發生錯誤: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isHandlingFinish = false;
+        });
+      } else {
+        _isHandlingFinish = false;
+      }
+    }
+  }
+
+  /// 實際處理儲存減碳與減碳點數的工作
+  Future<void> handleChargingFinishAndCarbon() async {
+    final chargeVM =
+        Provider.of<ChargeCanlogMonitorViewModel>(context, listen: false);
+    final double? thisSessionKwh = chargeVM.lastData?.totalKwhCharged;
+    if (thisSessionKwh == null) {
+      _logger.w('[handleChargingFinishAndCarbon] missing kWh data');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('找不到本次充電資料，無法處理減碳')),
+        );
+      }
+      return;
+    }
+
+    final crVM = Provider.of<CarbonReductionViewModel>(context, listen: false);
+    final crpVM =
+        Provider.of<CarbonRewardPointViewModel>(context, listen: false);
+
+    try {
+      // 先從後端取得目前的總減碳量，確保 previousTotal 與 server 同步
+      double previousTotal = 0.0;
+      try {
+        await crVM.fetchCarbonReduction();
+        previousTotal = crVM.carbonReduction?.totalCarbonReductionKg ?? 0.0;
+      } catch (e) {
+        _logger.w(
+            '[handleChargingFinishAndCarbon] fetch previous total failed: $e — defaulting to 0.0');
+        previousTotal = 0.0;
+      }
+
+      // 儲存減碳量（後端會回傳計算後的減碳資料）
+      await crVM.saveCarbonReduction(thisSessionKwh);
+
+      // 從 viewmodel 取得更新後的總減碳量
+      final newTotal = crVM.carbonReduction?.totalCarbonReductionKg ?? 0.0;
+
+      // 計算本次充電的減碳差額（避免負數，最少為 0）
+      final double deltaCarbonKg =
+          (newTotal - previousTotal) > 0 ? (newTotal - previousTotal) : 0.0;
+
+      // 使用本次的減碳差額來儲存減碳點數（後端期望的是本次減碳量）
+      await crpVM.saveCarbonRewardPoint(deltaCarbonKg);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('減碳與點數已儲存')),
+        );
+      }
+    } catch (e, st) {
+      _logger.e('[handleChargingFinishAndCarbon] error: $e\n$st');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('儲存減碳或點數發生錯誤: $e')),
+        );
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 只註冊一次監聽器
+    final vm =
+        Provider.of<ChargeCanlogMonitorViewModel>(context, listen: false);
+    if (_canlogMonitorVM != vm) {
+      // 移除舊的監聽（如果有），並註冊新的實體方法監聽
+      _canlogMonitorVM?.removeListener(_onCanlogMonitorChanged);
+      _canlogMonitorVM = vm;
+      _canlogMonitorVM?.addListener(_onCanlogMonitorChanged);
+    }
+
+    // 第一次載入時抓取目前的減碳量與減碳點數，確保 UI 有初始值
+    if (!_initialized) {
+      _initialized = true;
+      // 透過 provider 呼叫 viewmodels 的 fetch 方法
+      final crVM =
+          Provider.of<CarbonReductionViewModel>(context, listen: false);
+      final crpVM =
+          Provider.of<CarbonRewardPointViewModel>(context, listen: false);
+      // 非同步呼叫但不 await（讓畫面先渲染）
+      crVM.fetchCarbonReduction();
+      crpVM.fetchCarbonRewardPoint();
+    }
+  }
+
+  @override
+  void dispose() {
+    // 只移除 State 儲存的 ViewModel 監聽
+    _canlogMonitorVM?.removeListener(_onCanlogMonitorChanged);
+    super.dispose();
   }
 
   @override
@@ -29,7 +197,7 @@ class _ChargingViewState extends State<ChargingView> {
       backgroundColor: const Color(0xFF2A1E47),
       appBar: AppBar(
         title: const Text(
-          '充電站',
+          '充電模擬',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         backgroundColor: const Color(0xFF2A1E47),
@@ -38,57 +206,390 @@ class _ChargingViewState extends State<ChargingView> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [],
       ),
-      body: Stack(
-        children: [
-          Container(
-            color: const Color(0xFF2A1E47),
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // 充電站信息卡
-                    _buildChargingStationCard(),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildChargingStationCard(),
+              const SizedBox(height: 20),
+              _buildModeSelector(),
+              const SizedBox(height: 20),
+              _buildSkipIdleSwitch(),
+              const SizedBox(height: 12),
+              _buildDurationSlider(),
+              const SizedBox(height: 20),
+              _buildSimulateButton(),
+              const SizedBox(height: 20),
+              _buildDataStreamRow(),
+              const SizedBox(height: 20),
+              _buildChargingStats(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-                    const SizedBox(height: 24),
+  // 跳過 idle 資料的開關
+  Widget _buildSkipIdleSwitch() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        Switch(
+          value: _skipIdle,
+          onChanged: (val) {
+            setState(() {
+              _skipIdle = val;
+            });
+            _logger.i('skipIdle 切換: $_skipIdle');
+          },
+        ),
+        const Text('跳過 idle 資料', style: TextStyle(color: Colors.white)),
+      ],
+    );
+  }
 
-                    // 電池顯示
-                    _buildBatteryDisplay(),
+  // duration 參數滑桿
+  Widget _buildDurationSlider() {
+    return Row(
+      children: [
+        const Text('模擬時長(ms): ', style: TextStyle(color: Colors.white)),
+        Expanded(
+          child: Slider(
+            value: _duration.toDouble(),
+            min: 500,
+            max: 5000,
+            divisions: 19,
+            label: _duration.toString(),
+            onChanged: (val) {
+              setState(() {
+                _duration = val.round();
+              });
+              _logger.i('duration 調整: $_duration');
+            },
+          ),
+        ),
+        SizedBox(
+          width: 60,
+          child:
+              Text('$_duration', style: const TextStyle(color: Colors.white)),
+        ),
+      ],
+    );
+  }
 
-                    const SizedBox(height: 24),
-
-                    // 充電控制
-                    _buildChargingControls(),
-
-                    const SizedBox(height: 24),
-
-                    // 充電詳細信息
-                    _buildChargingDetails(),
-
-                    const SizedBox(height: 24),
-                  ],
+  Widget _buildModeSelector() {
+    final modes = ['TYPE1', 'TYPE2'];
+    return Card(
+      color: const Color(0xFF3A2D5B),
+      elevation: 8,
+      shadowColor: const Color(0xFF63588A).withOpacity(0.3),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: Color(0xFF63588A), width: 2),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: modes.map((mode) {
+            final isSelected = _chargeMode == mode;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              child: ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _chargeMode = mode;
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isSelected
+                      ? const Color(0xFFFFD166)
+                      : const Color(0xFF2A1E47),
+                  foregroundColor:
+                      isSelected ? const Color(0xFF3A2D5B) : Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 36, vertical: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(
+                      color: isSelected
+                          ? const Color(0xFFFFD166)
+                          : const Color(0xFF63588A),
+                      width: 2,
+                    ),
+                  ),
+                  elevation: isSelected ? 8 : 2,
                 ),
+                child: Text('超充$mode',
+                    style: TextStyle(
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontSize: 18)),
               ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSimulateButton() {
+    return Card(
+      color: const Color(0xFF3A2D5B),
+      elevation: 8,
+      shadowColor: const Color(0xFF63588A).withOpacity(0.3),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: Color(0xFF63588A), width: 2),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          child: ElevatedButton.icon(
+            icon: Icon(_isCharging ? Icons.bolt : Icons.play_arrow,
+                size: 28, color: Colors.white),
+            onPressed: _startSimulation,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _isCharging
+                  ? const Color(0xFF63588A)
+                  : const Color(0xFF4CAF50),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 22),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              minimumSize: const Size(double.infinity, 60),
+              elevation: _isCharging ? 2 : 8,
+            ),
+            label: Text(
+              _isCharging ? '充電中...' : '開始充電模擬',
+              style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2),
             ),
           ),
-        ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildDataStreamRow() {
+    return Consumer<ChargeCanlogMonitorViewModel>(
+      builder: (context, vm, _) {
+        final data = vm.latestData;
+        final isLoading = vm.isLoading;
+        final isFinished = vm.isFinished;
+        _logger.i(
+            'DataStreamRow: isLoading=$isLoading, isFinished=$isFinished, data=${data != null ? data.toString() : 'null'}');
+        return Card(
+          color: const Color(0xFF3A2D5B),
+          elevation: 8,
+          shadowColor: const Color(0xFF63588A).withOpacity(0.3),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: Color(0xFF63588A), width: 2),
+          ),
+          child: Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 24.0, vertical: 28.0),
+            child: isLoading && data == null
+                ? const Center(child: CircularProgressIndicator())
+                : data == null
+                    ? const Text('尚無資料',
+                        style: TextStyle(color: Colors.white70))
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          TweenAnimationBuilder<double>(
+                            tween: Tween<double>(
+                                begin: 0, end: (data.socUiPercent ?? 0.0)),
+                            duration: const Duration(milliseconds: 800),
+                            builder: (context, value, child) => Text(
+                              '電池電量：${value.toStringAsFixed(1)}%',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.5),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.bolt,
+                                  color: Color(0xFFFFD166), size: 28),
+                              const SizedBox(width: 8),
+                              Text(
+                                  '充電速度：${data.instantAcPowerKw?.toStringAsFixed(1) ?? '--'} kW',
+                                  style: const TextStyle(
+                                      color: Color(0xFFFFD166),
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          Text(
+                              '預計剩餘時間：${data.energyToChargeCompleteKwh?.toStringAsFixed(1) ?? '--'} 分鐘',
+                              style: const TextStyle(
+                                  color: Colors.white70, fontSize: 18)),
+                          const SizedBox(height: 14),
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 400),
+                            child: Text(
+                              '狀態：${data.status ?? '--'}',
+                              key: ValueKey(data.status),
+                              style: TextStyle(
+                                color: (data.status == '充電中' ||
+                                        data.status == 'charging')
+                                    ? const Color(0xFF4CAF50)
+                                    : const Color(0xFFFF6B6B),
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          if (isFinished)
+                            const Padding(
+                              padding: EdgeInsets.only(top: 16.0),
+                              child: Text('充電已結束',
+                                  style: TextStyle(
+                                      color: Colors.amber, fontSize: 18)),
+                            ),
+                        ],
+                      ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildChargingStats() {
+    return Consumer2<CarbonReductionViewModel, CarbonRewardPointViewModel>(
+      builder: (context, crVM, crpVM, _) {
+        final reduction = crVM.carbonReduction?.totalCarbonReductionKg ?? 0.0;
+        final points = crpVM.carbonRewardPoint?.carbonRewardPoints ?? 0;
+        // points 以 int 顯示
+        final isLoading = crVM.isLoading || crpVM.isLoading;
+        // 取得本次充電的 kWh（從 ChargeCanlogMonitorViewModel.lastData）
+        final chargeVM = Provider.of<ChargeCanlogMonitorViewModel>(context);
+        final double? thisSessionKwh = chargeVM.lastData?.totalKwhCharged;
+        _logger.i(
+            '[buildChargingStats] reduction=$reduction, points=$points, isLoading=$isLoading');
+        return Card(
+          color: const Color(0xFF3A2D5B),
+          elevation: 14,
+          shadowColor: const Color(0xFF63588A).withOpacity(0.18),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+            side: const BorderSide(color: Color(0xFF63588A), width: 2),
+          ),
+          child: Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 32.0, vertical: 28.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '充電統計',
+                  style: TextStyle(
+                    color: Color(0xFFFFD166),
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('本次充電',
+                        style: TextStyle(color: Colors.white70, fontSize: 16)),
+                    Text(
+                        thisSessionKwh != null
+                            ? '${thisSessionKwh.toStringAsFixed(2)} kWh'
+                            : '-- kWh',
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 16)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // 減碳量
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('減碳量',
+                        style: TextStyle(
+                            color: Color(0xFF4CAF50),
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold)),
+                    isLoading
+                        ? const SizedBox(
+                            width: 32,
+                            height: 20,
+                            child: Center(
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Color(0xFF4CAF50))),
+                          )
+                        : Text('${reduction.toStringAsFixed(2)} kg',
+                            style: const TextStyle(
+                                color: Color(0xFF4CAF50),
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // 減碳點數
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('減碳點數',
+                        style: TextStyle(
+                            color: Color(0xFF00B8D9),
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold)),
+                    isLoading
+                        ? const SizedBox(
+                            width: 32,
+                            height: 20,
+                            child: Center(
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Color(0xFF00B8D9))),
+                          )
+                        : Text('${points.toString()}',
+                            style: const TextStyle(
+                                color: Color(0xFF00B8D9),
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildChargingStationCard() {
     return Card(
       color: const Color(0xFF3A2D5B),
-      elevation: 4,
+      elevation: 10,
+      shadowColor: const Color(0xFF63588A).withOpacity(0.25),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         side: const BorderSide(color: Color(0xFF63588A), width: 2),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -97,54 +598,60 @@ class _ChargingViewState extends State<ChargingView> {
                 const Icon(
                   Icons.ev_station,
                   color: Color(0xFFFF6B6B),
-                  size: 32,
+                  size: 36,
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 const Text(
-                  'VoltiCar私人充電站',
+                  'VoltiCar 模擬充電站',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 18,
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            const Row(
+            const SizedBox(height: 20),
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('充電功率', style: TextStyle(color: Colors.white70)),
-                Text('最高150 kW', style: TextStyle(color: Colors.white)),
+              children: const [
+                Text('充電功率',
+                    style: TextStyle(color: Colors.white70, fontSize: 16)),
+                Text('最高 150 kW',
+                    style: TextStyle(color: Colors.white, fontSize: 16)),
               ],
             ),
-            const SizedBox(height: 8),
-            const Row(
+            const SizedBox(height: 10),
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('充電接口', style: TextStyle(color: Colors.white70)),
-                Text('Type 2 / CCS', style: TextStyle(color: Colors.white)),
+              children: const [
+                Text('充電接口',
+                    style: TextStyle(color: Colors.white70, fontSize: 16)),
+                Text('Type 2 / CCS',
+                    style: TextStyle(color: Colors.white, fontSize: 16)),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('狀態', style: TextStyle(color: Colors.white70)),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
+                const Text('狀態',
+                    style: TextStyle(color: Colors.white70, fontSize: 16)),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: _isCharging
-                        ? const Color(0xFF4CAF50).withOpacity(0.2)
-                        : const Color(0xFFFF6B6B).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(4),
+                        ? const Color(0xFF4CAF50).withOpacity(0.18)
+                        : const Color(0xFFFF6B6B).withOpacity(0.18),
+                    borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: _isCharging
                           ? const Color(0xFF4CAF50)
                           : const Color(0xFFFF6B6B),
+                      width: 2,
                     ),
                   ),
                   child: Text(
@@ -153,6 +660,8 @@ class _ChargingViewState extends State<ChargingView> {
                       color: _isCharging
                           ? const Color(0xFF4CAF50)
                           : const Color(0xFFFF6B6B),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
                   ),
                 ),
@@ -162,288 +671,5 @@ class _ChargingViewState extends State<ChargingView> {
         ),
       ),
     );
-  }
-
-  Widget _buildBatteryDisplay() {
-    return Card(
-      color: const Color(0xFF3A2D5B),
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFF63588A), width: 2),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // 電池電量百分比
-            Text(
-              '${(_batteryLevel * 100).toInt()}%',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            // 電池圖示
-            Container(
-              height: 40,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                border: Border.all(color: _batteryLevelColor(), width: 2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width:
-                        MediaQuery.of(context).size.width * 0.8 * _batteryLevel,
-                    decoration: BoxDecoration(
-                      color: _batteryLevelColor(),
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(6),
-                        bottomLeft: Radius.circular(6),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            if (_isCharging) ...[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.bolt, color: Color(0xFFFFD166)),
-                  const SizedBox(width: 4),
-                  Text(
-                    '充電速度: $_chargingSpeed kW',
-                    style: const TextStyle(color: Color(0xFFFFD166)),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '預計剩餘時間: $_estimatedTimeRemaining 分鐘',
-                style: const TextStyle(color: Colors.white70),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildChargingControls() {
-    return Card(
-      color: const Color(0xFF3A2D5B),
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFF63588A), width: 2),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // 充電按鈕
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _isCharging = !_isCharging;
-                  _chargingSpeed = _isCharging ? 50 : 0;
-                  _estimatedTimeRemaining = _isCharging
-                      ? (((1.0 - _batteryLevel) * 100 * 60) / _chargingSpeed)
-                          .round()
-                      : 0;
-
-                  // 如果開始充電，模擬充電過程
-                  if (_isCharging) {
-                    Future.delayed(const Duration(seconds: 1), () {
-                      _simulateCharging();
-                    });
-                  }
-                });
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _isCharging
-                    ? const Color(0xFFFF6B6B)
-                    : const Color(0xFF4CAF50),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                minimumSize: const Size(double.infinity, 50),
-              ),
-              child: Text(
-                _isCharging ? '停止充電' : '開始充電',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            // 充電速度選擇器（只在未充電時可調整）
-            if (!_isCharging) ...[
-              const Text(
-                '選擇充電功率',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildChargingRateButton(50, '標準'),
-                  _buildChargingRateButton(75, '快速'),
-                  _buildChargingRateButton(120, '超快'),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildChargingRateButton(int rate, String label) {
-    return ElevatedButton(
-      onPressed: () {
-        setState(() {
-          _chargingSpeed = rate;
-        });
-      },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: _chargingSpeed == rate
-            ? const Color(0xFF63588A)
-            : const Color(0xFF2A1E47),
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-          side: BorderSide(
-            color: _chargingSpeed == rate
-                ? const Color(0xFFFFD166)
-                : const Color(0xFF63588A),
-            width: 1,
-          ),
-        ),
-      ),
-      child: Column(
-        children: [
-          Text(
-            '$rate kW',
-            style: TextStyle(
-              fontWeight:
-                  _chargingSpeed == rate ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: _chargingSpeed == rate
-                  ? const Color(0xFFFFD166)
-                  : Colors.white70,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildChargingDetails() {
-    return Card(
-      color: const Color(0xFF3A2D5B),
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFF63588A), width: 2),
-      ),
-      child: const Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '充電統計',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('本次充電', style: TextStyle(color: Colors.white70)),
-                Text('0.0 kWh', style: TextStyle(color: Colors.white)),
-              ],
-            ),
-            SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('本月充電', style: TextStyle(color: Colors.white70)),
-                Text('120.5 kWh', style: TextStyle(color: Colors.white)),
-              ],
-            ),
-            SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('總充電次數', style: TextStyle(color: Colors.white70)),
-                Text('42 次', style: TextStyle(color: Colors.white)),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // 根據電池電量返回顏色
-  Color _batteryLevelColor() {
-    if (_batteryLevel < 0.2) {
-      return const Color(0xFFFF6B6B); // 紅色
-    } else if (_batteryLevel < 0.5) {
-      return const Color(0xFFFFD166); // 黃色
-    } else {
-      return const Color(0xFF4CAF50); // 綠色
-    }
-  }
-
-  // 模擬充電過程
-  void _simulateCharging() {
-    if (_isCharging && _batteryLevel < 1.0) {
-      setState(() {
-        // 每秒增加電量
-        _batteryLevel += (_chargingSpeed / 10000);
-        if (_batteryLevel > 1.0) _batteryLevel = 1.0;
-
-        // 更新剩餘時間
-        _estimatedTimeRemaining =
-            (((1.0 - _batteryLevel) * 100 * 60) / _chargingSpeed).round();
-
-        // 如果電池已滿，停止充電
-        if (_batteryLevel >= 1.0) {
-          _isCharging = false;
-          _chargingSpeed = 0;
-          _estimatedTimeRemaining = 0;
-        } else {
-          // 否則繼續模擬
-          Future.delayed(const Duration(seconds: 1), () {
-            _simulateCharging();
-          });
-        }
-      });
-    }
   }
 }

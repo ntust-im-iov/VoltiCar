@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:volticar_app/core/constants/api_constants.dart';
 import 'package:logger/logger.dart';
+import 'dart:math' as math;
 
 class ApiClient {
   static final ApiClient _instance = ApiClient._internal();
@@ -41,33 +42,29 @@ class ApiClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          _logger.i('=== 發送請求 ===');
-          _logger.i('URL: ${options.uri}');
-          _logger.i('Method: ${options.method}');
-          _logger.i('Headers: ${options.headers}');
-          _logger.i('Data: ${options.data}');
-
           // 添加認證 token
           final token = await _getToken();
+          _logger.i('發送請求到: ${options.path}');
+          _logger.i('獲取到的token: ${token != null ? "已獲取token" : "未獲取到token"}');
+
           if (token != null) {
             options.headers[ApiConstants.authHeader] =
                 '${ApiConstants.bearerPrefix}$token';
-            _logger.i('已添加認證 Token');
+            _logger.i('已添加Authorization header');
+          } else {
+            _logger.w('警告：未找到access_token，將發送未認證的請求');
           }
 
           handler.next(options);
         },
         onResponse: (response, handler) {
-          _logger.i('=== 收到響應 ===');
-          _logger.i('Status Code: ${response.statusCode}');
-          _logger.i('Data: ${response.data}');
+          // 移除詳細的響應日誌
           handler.next(response);
         },
         onError: (DioException e, handler) async {
-          _logger.e('=== 請求錯誤 ===');
-          _logger.e('Type: ${e.type}');
-          _logger.e('Message: ${e.message}');
-          _logger.e('Response: ${e.response?.data}');
+          _logger.e('API請求失敗: ${e.message}');
+          _logger.e(
+              'API error status: ${e.response?.statusCode}, body: ${e.response?.data}');
 
           // 處理401未授權錯誤
           if (e.response?.statusCode == 401) {
@@ -121,9 +118,32 @@ class ApiClient {
 
   Future<String?> _getToken() async {
     try {
-      return await _secureStorage.read(key: 'access_token');
+      _logger.i('正在讀取access_token...');
+      final token = await _secureStorage.read(key: 'access_token');
+      if (token != null) {
+        _logger.i(
+            '成功讀取到access_token: ${token.substring(0, math.min(10, token.length))}...');
+      } else {
+        _logger.w('未找到access_token在secure storage中');
+
+        // 嘗試讀取所有存儲的鍵值來調試
+        try {
+          final allKeys = await _secureStorage.readAll();
+          _logger.i('Secure Storage中的所有鍵值: ${allKeys.keys.toList()}');
+
+          // 檢查是否有其他相關的token鍵值
+          for (String key in allKeys.keys) {
+            if (key.contains('token') || key.contains('access')) {
+              _logger.i('找到相關鍵值: $key = ${allKeys[key]}');
+            }
+          }
+        } catch (e) {
+          _logger.e('讀取所有storage鍵值時發生錯誤: $e');
+        }
+      }
+      return token;
     } catch (e) {
-      _logger.e('Error reading token: $e');
+      _logger.e('讀取token時發生錯誤: $e');
       return null;
     }
   }
@@ -148,7 +168,7 @@ class ApiClient {
       }
 
       final response = await _dio.post(
-        '/users/token/refresh',
+        ApiConstants.apiVersion + '/users/token/refresh',
         data: {
           'refresh_token': refreshToken,
         },
